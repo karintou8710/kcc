@@ -18,9 +18,8 @@ assert() {
     fi
 }
 
-for i in 0 10 20 30 40 50
-do
-    assert $i $i
-done
+assert 1 1
+assert 3 3
+assert 21 "5+20-4"
 
 echo OK
