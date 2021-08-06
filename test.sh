@@ -47,4 +47,17 @@ assert 1 '1>=0;'
 assert 1 '1>=1;'
 assert 0 '1>=2;'
 
+# ローカル変数
+assert 6 'a=6;'
+assert 2 'a=2;b=a;b;'
+assert 3 'a=1;b=2;c=a+b;'
+assert 12 'value=12;'
+assert 5 'num=1;test=(num*10)/2;test;'
+
+# return
+assert 5 'return 5;'
+assert 6 'a=6;return a;'
+assert 10 'a=1;b=4;return 2*(a+b);'
+assert 13 'val=4;return val-2+11;'
+
 echo OK

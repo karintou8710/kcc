@@ -29,7 +29,7 @@ bool consume(char *op) {
         memcmp(token->str, op, token->len)) {
         return false;
     }
-    token = token->next;
+    next_token();
     return true;
 }
 
@@ -39,7 +39,7 @@ void expect(char *op) {
         memcmp(token->str, op, token->len)) {
         error_at(token->str, "'%s'ではありません", op);
     }
-    token = token->next;
+    next_token();
 }
 
 int expect_number() {
@@ -47,7 +47,7 @@ int expect_number() {
         error_at(token->str, "数ではありません");
     }
     int val = token->val;
-    token = token->next;
+    next_token();
     return val;
 }
 
@@ -103,8 +103,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        // 小文字だけのローカル変数
         if ('a'<=*p && *p<='z') {
-            cur = new_token(TK_IDENT, cur, p++, 1);
+            cur = new_token(TK_IDENT, cur, p, 0);
+            char *q = p;
+            str_advanve(&p);
+            cur->len = p - q;
             continue;
         }
 
@@ -131,11 +141,31 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_ident(char s) {
+Node *new_node_ident(Token *tok) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->offset = (s - 'a' + 1) * 8;
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+        node->offset = lvar->offset;
+    } else {
+        lvar = calloc(1, sizeof(LVar));
+        lvar->next = locals;
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        lvar->offset = locals->offset + 8;
+        node->offset = lvar->offset;
+        locals = lvar;
+    }
     return node;
+}
+
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+            return var;
+        }
+    }
+    return NULL;
 }
 
 // AST
@@ -149,7 +179,15 @@ void program() {
 }
 
 Node *stmt() {
-    Node *node = expr();
+    Node *node;
+    if (token->kind == TK_RETURN) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_RETURN;
+        next_token();
+        node->lhs = expr();
+    } else {
+        node = expr();
+    }
     expect(";");
     return node;
 }
@@ -244,8 +282,8 @@ Node *primary() {
     }
 
     if (token->kind == TK_IDENT) {
-        Node *node = new_node_ident(token->str[0]);
-        token = token->next;
+        Node *node = new_node_ident(token);
+        next_token();
         return node;
     }
 
@@ -253,5 +291,6 @@ Node *primary() {
         return new_node_num(expect_number());
     }
 
+    printf("%c\n", token->kind);
     error("不正なトークンです。");
 }

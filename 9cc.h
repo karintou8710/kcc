@@ -10,6 +10,7 @@ typedef enum {
     TK_NUM,
     TK_IDENT,
     TK_EOF,
+    TK_RETURN,
 } TokenKind;
 
 typedef struct Token Token;
@@ -36,6 +37,7 @@ typedef enum {
     ND_LE,     // <=
     ND_LVAR,   // local var
     ND_NUM,    // num
+    ND_RETURN, // return
 } NodeKind;
 
 typedef struct Node Node;
@@ -48,8 +50,15 @@ struct Node {
     int offset;    // kindがND_LVARの場合のみ使う
 };
 
-// 入力プログラム
-char *user_input;
+typedef struct LVar LVar;
+
+// ローカル変数の型
+struct LVar {
+  LVar *next; // 次の変数かNULL
+  char *name; // 変数の名前
+  int len;    // 名前の長さ
+  int offset; // RBPからのオフセット
+};
 
 void program();
 Node *stmt();
@@ -72,7 +81,19 @@ void expect(char *op);
 bool consume(char *op);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
+LVar *find_lvar(Token *tok);
 
+// util.c
+int is_alnum(char c);
+void str_advanve(char **p);
+void next_token();
+
+// codegen.c
 void gen(Node *node);
 
+// 変数
+
+
+LVar *locals; // ローカル変数
+char *user_input; // 入力プログラム
 Node *code[100];

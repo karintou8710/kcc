@@ -7,6 +7,9 @@ int main(int argc, char **argv) {
     }
 
     user_input = argv[1];
+    locals = calloc(1, sizeof(LVar));
+    locals->offset = 0;
+
     token = tokenize(user_input);
     program();
 
