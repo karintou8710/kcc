@@ -104,6 +104,28 @@ Node *stmt() {
         if (consume(TK_ELSE)) {
             node->els = stmt();
         }
+    } else if (consume(TK_WHILE)) {
+        node = new_node(ND_WHILE);
+        expect('(');
+        node->cond = expr();
+        expect(')');
+        node->body = stmt();
+    } else if (consume(TK_FOR)) {
+        node = new_node(ND_FOR);
+        expect('(');
+        if (token->kind != ';') {
+            node->init = expr();
+        }
+        expect(';');
+        if (token->kind != ';') {
+            node->cond = expr();
+        }
+        expect(';');
+        if (token->kind != ')') {
+            node->inc = expr();
+        }
+        expect(')');
+        node->body = stmt();
     } else {
         node = expr();
         expect(';');
@@ -211,6 +233,5 @@ Node *primary() {
         return new_node_num(expect_number());
     }
 
-    printf("%c\n", token->kind);
-    error("不正なトークンです。");
+    error("%sは不正なトークンです。", token->str);
 }

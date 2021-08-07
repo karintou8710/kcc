@@ -25,6 +25,7 @@ assert 3 'a=1;b=2;c=a+b;'
 assert 12 'value=12;'
 assert 6 'val=1;t=3*(val+1);t;'
 assert 5 'num=1;test=(num*10)/2;test;'
+assert 4 'a=1;a=a+3;a;'
 
 # return
 assert 5 'return 5;'
@@ -37,5 +38,11 @@ assert 4 'if (1) 4;'
 assert 6 'if (2+3==5) 3*2;'
 assert 10 'a=2*3;if (a==6) return a+4; else return 0;'
 assert 0 'a=2*3;if (a<5) return a+4; else return 0;'
+
+# while
+assert 10 'i=0;while (i<10) i=i+1;return i;'
+
+# for
+assert 10 'a=0; for(i=0;i<10;i=i+1) a=a+1; return a;'
 
 echo OK

@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
     }
 
     user_input = argv[1];
-    label_if_count = 0;
+    label_if_count = 0, label_loop_count = 0;
     locals = calloc(1, sizeof(LVar));
     locals->offset = 0;
 

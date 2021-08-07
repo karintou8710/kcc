@@ -76,6 +76,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_WHILE, cur, p, 5);
+            p += 5;
+            continue;
+        }
+
+        if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
+            cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
         // 小文字だけのローカル変数
         if ('a'<=*p && *p<='z') {
             cur = new_token(TK_IDENT, cur, p, 0);

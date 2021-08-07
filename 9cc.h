@@ -8,14 +8,16 @@
 enum {
     TK_NUM = 256,  // number
     TK_IDENT,      // ident
-    TK_EOF,        // eof
+    TK_EQ,         // ==
+    TK_NE,         // !=
+    TK_LE,         // <=
+    TK_GE,         // >=
     TK_RETURN,     // return
     TK_IF,         // if
     TK_ELSE,       // else
-    TK_EQ,        // ==
-    TK_NE,        // !=
-    TK_LE,        // <=
-    TK_GE,        // >=
+    TK_FOR,        // for
+    TK_WHILE,      // while
+    TK_EOF,        // eof
 };
 
 typedef struct Token Token;
@@ -45,6 +47,8 @@ typedef enum {
     ND_RETURN, // return
     ND_IF,     // if
     ND_ELSE,   // else
+    ND_FOR,    // for
+    ND_WHILE,  // while
 } NodeKind;
 
 typedef struct Node Node;
@@ -56,10 +60,15 @@ struct Node {
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
 
-    // if (cond) then els ...
+    // if (cond) then els 
+    // while (cond) body 
+    // for (init;cond;inc) body 
     Node *cond; 
     Node *then;
     Node *els;
+    Node *body;
+    Node *init;
+    Node *inc;
 };
 
 typedef struct LVar LVar;
@@ -113,3 +122,4 @@ LVar *locals; // ローカル変数
 char *user_input; // 入力プログラム
 Node *code[100];
 int label_if_count;
+int label_loop_count;
