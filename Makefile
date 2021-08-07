@@ -10,6 +10,9 @@ $(OBJS): 9cc.h
 test: 9cc
 		./tests/test-control.sh
 
+testall: 9cc
+		./tests/test-binop.sh && ./tests/test-control.sh
+
 clean:
 		rm -f 9cc *.o *~ tmp*
 
