@@ -23,20 +23,16 @@ void error_at(char *loc, char *fmt, ...) {
 }
 
 // 演算子の比較
-bool consume(char *op) {
-    if (token->kind != TK_RESERVED ||
-        token->len != strlen(op)||
-        memcmp(token->str, op, token->len)) {
+bool consume(int op) {
+    if (token->kind != op) {
         return false;
     }
     next_token();
     return true;
 }
 
-void expect(char *op) {
-    if (token->kind != TK_RESERVED ||
-        token->len != strlen(op) ||
-        memcmp(token->str, op, token->len)) {
+void expect(int op) {
+    if (token->kind != op) {
         error_at(token->str, "'%s'ではありません", op);
     }
     next_token();
@@ -55,7 +51,7 @@ bool at_eof() {
     return token->kind == TK_EOF;
 }
 
-Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
+Token *new_token(int kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
@@ -79,19 +75,33 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (
-            startsWith(p, "==") ||
-            startsWith(p, "!=") ||
-            startsWith(p, "<=") ||
-            startsWith(p, ">=") 
-        ) {
-            cur = new_token(TK_RESERVED, cur, p, 2);
+        if (startsWith(p, "==")) {
+            cur = new_token(TK_EQ, cur, p, 2);
+            p+=2;
+            continue;
+        }
+
+        if (startsWith(p, "!=")) {
+            cur = new_token(TK_NE, cur, p, 2);
+            p+=2;
+            continue;
+        }
+
+        if (startsWith(p, "<=")) {
+            cur = new_token(TK_LE, cur, p, 2);
+            p+=2;
+            continue;
+        }
+
+        if (startsWith(p, ">=")) {
+            cur = new_token(TK_GE, cur, p, 2);
             p+=2;
             continue;
         }
 
         if (strchr("+-*/=;()<>", *p)) {
-            cur = new_token(TK_RESERVED, cur, p++, 1);
+            cur = new_token(*p, cur, p, 1);
+            p++;
             continue;
         }
 
@@ -106,6 +116,18 @@ Token *tokenize(char *p) {
         if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_RETURN, cur, p, 6);
             p += 6;
+            continue;
+        }
+
+        if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
+            cur = new_token(TK_IF, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_ELSE, cur, p, 4);
+            p += 4;
             continue;
         }
 
@@ -126,7 +148,13 @@ Token *tokenize(char *p) {
     return head.next;
 }
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = kind;
+    return node;
+}
+
+Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
@@ -180,15 +208,26 @@ void program() {
 
 Node *stmt() {
     Node *node;
-    if (token->kind == TK_RETURN) {
+
+    if (consume(TK_RETURN)) {
         node = calloc(1, sizeof(Node));
         node->kind = ND_RETURN;
-        next_token();
         node->lhs = expr();
+        expect(';');
+    } else if (consume(TK_IF)) {
+        node = new_node(ND_IF);
+        expect('(');
+        node->cond = expr();
+        expect(')');
+        node->then = stmt();
+        if (consume(TK_ELSE)) {
+            node->els = stmt();
+        }
     } else {
         node = expr();
+        expect(';');
     }
-    expect(";");
+    
     return node;
 }
 
@@ -198,8 +237,8 @@ Node *expr() {
 
 Node *assign() {
     Node *node = equality();
-    if (consume("=")) {
-        node = new_node(ND_ASSIGN, node, assign());
+    if (consume('=')) {
+        node = new_binop(ND_ASSIGN, node, assign());
     }
     return node;
 }
@@ -208,10 +247,10 @@ Node *equality() {
     Node *node = relational();
 
     for(;;) {
-        if (consume("==")) {
-            node = new_node(ND_EQ, node, relational());
-        } else if (consume("!=")) {
-            node = new_node(ND_NE, node, relational());
+        if (consume(TK_EQ)) {
+            node = new_binop(ND_EQ, node, relational());
+        } else if (consume(TK_NE)) {
+            node = new_binop(ND_NE, node, relational());
         } else {
             return node;
         }
@@ -222,14 +261,14 @@ Node *relational() {
     Node *node = add();
 
     for(;;) {
-        if (consume("<")) {
-            node = new_node(ND_LT, node, add());
-        } else if (consume("<=")) {
-            node = new_node(ND_LE, node, add());
-        } else if(consume(">")) {
-            node = new_node(ND_LT, add(), node);
-        } else if (consume(">=")) {
-            node = new_node(ND_LE, add(), node);
+        if (consume('<')) {
+            node = new_binop(ND_LT, node, add());
+        } else if (consume(TK_LE)) {
+            node = new_binop(ND_LE, node, add());
+        } else if(consume('>')) {
+            node = new_binop(ND_LT, add(), node);
+        } else if (consume(TK_GE)) {
+            node = new_binop(ND_LE, add(), node);
         } else {
             return node;
         }
@@ -240,10 +279,10 @@ Node *add() {
     Node *node = mul();
 
     for(;;) {
-        if (consume("+")) {
-            node = new_node(ND_ADD, node, mul());
-        } else if (consume("-")) {
-            node = new_node(ND_SUB, node, mul());
+        if (consume('+')) {
+            node = new_binop(ND_ADD, node, mul());
+        } else if (consume('-')) {
+            node = new_binop(ND_SUB, node, mul());
         } else {
             return node;
         }
@@ -254,10 +293,10 @@ Node *mul() {
     Node *node = unary();
 
     for (;;) {
-        if (consume("*")) {
-            node = new_node(ND_MUL, node, unary());
-        } else if (consume("/")) {
-            node = new_node(ND_DIV, node, unary());
+        if (consume('*')) {
+            node = new_binop(ND_MUL, node, unary());
+        } else if (consume('/')) {
+            node = new_binop(ND_DIV, node, unary());
         } else {
             return node;
         }
@@ -265,19 +304,19 @@ Node *mul() {
 }
 
 Node *unary() {
-    if (consume("+")) {
+    if (consume('+')) {
         return primary();
-    } else if (consume("-")) {
-        return new_node(ND_SUB, new_node_num(0), primary());
+    } else if (consume('-')) {
+        return new_binop(ND_SUB, new_node_num(0), primary());
     } else {
         return primary();
     }
 }
 
 Node *primary() {
-    if (consume("(")) {
+    if (consume('(')) {
         Node *node = expr();
-        expect(")");
+        expect(')');
         return node;
     }
 

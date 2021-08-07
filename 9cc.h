@@ -5,18 +5,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum {
-    TK_RESERVED,
-    TK_NUM,
-    TK_IDENT,
-    TK_EOF,
-    TK_RETURN,
-} TokenKind;
+enum {
+    TK_NUM = 256,  // number
+    TK_IDENT,      // ident
+    TK_EOF,        // eof
+    TK_RETURN,     // return
+    TK_IF,         // if
+    TK_ELSE,       // else
+    TK_EQ,        // ==
+    TK_NE,        // !=
+    TK_LE,        // <=
+    TK_GE,        // >=
+};
 
 typedef struct Token Token;
 
 struct Token {
-    TokenKind kind;
+    int kind;
     Token *next;
     int val;
     char *str;
@@ -38,6 +43,8 @@ typedef enum {
     ND_LVAR,   // local var
     ND_NUM,    // num
     ND_RETURN, // return
+    ND_IF,     // if
+    ND_ELSE,   // else
 } NodeKind;
 
 typedef struct Node Node;
@@ -48,6 +55,11 @@ struct Node {
     Node *rhs;
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
+
+    // if (cond) then els ...
+    Node *cond; 
+    Node *then;
+    Node *els;
 };
 
 typedef struct LVar LVar;
@@ -72,13 +84,14 @@ Node *unary();
 Node *primary();
 
 Node *new_node_num(int val);
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node(NodeKind kind);
+Node *new_binop(NodeKind kind, Node *lhs, Node *rhs);
 Token *tokenize(char *p);
-Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+Token *new_token(int kind, Token *cur, char *str, int len);
 bool at_eof();
 int expect_number();
-void expect(char *op);
-bool consume(char *op);
+void expect(int op);
+bool consume(int op);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 LVar *find_lvar(Token *tok);
@@ -97,3 +110,4 @@ void gen(Node *node);
 LVar *locals; // ローカル変数
 char *user_input; // 入力プログラム
 Node *code[100];
+int label_if_count;

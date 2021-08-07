@@ -18,40 +18,12 @@ assert() {
     fi
 }
 
-assert 1 "1;"
-assert 3 "3;"
-assert 21 "5+20-4;"
-assert 41 " 12 + 34 - 5; "
-assert 47 '5+6*7;'
-assert 15 '5*(9-6);'
-assert 4 '(3+5)/2;'
-assert 10 '-10 + 20;'
-assert 19 '(-10+11)* 7+ ((1-4) * (-4));'
-
-assert 0 '0==1;'
-assert 1 '42==42;'
-assert 1 '0!=1;'
-assert 0 '42!=42;'
-
-assert 1 '0<1;'
-assert 0 '1<1;'
-assert 0 '2<1;'
-assert 1 '0<=1;'
-assert 1 '1<=1;'
-assert 0 '2<=1;'
-
-assert 1 '1>0;'
-assert 0 '1>1;'
-assert 0 '1>2;'
-assert 1 '1>=0;'
-assert 1 '1>=1;'
-assert 0 '1>=2;'
-
 # ローカル変数
 assert 6 'a=6;'
 assert 2 'a=2;b=a;b;'
 assert 3 'a=1;b=2;c=a+b;'
 assert 12 'value=12;'
+assert 6 'val=1;t=3*(val+1);t;'
 assert 5 'num=1;test=(num*10)/2;test;'
 
 # return
@@ -59,5 +31,11 @@ assert 5 'return 5;'
 assert 6 'a=6;return a;'
 assert 10 'a=1;b=4;return 2*(a+b);'
 assert 13 'val=4;return val-2+11;'
+
+# if else
+assert 4 'if (1) 4;'
+assert 6 'if (2+3==5) 3*2;'
+assert 10 'a=2*3;if (a==6) return a+4; else return 0;'
+assert 0 'a=2*3;if (a<5) return a+4; else return 0;'
 
 echo OK
