@@ -113,18 +113,18 @@ Node *stmt() {
     } else if (consume(TK_FOR)) {
         node = new_node(ND_FOR);
         expect('(');
-        if (token->kind != ';') {
+        if (!consume(';')) {
             node->init = expr();
+            expect(';');
         }
-        expect(';');
-        if (token->kind != ';') {
+        if (!consume(';')) {
             node->cond = expr();
+            expect(';');
         }
-        expect(';');
-        if (token->kind != ')') {
+        if (!consume(')')) {
             node->inc = expr();
+            expect(')');
         }
-        expect(')');
         node->body = stmt();
     } else if (consume('{')) {
         node = new_node(ND_BLOCK);
