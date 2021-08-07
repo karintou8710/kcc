@@ -142,6 +142,14 @@ Node *assign() {
     Node *node = equality();
     if (consume('=')) {
         node = new_binop(ND_ASSIGN, node, assign());
+    } else if (consume(TK_ADD_EQ)) {
+        node = new_binop(ND_ASSIGN, node, new_binop(ND_ADD, node, equality()));
+    } else if (consume(TK_SUB_EQ)) {
+        node = new_binop(ND_ASSIGN, node, new_binop(ND_SUB, node, equality()));
+    } else if (consume(TK_MUL_EQ)) {
+        node = new_binop(ND_ASSIGN, node, new_binop(ND_MUL, node, equality()));
+    } else if (consume(TK_DIV_EQ)) {
+        node = new_binop(ND_ASSIGN, node, new_binop(ND_DIV, node, equality()));
     }
     return node;
 }
