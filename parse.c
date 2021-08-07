@@ -126,6 +126,12 @@ Node *stmt() {
         }
         expect(')');
         node->body = stmt();
+    } else if (consume('{')) {
+        node = new_node(ND_BLOCK);
+        node->stmts = new_vec();
+        while(!consume('}')) {
+            vec_push(node->stmts, stmt());
+        }
     } else {
         node = expr();
         expect(';');

@@ -51,7 +51,7 @@ Vector *new_vec() {
     return v;
 }
 
-void *vec_push(Vector *v, void *elem) {
+void vec_push(Vector *v, void *elem) {
     if (v->len == v->capacity) {
         v->capacity *= 2;
         v->body = realloc(v->body, sizeof(void *) * v->capacity);

@@ -52,4 +52,9 @@ assert 10 'i=0;while (i<10) i+=1;return i;'
 # for
 assert 10 'a=0; for(i=0;i<10;i+=1) a=a+1; return a;'
 
+# block
+assert 1 '{return 1;}'
+assert 2 'a=1;if (a/2==0) {a*=2;return a;} else {return a;}'
+assert 20 'a=0;for(i=1;i<=5;i+=1) {a+=i;a+=1;} return a;'
+
 echo OK

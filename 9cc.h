@@ -4,6 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
+typedef struct Vector Vector;
+
+struct Vector {
+    void **body;
+    int len;
+    int capacity;
+};
 
 enum {
     TK_NUM = 256,  // number
@@ -53,6 +62,7 @@ typedef enum {
     ND_ELSE,   // else
     ND_FOR,    // for
     ND_WHILE,  // while
+    ND_BLOCK,  // block {}
 } NodeKind;
 
 typedef struct Node Node;
@@ -63,7 +73,7 @@ struct Node {
     Node *rhs;
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
-    Vector stmts;
+    Vector *stmts;
 
     // if (cond) then els 
     // while (cond) body 
@@ -84,14 +94,6 @@ struct LVar {
   char *name; // 変数の名前
   int len;    // 名前の長さ
   int offset; // RBPからのオフセット
-};
-
-typedef struct Vector Vector;
-
-struct Vector {
-    void **body;
-    int len;
-    int capacity;
 };
 
 
@@ -123,6 +125,14 @@ void next_token();
 bool startsWith(char *p, char *q);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
+
+Vector *new_vec();
+void vec_push(Vector *v, void *elem);
+void vec_pushi(Vector *v, int val);
+void *vec_pop(Vector *v);
+void *vec_last(Vector *v);
+bool vec_contains(Vector *v, void *elem);
+bool vec_union1(Vector *v, void *elem);
 
 // codegen.c
 void gen(Node *node);
