@@ -72,6 +72,7 @@ struct LVar {
   int offset; // RBPからのオフセット
 };
 
+// parse.c
 void program();
 Node *stmt();
 Node *expr();
@@ -86,27 +87,28 @@ Node *primary();
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);
 Node *new_binop(NodeKind kind, Node *lhs, Node *rhs);
-Token *tokenize(char *p);
-Token *new_token(int kind, Token *cur, char *str, int len);
 bool at_eof();
 int expect_number();
 void expect(int op);
 bool consume(int op);
-void error_at(char *loc, char *fmt, ...);
-void error(char *fmt, ...);
 LVar *find_lvar(Token *tok);
 
 // util.c
 int is_alnum(char c);
 void str_advanve(char **p);
 void next_token();
+bool startsWith(char *p, char *q);
+void error_at(char *loc, char *fmt, ...);
+void error(char *fmt, ...);
 
 // codegen.c
 void gen(Node *node);
 
+// token.c
+Token *tokenize(char *p);
+Token *new_token(int kind, Token *cur, char *str, int len);
+
 // 変数
-
-
 LVar *locals; // ローカル変数
 char *user_input; // 入力プログラム
 Node *code[100];
