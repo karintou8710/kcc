@@ -63,6 +63,7 @@ struct Node {
     Node *rhs;
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
+    Vector stmts;
 
     // if (cond) then els 
     // while (cond) body 
@@ -84,6 +85,15 @@ struct LVar {
   int len;    // 名前の長さ
   int offset; // RBPからのオフセット
 };
+
+typedef struct Vector Vector;
+
+struct Vector {
+    void **body;
+    int len;
+    int capacity;
+};
+
 
 // parse.c
 void program();
