@@ -60,5 +60,6 @@ assert 20 'a=0;for(i=1;i<=5;i+=1) {a+=i;a+=1;} return a;'
 # func call
 assert 3 'ret();'
 assert 3 '{ return ret(); }'
+assert 5 '{a=1; return ret() + a*2;}'
 
 echo OK

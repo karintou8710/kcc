@@ -1,6 +1,9 @@
 #include <stdio.h>
 
 int ret() {
-    printf("Hello, World\n");
     return 3;
+}
+
+void p() {
+    printf("Hello, World\n");
 }
