@@ -26,6 +26,7 @@ assert 12 'value=12;'
 assert 6 'val=1;t=3*(val+1);t;'
 assert 5 'num=1;test=(num*10)/2;test;'
 assert 4 'a=1;a=a+3;a;'
+assert 5 'a2=1;A_1=5;a2*A_1;'
 
 # return
 assert 5 'return 5;'

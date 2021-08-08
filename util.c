@@ -26,6 +26,12 @@ bool startsWith(char *p, char *q) {
     return memcmp(p, q, strlen(q)) == 0;
 }
 
+int is_alpha(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         (c == '_');
+}
+
 int is_alnum(char c) {
   return ('a' <= c && c <= 'z') ||
          ('A' <= c && c <= 'Z') ||
@@ -34,7 +40,7 @@ int is_alnum(char c) {
 }
 
 void str_advanve(char **p) {
-    while ('a'<=**p && **p<='z') {
+    while (is_alnum(**p)) {
         *p += 1;
     }
 }

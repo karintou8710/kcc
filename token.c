@@ -113,7 +113,7 @@ Token *tokenize(char *p) {
         }
 
         // 小文字だけのローカル変数
-        if ('a'<=*p && *p<='z') {
+        if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;
             str_advanve(&p);

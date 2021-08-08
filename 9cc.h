@@ -121,6 +121,7 @@ bool consume(int op);
 LVar *find_lvar(Token *tok);
 
 // util.c
+int is_alpha(char c);
 int is_alnum(char c);
 void str_advanve(char **p);
 void next_token();
