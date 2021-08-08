@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+static LVar *locals;
+
 // 演算子の比較
 bool consume(int op) {
     if (token->kind != op) {
@@ -102,7 +104,11 @@ Function *func_define() {
     fn->name = my_strndup(tok->str, tok->len);
     expect('(');
     expect(')');
+    locals = NULL;
+    locals = calloc(1, sizeof(LVar));
+    locals->offset = 0;
     fn->body = compound_stmt();
+    fn->locals = locals;
     return fn;
 }
 

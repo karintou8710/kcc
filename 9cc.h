@@ -158,7 +158,6 @@ Token *tokenize(char *p);
 Token *new_token(int kind, Token *cur, char *str, int len);
 
 // 変数
-LVar *locals; // ローカル変数
 char *user_input; // 入力プログラム
 Function *funcs[100];
 int label_if_count;

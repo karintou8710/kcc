@@ -3,6 +3,17 @@
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static Function *current_fn;
 
+static void assign_lvar_offsets() {
+    for (int i=0; funcs[i]; i++) {
+        int offset = 0;
+        for (LVar *var=funcs[i]->locals; var; var=var->next) {
+            offset += 8;
+            var->offset -= 8;
+        }
+        funcs[i]->stack_size = offset;
+    }
+}
+
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
         error("代入の左辺値が変数ではありません");
@@ -154,6 +165,9 @@ void gen(Node *node) {
 }
 
 void codegen() {
+    // 各関数のoffsetを計算
+    assign_lvar_offsets();
+
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
     
@@ -167,7 +181,7 @@ void codegen() {
         // 変数26個分の領域を確保する
         printf("  push rbp\n");
         printf("  mov rbp, rsp\n");
-        printf("  sub rsp, 208\n");
+        printf("  sub rsp, %d\n", current_fn->stack_size);
 
         gen(current_fn->body);
         // 式の評価結果としてスタックに一つの値が残っている
