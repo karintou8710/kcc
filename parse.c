@@ -238,8 +238,18 @@ Node *primary() {
     }
 
     if (token->kind == TK_IDENT) {
-        Node *node = new_node_ident(token);
+        Token *tok = token;
         next_token();
+        Node *node;
+        if (consume('(')) {
+            // 関数の呼びだし
+            expect(')');
+            node = new_node(ND_CALL);
+            node->fn_name = my_strndup(tok->str, tok->len);
+            // printf("node %s\n", node->fn_name);
+        } else {
+            node = new_node_ident(tok);
+        }
         return node;
     }
 

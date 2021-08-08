@@ -63,6 +63,7 @@ typedef enum {
     ND_FOR,    // for
     ND_WHILE,  // while
     ND_BLOCK,  // block {}
+    ND_CALL,   // call
 } NodeKind;
 
 typedef struct Node Node;
@@ -73,6 +74,7 @@ struct Node {
     Node *rhs;
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
+    char *fn_name;
     Vector *stmts;
 
     // if (cond) then els 
@@ -125,6 +127,7 @@ void next_token();
 bool startsWith(char *p, char *q);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
+char *my_strndup(const char *s, size_t n);
 
 Vector *new_vec();
 void vec_push(Vector *v, void *elem);

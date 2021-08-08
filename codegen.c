@@ -34,6 +34,7 @@ void gen(Node *node) {
             printf("  mov rsp, rbp\n");
             printf("  pop rbp\n");
             printf("  ret\n");
+            // returnは終了なので数合わせなし
             return;
         case ND_IF:
             gen(node->cond);
@@ -88,6 +89,12 @@ void gen(Node *node) {
                 gen(node->stmts->body[i]);
                 printf("  pop rax\n");
             }
+            printf("  push 0\n"); // 数合わせ
+            return;
+        case ND_CALL:
+            printf("  mov rax, 0\n");
+            printf("  call %s\n", node->fn_name);
+            printf("  push rax\n"); // 数合わせ
             return;
     }
 

@@ -7,11 +7,14 @@ OBJS=$(SRCS:.c=.o)
 
 $(OBJS): 9cc.h
 
-test: 9cc
+test: 9cc test_c
 		./tests/test-control.sh
 
 testall: 9cc
 		./tests/test-binop.sh && ./tests/test-control.sh
+
+test_c:
+		gcc -xc -c -o tmp2.o ./tests/test-fn.c
 
 clean:
 		rm -f 9cc *.o *~ tmp*
