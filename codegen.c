@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
         error("代入の左辺値が変数ではありません");
@@ -91,11 +93,20 @@ void gen(Node *node) {
             }
             printf("  push 0\n"); // 数合わせ
             return;
-        case ND_CALL:
+        case ND_CALL: {
+            int nargs = node->args->len;
+            for (int i=0;i<nargs;i++) {
+                gen(node->args->body[i]);
+            }
+            for (int i=nargs-1;i>=0;i--) {
+                printf("  pop %s\n", argreg[i]);
+            }
             printf("  mov rax, 0\n");
             printf("  call %s\n", node->fn_name);
             printf("  push rax\n"); // 数合わせ
             return;
+        }
+            
     }
 
     gen(node->lhs);

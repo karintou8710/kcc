@@ -230,6 +230,20 @@ Node *unary() {
     }
 }
 
+// funcall = ideal "(" (expr ("," expr)*)? ")"
+Node *funcall(Token *tok) {
+    Node *node = new_node(ND_CALL);
+    node->fn_name = my_strndup(tok->str, tok->len);
+    node->args = new_vec();
+    while (!consume(')')) {
+        if (node->args->len != 0) {
+            expect(',');
+        }
+        vec_push(node->args, expr());
+    }
+    return node;
+}
+
 Node *primary() {
     if (consume('(')) {
         Node *node = expr();
@@ -243,10 +257,7 @@ Node *primary() {
         Node *node;
         if (consume('(')) {
             // 関数の呼びだし
-            expect(')');
-            node = new_node(ND_CALL);
-            node->fn_name = my_strndup(tok->str, tok->len);
-            // printf("node %s\n", node->fn_name);
+            node = funcall(tok);
         } else {
             node = new_node_ident(tok);
         }

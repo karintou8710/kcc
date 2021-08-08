@@ -62,5 +62,10 @@ assert 20 'a=0;for(i=1;i<=5;i+=1) {a+=i;a+=1;} return a;'
 assert 3 'ret();'
 assert 3 '{ return ret(); }'
 assert 5 '{a=1; return ret() + a*2;}'
+assert 4 '{return constant(4);}'
+assert 3 '{return add(1, 2);}'
+assert 21 '{return add6(1, 2, 3, 4, 5, 6);}'
+assert 66 '{ return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }'
+assert 136 '{ return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }'
 
 echo OK

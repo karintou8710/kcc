@@ -75,6 +75,7 @@ struct Node {
     int val;
     int offset;    // kindがND_LVARの場合のみ使う
     char *fn_name;
+    Vector *args;
     Vector *stmts;
 
     // if (cond) then els 
