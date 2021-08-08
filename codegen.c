@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static Function *current_fn;
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
@@ -33,9 +34,7 @@ void gen(Node *node) {
         case ND_RETURN:
             gen(node->lhs);
             printf("  pop rax\n");
-            printf("  mov rsp, rbp\n");
-            printf("  pop rbp\n");
-            printf("  ret\n");
+            printf("  jmp .L.return.%s\n", current_fn->name);
             // returnは終了なので数合わせなし
             return;
         case ND_IF:
@@ -152,4 +151,35 @@ void gen(Node *node) {
     }
 
     printf("  push rax\n");
+}
+
+void codegen() {
+    // アセンブリの前半部分を出力
+    printf(".intel_syntax noprefix\n");
+    
+    // 先頭の式から順にコード生成
+    for (int i = 0; funcs[i]; i++) {
+        current_fn = funcs[i];
+        printf(".globl %s\n", current_fn->name);
+        printf("%s:\n", current_fn->name);
+
+        // プロローグ
+        // 変数26個分の領域を確保する
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  sub rsp, 208\n");
+
+        gen(current_fn->body);
+        // 式の評価結果としてスタックに一つの値が残っている
+        printf("  pop rax\n");
+
+        // エピローグ
+        // 最後の式の結果がRAXに残っているのでそれが返り値になる
+        printf(".L.return.%s:\n", current_fn->name);
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+    }
+
+    
 }

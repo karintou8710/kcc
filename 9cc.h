@@ -93,15 +93,25 @@ typedef struct LVar LVar;
 
 // ローカル変数の型
 struct LVar {
-  LVar *next; // 次の変数かNULL
-  char *name; // 変数の名前
-  int len;    // 名前の長さ
-  int offset; // RBPからのオフセット
+    LVar *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len;    // 名前の長さ
+    int offset; // RBPからのオフセット
 };
 
+typedef struct Function Function;
+
+struct Function {
+    char *name;
+    Node *body;
+    LVar *locals;
+    int stack_size;
+};
 
 // parse.c
 void program();
+Function *func_define();
+Node *compound_stmt();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -141,6 +151,7 @@ bool vec_union1(Vector *v, void *elem);
 
 // codegen.c
 void gen(Node *node);
+void codegen();
 
 // token.c
 Token *tokenize(char *p);
@@ -149,6 +160,6 @@ Token *new_token(int kind, Token *cur, char *str, int len);
 // 変数
 LVar *locals; // ローカル変数
 char *user_input; // 入力プログラム
-Node *code[100];
+Function *funcs[100];
 int label_if_count;
 int label_loop_count;

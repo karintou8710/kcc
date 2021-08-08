@@ -9,6 +9,13 @@ bool consume(int op) {
     return true;
 }
 
+bool equal(int op) {
+    if (token->kind != op) {
+        return false;
+    }
+    return true;
+}
+
 void expect(int op) {
     if (token->kind != op) {
         error_at(token->str, "'%s'ではありません", op);
@@ -82,9 +89,32 @@ LVar *find_lvar(Token *tok) {
 void program() {
     int i=0;
     while(!at_eof()) {
-        code[i++] = stmt();
+        funcs[i++] = func_define();
     }
-    code[i] = NULL;
+    funcs[i] = NULL;
+}
+
+// func_define = ideal "(" (expr ("," expr)*)? ")" {  }
+Function *func_define() {
+    Function *fn = calloc(1, sizeof(Function));
+    Token *tok = token;
+    expect(TK_IDENT);
+    fn->name = my_strndup(tok->str, tok->len);
+    expect('(');
+    expect(')');
+    fn->body = compound_stmt();
+    return fn;
+}
+
+// compound_stmt = { stmt* }
+Node *compound_stmt() {
+    expect('{');
+    Node *node = new_node(ND_BLOCK);
+    node->stmts = new_vec();
+    while(!consume('}')) {
+        vec_push(node->stmts, stmt());
+    }
+    return node;
 }
 
 Node *stmt() {
@@ -126,12 +156,8 @@ Node *stmt() {
             expect(')');
         }
         node->body = stmt();
-    } else if (consume('{')) {
-        node = new_node(ND_BLOCK);
-        node->stmts = new_vec();
-        while(!consume('}')) {
-            vec_push(node->stmts, stmt());
-        }
+    } else if (equal('{')) {
+        node = compound_stmt();
     } else {
         node = expr();
         expect(';');
