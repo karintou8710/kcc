@@ -64,14 +64,14 @@ Node *new_node_ident(Token *tok) {
     node->kind = ND_LVAR;
     LVar *lvar = find_lvar(tok);
     if (lvar) {
-        node->offset = lvar->offset;
+        node->lvar = lvar;
     } else {
         lvar = calloc(1, sizeof(LVar));
         lvar->next = locals;
         lvar->name = tok->str;
         lvar->len = tok->len;
         lvar->offset = locals->offset + 8;
-        node->offset = lvar->offset;
+        node->lvar = lvar;
         locals = lvar;
     }
     return node;

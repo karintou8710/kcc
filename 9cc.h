@@ -14,6 +14,16 @@ struct Vector {
     int capacity;
 };
 
+typedef struct LVar LVar;
+
+// ローカル変数の型
+struct LVar {
+    LVar *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len;    // 名前の長さ
+    int offset; // RBPからのオフセット
+};
+
 enum {
     TK_NUM = 256,  // number
     TK_IDENT,      // ident
@@ -73,7 +83,7 @@ struct Node {
     Node *lhs;
     Node *rhs;
     int val;
-    int offset;    // kindがND_LVARの場合のみ使う
+    LVar *lvar;    // kindがND_LVARの場合のみ使う
     char *fn_name;
     Vector *args;
     Vector *stmts;
@@ -89,15 +99,7 @@ struct Node {
     Node *inc;
 };
 
-typedef struct LVar LVar;
 
-// ローカル変数の型
-struct LVar {
-    LVar *next; // 次の変数かNULL
-    char *name; // 変数の名前
-    int len;    // 名前の長さ
-    int offset; // RBPからのオフセット
-};
 
 typedef struct Function Function;
 
