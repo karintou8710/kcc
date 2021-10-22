@@ -3,7 +3,7 @@ TESTDIR=./tests
 SRCS=$(wildcard *.c)
 TESTSRCS=$(wildcard $(TESTDIR)/*.c)
 OBJS=$(SRCS:.c=.o)
-ARG=p();
+ARG=main() {p();}
 
 9cc: $(OBJS)
 		$(CC) -o 9cc $(OBJS) $(LDFLAGS)

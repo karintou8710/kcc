@@ -124,7 +124,6 @@ Token *tokenize(char *p) {
         error("トークナイズできません");
     }
 
-    
     new_token(TK_EOF, cur, p, 0);
     return head.next;
 }

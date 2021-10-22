@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 
+/* ベクターの定義 */
 typedef struct Vector Vector;
 
 struct Vector {
@@ -14,9 +15,9 @@ struct Vector {
     int capacity;
 };
 
+/* ローカル変数の定義 */
 typedef struct LVar LVar;
 
-// ローカル変数の型
 struct LVar {
     LVar *next; // 次の変数かNULL
     char *name; // 変数の名前
@@ -24,7 +25,10 @@ struct LVar {
     int offset; // RBPからのオフセット
 };
 
-enum {
+/* トークンの定義 */
+typedef struct Token Token;
+
+typedef enum {
     TK_NUM = 256,  // number
     TK_IDENT,      // ident
     TK_EQ,         // ==
@@ -41,19 +45,19 @@ enum {
     TK_FOR,        // for
     TK_WHILE,      // while
     TK_EOF,        // eof
-};
-
-typedef struct Token Token;
+} TokenKind;
 
 struct Token {
-    int kind;
-    Token *next;
-    int val;
-    char *str;
-    int len;
+    TokenKind kind; //
+    Token *next;    //
+    int val;        //
+    char *str;      //
+    int len;        //
 };
 
 Token *token;
+
+/* ノードの定義 */ 
 
 typedef enum {
     ND_ADD,    // +
@@ -79,50 +83,41 @@ typedef enum {
 typedef struct Node Node;
 
 struct Node {
-    NodeKind kind;
-    Node *lhs;
-    Node *rhs;
-    int val;
+    NodeKind kind; 
+    Node *lhs;     // 左辺
+    Node *rhs;     // 右辺
+    int val;       // ND_NUMの時に使う
     LVar *lvar;    // kindがND_LVARの場合のみ使う
-    char *fn_name;
-    Vector *args;
-    Vector *stmts;
+    char *fn_name; // 
+    Vector *args;  // 
+    Vector *stmts; // 
 
     // if (cond) then els 
     // while (cond) body 
     // for (init;cond;inc) body 
-    Node *cond; 
-    Node *then;
-    Node *els;
-    Node *body;
-    Node *init;
-    Node *inc;
+    Node *cond;    // 
+    Node *then;    //
+    Node *els;     //
+    Node *body;    //
+    Node *init;    //
+    Node *inc;     //
 };
 
 
 
+/* 関数型の定義 */
 typedef struct Function Function;
 
 struct Function {
     char *name;
     Node *body;
+    LVar *params;
     LVar *locals;
     int stack_size;
 };
 
 // parse.c
 void program();
-Function *func_define();
-Node *compound_stmt();
-Node *stmt();
-Node *expr();
-Node *assign();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *unary();
-Node *primary();
 
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);
@@ -152,7 +147,6 @@ bool vec_contains(Vector *v, void *elem);
 bool vec_union1(Vector *v, void *elem);
 
 // codegen.c
-void gen(Node *node);
 void codegen();
 
 // token.c
@@ -164,3 +158,4 @@ char *user_input; // 入力プログラム
 Function *funcs[100];
 int label_if_count;
 int label_loop_count;
+int block_count;

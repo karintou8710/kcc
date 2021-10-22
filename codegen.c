@@ -1,5 +1,13 @@
 #include "9cc.h"
 
+/*
+ * ASTからスタックマシンを使ってアセンブリを生成する
+ * 
+ * スタックマシンの使用
+ * 
+ * 全てのノードは必ず一つだけの要素が残るようにpushする
+ */
+
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static Function *current_fn;
 
@@ -8,13 +16,13 @@ static void assign_lvar_offsets() {
         int offset = 0;
         for (LVar *var=funcs[i]->locals; var->next; var=var->next) {
             offset += 8;
-            var->offset -= 8;
         }
         funcs[i]->stack_size = offset;
     }
 }
 
-void gen_lval(Node *node) {
+// 左辺値は変数である必要がある
+static void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
         error("代入の左辺値が変数ではありません");
     }
@@ -23,7 +31,7 @@ void gen_lval(Node *node) {
     printf("  push rax\n");
 }
 
-void gen(Node *node) {
+static void gen(Node *node) {
     switch (node->kind) {
         case ND_NUM:
             printf("  push %d\n", node->val);
@@ -62,7 +70,9 @@ void gen(Node *node) {
             } else {
                 printf("  je  .Lend%04d\n", label_if_count);
                 gen(node->then);
+                printf("  pop rax\n"); // 数合わせ
                 printf(".Lend%04d:\n", label_if_count);
+                printf("push 0\n"); // 数合わせ
             }
             
             label_if_count++;
@@ -119,6 +129,7 @@ void gen(Node *node) {
             
     }
 
+    // 主に演算のATSで読みこまれる
     gen(node->lhs);
     gen(node->rhs);
 
@@ -178,10 +189,16 @@ void codegen() {
         printf("%s:\n", current_fn->name);
 
         // プロローグ
-        // 変数26個分の領域を確保する
         printf("  push rbp\n");
         printf("  mov rbp, rsp\n");
         printf("  sub rsp, %d\n", current_fn->stack_size);
+
+        int j=0;
+        for (LVar *var=current_fn->params;var;var=var->next) {
+            printf("  mov rax, rbp\n");
+            printf("  sub rax, %d\n", var->offset);
+            printf("  mov [rax], %s\n", argreg[j++]);
+        }
 
         gen(current_fn->body);
         // 式の評価結果としてスタックに一つの値が残っている

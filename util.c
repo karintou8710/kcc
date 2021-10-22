@@ -5,7 +5,7 @@ void error(char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 // エラー箇所を報告する

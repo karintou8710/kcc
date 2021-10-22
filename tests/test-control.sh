@@ -40,6 +40,7 @@ assert 4 'main() {if (1) return 4;}'
 assert 6 'main() {if (2+3==5) return 3*2;}'
 assert 10 'main() {a=2*3; if (a==6) return a+4; else return 0;}'
 assert 0 'main() {a=2*3; if (a<5) return a+4; else return 0;}'
+assert 1 'main() {a=1;n=0; if(a==1){n=1;} if(a==2){n=2;} return n; }'
 
 # # while
 assert 10 'main() {i=0; while (i<10) i+=1; return i;}'
@@ -65,5 +66,12 @@ assert 136 'main() {return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,
 # func define
 assert 2 'test() {return 2;} main() {return test();}'
 assert 5 'test() {return 4;} main() {a=1; return a+test();}'
+assert 2 'test() {return 1;} main() {return test() + test();}'
+
+assert 6 'test(a) {return a;} main() {return test(6);}'
+assert 3 'add2(a,b) {return a+b;} main() {return add2(1,2);}'
+assert 15 'test(a,b) {c=10;return c+a+b;} main() {return test(2, 3);}'
+assert 8 'sum(n) {if (n==1) {return 1;} return sum(n-1) + sum(n-1);} main() {return sum(4);}'
+assert 55 'fib(n) {if (n==1) {return 1;}if (n==2) {return 1;}return fib(n-1) + fib(n-2);}main() {return fib(10);}'
 
 echo OK

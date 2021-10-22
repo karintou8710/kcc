@@ -2,6 +2,19 @@
 
 static LVar *locals;
 
+static LVar *new_lvar(Token *tok);
+static Function *func_define();
+static Node *compound_stmt();
+static Node *stmt();
+static Node *expr();
+static Node *assign();
+static Node *equality();
+static Node *relational();
+static Node *add();
+static Node *mul();
+static Node *unary();
+static Node *primary();
+
 // 演算子の比較
 bool consume(int op) {
     if (token->kind != op) {
@@ -66,17 +79,13 @@ Node *new_node_ident(Token *tok) {
     if (lvar) {
         node->lvar = lvar;
     } else {
-        lvar = calloc(1, sizeof(LVar));
-        lvar->next = locals;
-        lvar->name = tok->str;
-        lvar->len = tok->len;
-        lvar->offset = locals->offset + 8;
+        lvar = new_lvar(tok);
         node->lvar = lvar;
-        locals = lvar;
     }
     return node;
 }
 
+// ローカル変数を検索
 LVar *find_lvar(Token *tok) {
     for (LVar *var = locals; var; var = var->next) {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
@@ -86,8 +95,33 @@ LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
-// AST
+// ローカル変数の作成
+static LVar *new_lvar(Token *tok) {
+    LVar *lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = tok->str;
+    lvar->len = tok->len;
+    lvar->offset = locals->offset + 8;
+    locals = lvar;
+    return lvar;
+}
 
+// 引数からローカル変数を作成する
+static void create_lvar_from_params(LVar *params) {
+    if (params) {
+        LVar *lvar = calloc(1, sizeof(LVar));
+        lvar->name = params->name;
+        lvar->len = params->len;
+        lvar->offset = locals->offset + 8;
+        lvar->next = locals;
+        locals = lvar;
+        create_lvar_from_params(params->next);
+    }
+}
+
+/* AST */
+
+// program = func_define*
 void program() {
     int i=0;
     while(!at_eof()) {
@@ -96,24 +130,38 @@ void program() {
     funcs[i] = NULL;
 }
 
-// func_define = ideal "(" (expr ("," expr)*)? ")" {  }
-Function *func_define() {
+// func_define = ident "(" (ident ("," ident)*)? ")" compound_stmt
+static Function *func_define() {
     Function *fn = calloc(1, sizeof(Function));
     Token *tok = token;
+    LVar head = {};
+    LVar *cur = &head;
+
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
     expect('(');
-    expect(')');
-    locals = NULL;
+    while (!consume(')')) {
+        if (cur != &head) {
+            expect(',');
+        }
+        tok = token;
+        expect(TK_IDENT);
+        LVar *lvar = calloc(1, sizeof(LVar));
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        lvar->offset = cur->offset + 8;
+        cur = cur->next = lvar;
+    }
+    fn->params = head.next;
     locals = calloc(1, sizeof(LVar));
-    locals->offset = 0;
+    create_lvar_from_params(fn->params);
     fn->body = compound_stmt();
     fn->locals = locals;
     return fn;
 }
 
 // compound_stmt = { stmt* }
-Node *compound_stmt() {
+static Node *compound_stmt() {
     expect('{');
     Node *node = new_node(ND_BLOCK);
     node->stmts = new_vec();
@@ -123,7 +171,14 @@ Node *compound_stmt() {
     return node;
 }
 
-Node *stmt() {
+/* stmt = expr ";"
+  *     | "return" expr ";"
+ *      | "if" "(" expr ")" stmt ("else" stmt)?
+ *      | "while" "(" expr ")" stmt
+ *      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+ *      | compound_stmt
+ */ 
+static Node *stmt() {
     Node *node;
 
     if (consume(TK_RETURN)) {
@@ -172,11 +227,13 @@ Node *stmt() {
     return node;
 }
 
+// expr = assign
 Node *expr() {
     return assign();
 }
 
-Node *assign() {
+// assign = equality ("=" assign)?
+static Node *assign() {
     Node *node = equality();
     if (consume('=')) {
         node = new_binop(ND_ASSIGN, node, assign());
@@ -192,7 +249,8 @@ Node *assign() {
     return node;
 }
 
-Node *equality() {
+// equality = relational ("==" relational | "!=" relational)*
+static Node *equality() {
     Node *node = relational();
 
     for(;;) {
@@ -206,7 +264,8 @@ Node *equality() {
     }
 }
 
-Node *relational() {
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+static Node *relational() {
     Node *node = add();
 
     for(;;) {
@@ -224,7 +283,8 @@ Node *relational() {
     }
 }
 
-Node *add() {
+// add = mul ("+" mul | "-" mul)*
+static Node *add() {
     Node *node = mul();
 
     for(;;) {
@@ -238,7 +298,8 @@ Node *add() {
     }
 }
 
-Node *mul() {
+// mul = unary ("*" unary | "/" unary)*
+static Node *mul() {
     Node *node = unary();
 
     for (;;) {
@@ -252,7 +313,8 @@ Node *mul() {
     }
 }
 
-Node *unary() {
+// unary = ("+" | "-")? primary
+static Node *unary() {
     if (consume('+')) {
         return primary();
     } else if (consume('-')) {
@@ -262,8 +324,8 @@ Node *unary() {
     }
 }
 
-// funcall = ideal "(" (expr ("," expr)*)? ")"
-Node *funcall(Token *tok) {
+// funcall = ident "(" (expr ("," expr)*)? ")"
+static Node *funcall(Token *tok) {
     Node *node = new_node(ND_CALL);
     node->fn_name = my_strndup(tok->str, tok->len);
     node->args = new_vec();
@@ -276,7 +338,9 @@ Node *funcall(Token *tok) {
     return node;
 }
 
-Node *primary() {
+// primary = "(" expr ")" | num | IDENT | funcall
+/* ※ funcallがBNFと一致していない */
+static Node *primary() {
     if (consume('(')) {
         Node *node = expr();
         expect(')');
