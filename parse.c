@@ -119,7 +119,15 @@ static void create_lvar_from_params(LVar *params) {
     }
 }
 
-/* AST */
+
+
+/*************************************/
+/******                         ******/
+/******           AST           ******/
+/******                         ******/
+/*************************************/
+
+
 
 // program = func_define*
 void program() {
@@ -313,15 +321,27 @@ static Node *mul() {
     }
 }
 
-// unary = ("+" | "-")? primary
+/* unary = "+"? primary
+ *       | "-"? primary
+ *       | "*" primary
+ *       | "&" primary
+ */        
 static Node *unary() {
     if (consume('+')) {
         return primary();
     } else if (consume('-')) {
         return new_binop(ND_SUB, new_node_num(0), primary());
-    } else {
-        return primary();
+    } else if (consume('*')) {
+        Node *node = new_node(ND_DEREF);
+        node->lhs = primary();
+        return node;
+    } else if (consume('&')) {
+        Node *node = new_node(ND_ADDR);
+        node->lhs = primary();
+        return node;
     }
+
+    return primary();
 }
 
 // funcall = ident "(" (expr ("," expr)*)? ")"

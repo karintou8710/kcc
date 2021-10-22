@@ -3,7 +3,6 @@ TESTDIR=./tests
 SRCS=$(wildcard *.c)
 TESTSRCS=$(wildcard $(TESTDIR)/*.c)
 OBJS=$(SRCS:.c=.o)
-ARG=main() {p();}
 
 9cc: $(OBJS)
 		$(CC) -o 9cc $(OBJS) $(LDFLAGS)
@@ -17,7 +16,7 @@ testall: 9cc test_c
 		./tests/test-binop.sh && ./tests/test-control.sh
 
 exec: 9cc test_c
-		./exec.sh "$(ARG)"
+		./exec.sh
 
 test_c:
 		gcc -xc -c -o tmp2.o $(TESTSRCS)

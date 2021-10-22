@@ -1,9 +1,7 @@
 #!/bin/bash
 
 exec() {
-    input="$1"
-
-    ./9cc "$input" > tmp.s
+    ./9cc "`cat test_exec.c.test`" > tmp.s
     cc -static -o tmp tmp.s tmp2.o
     ./tmp
     actual="$?"
@@ -11,4 +9,4 @@ exec() {
     echo "$input => $actual"
 }
 
-exec "$1"
+exec

@@ -73,5 +73,6 @@ assert 3 'add2(a,b) {return a+b;} main() {return add2(1,2);}'
 assert 15 'test(a,b) {c=10;return c+a+b;} main() {return test(2, 3);}'
 assert 8 'sum(n) {if (n==1) {return 1;} return sum(n-1) + sum(n-1);} main() {return sum(4);}'
 assert 55 'fib(n) {if (n==1) {return 1;}if (n==2) {return 1;}return fib(n-1) + fib(n-2);}main() {return fib(10);}'
+assert 3 'main() { x = 3;y = 5;z = &y + 8;return *z;} '
 
 echo OK

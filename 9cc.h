@@ -78,6 +78,8 @@ typedef enum {
     ND_WHILE,  // while
     ND_BLOCK,  // block {}
     ND_CALL,   // call
+    ND_ADDR,   // & アドレス
+    ND_DEREF   // * ポインタ
 } NodeKind;
 
 typedef struct Node Node;
