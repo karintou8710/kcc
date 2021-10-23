@@ -73,6 +73,10 @@ assert 3 'int add2(int a,int b) {return a+b;} int main() {return add2(1,2);}'
 assert 15 'int test(int a, int b) {int c;c=10;return c+a+b;} int main() {return test(2, 3);}'
 assert 8 'int sum(int n) {if (n==1) {return 1;} return sum(n-1) + sum(n-1);} int main() {return sum(4);}'
 assert 55 'int fib(int n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib(n-1) + fib(n-2);}int main() {return fib(10);}'
-assert 3 'int main() {int x;int y;int z; x = 3;y = 5;z = &y + 8;return *z;} '
 
+
+# ポインター
+assert 3 'int main() {int x;int y;int z; x = 3;y = 5;z = &y + 8;return *z;} '
+assert 3 'int main() {int x;int *y;y = &x;*y = 3;return x;}'
+assert 10 'int main() {int a;int *b;int **c;int ***d;d = &c;c = &b;b = &a;a = 10;return ***d;}'
 echo OK

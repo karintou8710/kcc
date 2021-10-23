@@ -274,12 +274,18 @@ static Node *stmt() {
     return node;
 }
 
-// declaration_specifier = int
+// declaration_specifier = int "*"*
 static Type *declaration_specifier() {
     expect_nostep(TK_TYPE);
     Type *type = calloc(1, sizeof(Type));
     type->kind = token->type;
     next_token();
+    while (consume('*')) {
+        Type *t = calloc(1, sizeof(Type));
+        t->kind = TYPE_PTR;
+        t->ptr_to = type;
+        type = t;
+    }
     return type;
 }
 
@@ -379,7 +385,7 @@ static Node *mul() {
 
 /* unary = "+"? primary
  *       | "-"? primary
- *       | "*" primary
+ *       | "*"+ primary
  *       | "&" primary
  */        
 static Node *unary() {
@@ -389,8 +395,15 @@ static Node *unary() {
         return new_binop(ND_SUB, new_node_num(0), primary());
     } else if (consume('*')) {
         Node *node = new_node(ND_DEREF);
+        Node *top_node = node;
+        while (consume('*')) {
+            Node *n = new_node(ND_DEREF);
+            node->lhs = n;
+            node = n;
+        }
         node->lhs = primary();
-        return node;
+        
+        return top_node;
     } else if (consume('&')) {
         Node *node = new_node(ND_ADDR);
         node->lhs = primary();

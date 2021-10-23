@@ -18,12 +18,14 @@ struct Vector {
 // 型の定義
 typedef enum {
     TYPE_INT,
+    TYPE_PTR,
 } TypeKind;
 
 typedef struct Type Type;
 
 struct Type {
     TypeKind kind;
+    Type *ptr_to;
 };
 
 /* トークンの定義 */

@@ -8,6 +8,8 @@
  * 全てのノードは必ず一つだけの要素が残るようにpushする
  */
 
+static void gen(Node *node);
+
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static Function *current_fn;
 
@@ -22,6 +24,7 @@ static void assign_lvar_offsets() {
 }
 
 // 左辺値は変数である必要がある
+// ローカル変数のアドレスを生成
 static void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
         error("代入の左辺値が変数ではありません");
@@ -29,6 +32,22 @@ static void gen_lval(Node *node) {
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", node->lvar->offset);
     printf("  push rax\n");
+}
+
+// ポインター変数への代入への対応
+static void gen_addr(Node *node) {
+    if (node->kind == ND_DEREF) {
+        gen_addr(node->lhs);
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    } else if (node->kind == ND_LVAR) {
+        gen_lval(node);
+        return;
+    }
+
+    error("左辺値がポインターまたは変数ではありません");
 }
 
 static void gen(Node *node) {
@@ -52,7 +71,7 @@ static void gen(Node *node) {
             printf("  push rax\n");
             return;
         case ND_ASSIGN:
-            gen_lval(node->lhs);
+            gen_addr(node->lhs);
             gen(node->rhs);
             printf("  pop rdi\n");
             printf("  pop rax\n");
