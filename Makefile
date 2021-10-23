@@ -1,13 +1,14 @@
 CFLAGS=-std=c11 -g -static
 TESTDIR=./tests
-SRCS=$(wildcard *.c)
+SRCDIR=./src
+SRCS=$(wildcard $(SRCDIR)/*.c)
 TESTSRCS=$(wildcard $(TESTDIR)/*.c)
 OBJS=$(SRCS:.c=.o)
 
 9cc: $(OBJS)
 		$(CC) -o 9cc $(OBJS) $(LDFLAGS)
 
-$(OBJS): 9cc.h
+$(OBJS): $(SRCDIR)/9cc.h
 
 test: 9cc test_c
 		./tests/test-control.sh
@@ -22,6 +23,6 @@ test_c:
 		gcc -xc -c -o tmp2.o $(TESTSRCS)
 
 clean:
-		rm -f 9cc *.o *~ tmp*
+		find . -name "9cc" -o -name "*.o" -o -name "*~" -o -name "tmp*" | xargs rm -f 
 
 .PHONY: test clean
