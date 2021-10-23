@@ -112,6 +112,13 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
+            cur = new_token(TK_TYPE, cur, p, 3);
+            cur->type = TYPE_INT;
+            p += 3;
+            continue;
+        }
+
         // 小文字だけのローカル変数
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
@@ -121,7 +128,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        error("トークナイズできません");
+        error_at(p, "トークナイズできません");
     }
 
     new_token(TK_EOF, cur, p, 0);

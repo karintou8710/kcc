@@ -15,14 +15,15 @@ struct Vector {
     int capacity;
 };
 
-/* ローカル変数の定義 */
-typedef struct LVar LVar;
+// 型の定義
+typedef enum {
+    TYPE_INT,
+} TypeKind;
 
-struct LVar {
-    LVar *next; // 次の変数かNULL
-    char *name; // 変数の名前
-    int len;    // 名前の長さ
-    int offset; // RBPからのオフセット
+typedef struct Type Type;
+
+struct Type {
+    TypeKind kind;
 };
 
 /* トークンの定義 */
@@ -45,10 +46,12 @@ typedef enum {
     TK_FOR,        // for
     TK_WHILE,      // while
     TK_EOF,        // eof
+    TK_TYPE,        // int
 } TokenKind;
 
 struct Token {
     TokenKind kind; //
+    TypeKind type;  //
     Token *next;    //
     int val;        //
     char *str;      //
@@ -56,6 +59,18 @@ struct Token {
 };
 
 Token *token;
+
+/* ローカル変数の定義 */
+typedef struct LVar LVar;
+
+struct LVar {
+    LVar *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len;    // 名前の長さ
+    int offset; // RBPからのオフセット
+    Type *type;   // 型情報
+};
+
 
 /* ノードの定義 */ 
 
@@ -135,6 +150,7 @@ int is_alpha(char c);
 int is_alnum(char c);
 void str_advanve(char **p);
 void next_token();
+Token *get_next_token();
 bool startsWith(char *p, char *q);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);

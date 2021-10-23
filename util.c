@@ -49,6 +49,10 @@ void next_token() {
     token = token->next;
 }
 
+Token *get_next_token() {
+  return token->next;
+}
+
 Vector *new_vec() {
     Vector *v = calloc(1, sizeof(Vector));
     v->body = calloc(16, sizeof(void *));

@@ -2,7 +2,8 @@
 
 static LVar *locals;
 
-static LVar *new_lvar(Token *tok);
+static Type *declaration_specifier();
+static LVar *new_lvar(Token *tok, Type *type);
 static Function *func_define();
 static Node *compound_stmt();
 static Node *stmt();
@@ -24,7 +25,7 @@ bool consume(int op) {
     return true;
 }
 
-bool equal(int op) {
+bool consume_nostep(int op) {
     if (token->kind != op) {
         return false;
     }
@@ -33,11 +34,26 @@ bool equal(int op) {
 
 void expect(int op) {
     if (token->kind != op) {
+        if (op == TK_TYPE) {
+            error("適当な位置に型がありません");
+        }
+        
         error_at(token->str, "'%s'ではありません", op);
     }
     next_token();
 }
 
+void expect_nostep(int op) {
+    if (token->kind != op) {
+        if (op == TK_TYPE) {
+            error("適当な位置に型がありません");
+        }
+
+        error_at(token->str, "'%s'ではありません", op);
+    }
+}
+
+// 
 int expect_number() {
     if (token->kind != TK_NUM) {
         error_at(token->str, "数ではありません");
@@ -47,16 +63,19 @@ int expect_number() {
     return val;
 }
 
+// 文末
 bool at_eof() {
     return token->kind == TK_EOF;
 }
 
+// ノード作成
 Node *new_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
     return node;
 }
 
+// 演算子ノード作成
 Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -65,6 +84,7 @@ Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+// 数値ノードを作成
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_NUM;
@@ -72,16 +92,30 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_ident(Token *tok) {
+// ローカル変数を宣言
+Node *declear_node_ident(Token *tok, Type *type) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
     LVar *lvar = find_lvar(tok);
     if (lvar) {
-        node->lvar = lvar;
-    } else {
-        lvar = new_lvar(tok);
-        node->lvar = lvar;
+        error("既に宣言済みです");
     }
+
+    lvar = new_lvar(tok, type);
+    node->lvar = lvar;
+    return node;
+}
+
+// ローカル変数のノードを取得
+Node *get_node_ident(Token *tok) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    LVar *lvar = find_lvar(tok);
+    if (!lvar) {
+        error("宣言されていません\n");
+    }
+
+    node->lvar = lvar;
     return node;
 }
 
@@ -96,11 +130,12 @@ LVar *find_lvar(Token *tok) {
 }
 
 // ローカル変数の作成
-static LVar *new_lvar(Token *tok) {
+static LVar *new_lvar(Token *tok, Type *type) {
     LVar *lvar = calloc(1, sizeof(LVar));
     lvar->next = locals;
     lvar->name = tok->str;
     lvar->len = tok->len;
+    lvar->type = type;
     lvar->offset = locals->offset + 8;
     locals = lvar;
     return lvar;
@@ -138,8 +173,10 @@ void program() {
     funcs[i] = NULL;
 }
 
-// func_define = ident "(" (ident ("," ident)*)? ")" compound_stmt
+// func_define = declaration_specifier ident "(" (declaration_specifier ident ("," declaration_specifier ident)*)? ")" compound_stmt
 static Function *func_define() {
+    Type *type = declaration_specifier();
+
     Function *fn = calloc(1, sizeof(Function));
     Token *tok = token;
     LVar head = {};
@@ -152,11 +189,13 @@ static Function *func_define() {
         if (cur != &head) {
             expect(',');
         }
+        Type *type = declaration_specifier();
         tok = token;
         expect(TK_IDENT);
         LVar *lvar = calloc(1, sizeof(LVar));
         lvar->name = tok->str;
         lvar->len = tok->len;
+        lvar->type = type;
         lvar->offset = cur->offset + 8;
         cur = cur->next = lvar;
     }
@@ -225,7 +264,7 @@ static Node *stmt() {
             expect(')');
         }
         node->body = stmt();
-    } else if (equal('{')) {
+    } else if (consume_nostep('{')) {
         node = compound_stmt();
     } else {
         node = expr();
@@ -235,8 +274,25 @@ static Node *stmt() {
     return node;
 }
 
-// expr = assign
-Node *expr() {
+// declaration_specifier = int
+static Type *declaration_specifier() {
+    expect_nostep(TK_TYPE);
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = token->type;
+    next_token();
+    return type;
+}
+
+// expr = assign | declaration_specifier ident
+static Node *expr() {
+
+    if (consume_nostep(TK_TYPE)) {
+        Type *type = declaration_specifier();
+        Node *node = declear_node_ident(token, type);
+        next_token();
+        return node;
+    }
+
     return assign();
 }
 
@@ -344,8 +400,10 @@ static Node *unary() {
     return primary();
 }
 
-// funcall = ident "(" (expr ("," expr)*)? ")"
+// funcall = "(" (expr ("," expr)*)? ")"
 static Node *funcall(Token *tok) {
+    
+    expect('(');
     Node *node = new_node(ND_CALL);
     node->fn_name = my_strndup(tok->str, tok->len);
     node->args = new_vec();
@@ -358,7 +416,7 @@ static Node *funcall(Token *tok) {
     return node;
 }
 
-// primary = "(" expr ")" | num | IDENT | funcall
+// primary = "(" expr ")" | num | ident funcall?
 /* ※ funcallがBNFと一致していない */
 static Node *primary() {
     if (consume('(')) {
@@ -367,20 +425,20 @@ static Node *primary() {
         return node;
     }
 
-    if (token->kind == TK_IDENT) {
+    if (consume_nostep(TK_IDENT)) {
         Token *tok = token;
         next_token();
         Node *node;
-        if (consume('(')) {
+        if (consume_nostep('(')) {
             // 関数の呼びだし
             node = funcall(tok);
         } else {
-            node = new_node_ident(tok);
+            node = get_node_ident(tok);
         }
         return node;
     }
 
-    if (token->kind == TK_NUM) {
+    if (consume_nostep(TK_NUM)) {
         return new_node_num(expect_number());
     }
 
