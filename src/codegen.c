@@ -10,16 +10,74 @@
 
 static void gen(Node *node);
 
-static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+static char *argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
+static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static char *raxreg[] = {"rax", "eax", "ax", "al"};  // size: 8, 4, 2, 1
+static char *rdireg[] = {"rdi", "edi", "di", "dil"}; // size: 8, 4, 2, 1
 static Function *current_fn;
+
+static char *get_argreg(int index, int size) {
+    switch (size) {
+        case 8:
+            return argreg64[index];
+            break;
+        case 4:
+            return argreg32[index];
+            break;
+        case 2:
+            return argreg16[index];
+            break;
+        case 1:
+            return argreg8[index];
+            break;
+    }
+    
+    error("サポートしてない引数です。");
+}
+
+static char *s_to_rax(int size) {
+    switch (size) {
+        case 8:
+            return raxreg[0]; // rax
+            break;
+        case 4:
+            return raxreg[1]; // eax
+            break;
+        case 2:
+            return raxreg[2]; // ax
+            break;
+        case 1:
+            return raxreg[3]; // al
+            break;
+    }
+    
+    error("サポートしてないレジスターのサイズです");
+}
+
+static char *s_to_rdi(int size) {
+    switch (size) {
+        case 8:
+            return rdireg[0]; // rdi
+            break;
+        case 4:
+            return rdireg[1]; // edi
+            break;
+        case 2:
+            return rdireg[2]; // di
+            break;
+        case 1:
+            return rdireg[3]; // dil
+            break;
+    }
+    
+    error("サポートしてないレジスターのサイズです");
+}
 
 static void assign_lvar_offsets() {
     for (int i=0; funcs[i]; i++) {
-        int offset = 0;
-        for (LVar *var=funcs[i]->locals; var->next; var=var->next) {
-            offset += 8;
-        }
-        funcs[i]->stack_size = offset;
+        funcs[i]->stack_size = funcs[i]->locals->offset;
     }
 }
 
@@ -58,7 +116,7 @@ static void gen(Node *node) {
         case ND_LVAR:
             gen_lval(node);
             printf("  pop rax\n");
-            printf("  mov rax, [rax]\n");
+            printf("  mov %s, [rax]\n", s_to_rax(node->lvar->type->size));
             printf("  push rax\n");
             return;
         case ND_ADDR:
@@ -67,7 +125,7 @@ static void gen(Node *node) {
         case ND_DEREF:
             gen(node->lhs);
             printf("  pop rax\n");
-            printf("  mov rax, [rax]\n");
+            printf("  mov rax, [rax]\n"); // pointerなのでrax
             printf("  push rax\n");
             return;
         case ND_ASSIGN:
@@ -75,7 +133,7 @@ static void gen(Node *node) {
             gen(node->rhs);
             printf("  pop rdi\n");
             printf("  pop rax\n");
-            printf("  mov [rax], rdi\n");
+            printf("  mov [rax], %s\n", s_to_rdi(node->lhs->lvar->type->size));
             printf("  push rdi\n");
             return;
         case ND_RETURN:
@@ -147,7 +205,8 @@ static void gen(Node *node) {
                 gen(node->args->body[i]);
             }
             for (int i=nargs-1;i>=0;i--) {
-                printf("  pop %s\n", argreg[i]);
+                LVar *l = node->args->body[i];
+                printf("  pop %s\n", argreg64[i]);
             }
             printf("  mov rax, 0\n");
             printf("  call %s\n", node->fn_name);
@@ -225,7 +284,7 @@ void codegen() {
         for (LVar *var=current_fn->params;var;var=var->next) {
             printf("  mov rax, rbp\n");
             printf("  sub rax, %d\n", var->offset);
-            printf("  mov [rax], %s\n", argreg[j++]);
+            printf("  mov [rax], %s\n", get_argreg(j++, var->type->size));
         }
 
         gen(current_fn->body);
@@ -239,6 +298,4 @@ void codegen() {
         printf("  pop rbp\n");
         printf("  ret\n");
     }
-
-    
 }

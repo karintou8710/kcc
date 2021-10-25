@@ -26,6 +26,7 @@ typedef struct Type Type;
 struct Type {
     TypeKind kind;
     Type *ptr_to;
+    int size;
 };
 
 /* トークンの定義 */
@@ -53,7 +54,7 @@ typedef enum {
 
 struct Token {
     TokenKind kind; //
-    TypeKind type;  //
+    Type *type;  //
     Token *next;    //
     int val;        //
     char *str;      //
@@ -172,6 +173,10 @@ void codegen();
 // token.c
 Token *tokenize(char *p);
 Token *new_token(int kind, Token *cur, char *str, int len);
+
+// type.c
+Type *new_type(TypeKind tykind);
+Type *new_ptr_type(Type *ptr_to);
 
 // 変数
 char *user_input; // 入力プログラム

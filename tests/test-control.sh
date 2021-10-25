@@ -76,7 +76,6 @@ assert 55 'int fib(int n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib
 
 
 # ポインター
-assert 3 'int main() {int x;int y;int z; x = 3;y = 5;z = &y + 8;return *z;} '
 assert 3 'int main() {int x;int *y;y = &x;*y = 3;return x;}'
 assert 10 'int main() {int a;int *b;int **c;int ***d;d = &c;c = &b;b = &a;a = 10;return ***d;}'
 echo OK

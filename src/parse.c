@@ -129,6 +129,16 @@ LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
+LVar *copy_lvar(LVar *lvar) {
+    LVar *l = calloc(1, sizeof(LVar));
+    l->next = lvar->next;
+    l->name = lvar->name;
+    l->len = lvar->len;
+    l->offset = lvar->offset;
+    l->type = lvar->type;
+    return l;
+}
+
 // ローカル変数の作成
 static LVar *new_lvar(Token *tok, Type *type) {
     LVar *lvar = calloc(1, sizeof(LVar));
@@ -136,7 +146,7 @@ static LVar *new_lvar(Token *tok, Type *type) {
     lvar->name = tok->str;
     lvar->len = tok->len;
     lvar->type = type;
-    lvar->offset = locals->offset + 8;
+    lvar->offset = locals->offset + type->size;
     locals = lvar;
     return lvar;
 }
@@ -147,8 +157,10 @@ static void create_lvar_from_params(LVar *params) {
         LVar *lvar = calloc(1, sizeof(LVar));
         lvar->name = params->name;
         lvar->len = params->len;
-        lvar->offset = locals->offset + 8;
+        lvar->type = new_type(TYPE_INT);
+        lvar->offset = locals->offset + lvar->type->size;
         lvar->next = locals;
+        
         locals = lvar;
         create_lvar_from_params(params->next);
     }
@@ -196,11 +208,12 @@ static Function *func_define() {
         lvar->name = tok->str;
         lvar->len = tok->len;
         lvar->type = type;
-        lvar->offset = cur->offset + 8;
+        lvar->offset = cur->offset + lvar->type->size;
         cur = cur->next = lvar;
     }
     fn->params = head.next;
     locals = calloc(1, sizeof(LVar));
+    locals->offset = 0;
     create_lvar_from_params(fn->params);
     fn->body = compound_stmt();
     fn->locals = locals;
@@ -277,13 +290,10 @@ static Node *stmt() {
 // declaration_specifier = int "*"*
 static Type *declaration_specifier() {
     expect_nostep(TK_TYPE);
-    Type *type = calloc(1, sizeof(Type));
-    type->kind = token->type;
+    Type *type = token->type;
     next_token();
     while (consume('*')) {
-        Type *t = calloc(1, sizeof(Type));
-        t->kind = TYPE_PTR;
-        t->ptr_to = type;
+        Type *t = new_ptr_type(type);
         type = t;
     }
     return type;
@@ -399,9 +409,21 @@ static Node *unary() {
         while (consume('*')) {
             Node *n = new_node(ND_DEREF);
             node->lhs = n;
+            n->rhs = node;
             node = n;
         }
         node->lhs = primary();
+
+        while (1) {
+            LVar *l = copy_lvar(node->lhs->lvar);
+            if (!l->type->ptr_to) {
+                error("derefに失敗しました");
+            }
+            l->type = node->lhs->lvar->type->ptr_to;
+            node->lvar = l;
+            if (!node->rhs) break;
+            node = node->rhs;
+        }
         
         return top_node;
     } else if (consume('&')) {

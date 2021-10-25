@@ -114,7 +114,7 @@ Token *tokenize(char *p) {
 
         if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
             cur = new_token(TK_TYPE, cur, p, 3);
-            cur->type = TYPE_INT;
+            cur->type = new_type(TYPE_INT);
             p += 3;
             continue;
         }
