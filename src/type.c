@@ -36,7 +36,7 @@ void add_type(Node *node) {
 
     if (node->type != NULL) return;
 
-    if (node->kind == ND_LVAR) {
+    if (node->kind == ND_LVAR || node->kind == ND_DEREF) {
         node->type = node->lvar->type;
         return;
     }

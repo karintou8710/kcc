@@ -179,6 +179,12 @@ Node *new_node_num(int val) {
     return node;
 }
 
+// sizeofの実装
+int sizeOfNode(Node *node) {
+    add_type(node);
+    return node->type->size;
+}
+
 // ローカル変数を宣言
 Node *declear_node_ident(Token *tok, Type *type) {
     Node *node = calloc(1, sizeof(Node));
@@ -484,6 +490,7 @@ static Node *mul() {
  *       | "-"? primary
  *       | "*"+ primary
  *       | "&" primary
+ *       | "sizeof" unary
  */        
 static Node *unary() {
     if (consume('+')) {
@@ -516,6 +523,9 @@ static Node *unary() {
     } else if (consume('&')) {
         Node *node = new_node(ND_ADDR);
         node->lhs = primary();
+        return node;
+    } else if (consume(TK_SIZEOF)) {
+        Node *node = new_node_num(sizeOfNode(unary()));
         return node;
     }
 
