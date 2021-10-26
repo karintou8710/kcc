@@ -27,3 +27,73 @@ Type *new_ptr_type(Type *ptr_to) {
     ty->ptr_to = ptr_to;
     return ty;
 }
+
+/*
+ * ND_NUM, ND_CALL, ND_LVAR, ND_ADD,SUB,MUL,DIV, 
+ *
+ */ 
+void add_type(Node *node) {
+
+    if (node->type != NULL) return;
+
+    if (node->kind == ND_LVAR) {
+        node->type = node->lvar->type;
+        return;
+    }
+
+    if (node->kind == ND_NUM) {
+        node->type = new_type(TYPE_INT);
+        return;
+    }
+
+    if (node->kind == ND_CALL) {
+        /* TODO: とりあえずINT型だけど、関数の戻り値の型に直す */
+        node->type = new_type(TYPE_INT);
+        return;
+    }
+
+    if (node->kind == ND_ADD) {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_INT);
+        }
+
+        if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_PTR);
+        }
+
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR) {
+            node->type = new_type(TYPE_PTR);
+        }
+    }
+
+    if (node->kind == ND_SUB) {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_INT);
+        }
+
+        if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_PTR);
+        }
+
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR) {
+            node->type = new_type(TYPE_PTR);
+        }
+    }
+
+    if (node->kind == ND_MUL) {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_INT);
+        }
+    }
+
+    if (node->kind == ND_DIV) {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+            node->type = new_type(TYPE_INT);
+        }
+    }
+
+}

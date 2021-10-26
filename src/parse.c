@@ -84,6 +84,93 @@ Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+/*
+ * 演算子には型のキャストがある
+ */
+Node *new_add(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_ADD;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return node;
+    }
+
+    if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
+        rhs->val *= lhs->type->ptr_to->size;
+        return node;
+    }
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR) {
+        lhs->val *= rhs->type->ptr_to->size;
+        return node;
+    }
+
+    error("実行できないコードです");
+}
+
+Node *new_sub(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_SUB;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return node;
+    }
+
+    if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
+        rhs->val *= lhs->type->ptr_to->size;
+        return node;
+    }
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR) {
+        lhs->val *= rhs->type->ptr_to->size;
+        return node;
+    }
+
+    error("実行できないコードです");
+}
+
+Node *new_mul(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_MUL;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return node;
+    }
+
+    error("実行できないコードです");
+}
+
+Node *new_div(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_DIV;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return node;
+    }
+
+    error("実行できないコードです");
+}
+
 // 数値ノードを作成
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
@@ -369,9 +456,9 @@ static Node *add() {
 
     for(;;) {
         if (consume('+')) {
-            node = new_binop(ND_ADD, node, mul());
+            node = new_add(node, mul());
         } else if (consume('-')) {
-            node = new_binop(ND_SUB, node, mul());
+            node = new_sub(node, mul());
         } else {
             return node;
         }
@@ -384,9 +471,9 @@ static Node *mul() {
 
     for (;;) {
         if (consume('*')) {
-            node = new_binop(ND_MUL, node, unary());
+            node = new_mul(node, unary());
         } else if (consume('/')) {
-            node = new_binop(ND_DIV, node, unary());
+            node = new_div(node, unary());
         } else {
             return node;
         }
@@ -402,7 +489,7 @@ static Node *unary() {
     if (consume('+')) {
         return primary();
     } else if (consume('-')) {
-        return new_binop(ND_SUB, new_node_num(0), primary());
+        return new_sub(new_node_num(0), primary());
     } else if (consume('*')) {
         Node *node = new_node(ND_DEREF);
         Node *top_node = node;

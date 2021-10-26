@@ -111,6 +111,7 @@ struct Node {
     char *fn_name; // 
     Vector *args;  // 
     Vector *stmts; // 
+    Type *type;    // 型
 
     // if (cond) then els 
     // while (cond) body 
@@ -177,6 +178,7 @@ Token *new_token(int kind, Token *cur, char *str, int len);
 // type.c
 Type *new_type(TypeKind tykind);
 Type *new_ptr_type(Type *ptr_to);
+void add_type(Node *node);
 
 // 変数
 char *user_input; // 入力プログラム
