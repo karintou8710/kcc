@@ -11,6 +11,7 @@ static Node *new_add(Node *lhs, Node *rhs);
 static Node *new_sub(Node *lhs, Node *rhs);
 static Node *new_mul(Node *lhs, Node *rhs);
 static Node *new_div(Node *lhs, Node *rhs);
+static Node *new_mod(Node *lhs, Node *rhs);
 static Node *new_node_num(int val);
 static LVar *new_lvar(Token *tok, Type *type);
 static void create_lvar_from_params(LVar *params);
@@ -276,6 +277,20 @@ static Node *new_div(Node *lhs, Node *rhs)
     error("実行できない型による演算です(DIV)");
 }
 
+static Node *new_mod(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    // lhsとrhsの順番に関係あり (lhs <= rhs)
+    Node *node = new_binop(ND_MOD, lhs, rhs);
+
+    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    {
+        return node;
+    }
+
+    error("実行できない型による演算です(MOD)");
+}
 /* 数値ノードを作成 */
 static Node *new_node_num(int val)
 {
@@ -610,6 +625,8 @@ static Node *mul()
         else if (consume('/'))
         {
             node = new_div(node, unary());
+        } else if (consume('%')) {
+            node = new_mod(node, unary());
         }
         else
         {

@@ -167,4 +167,16 @@ void add_type(Node *node)
 
         error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
     }
+
+    if (node->kind == ND_MOD)
+    {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+        {
+            node->type = new_type(TYPE_INT);
+            return;
+        }
+
+        error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
+    }
 }
