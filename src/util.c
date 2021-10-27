@@ -1,6 +1,7 @@
 #include "9cc.h"
 
-void error(char *fmt, ...) {
+void error(char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
@@ -9,7 +10,8 @@ void error(char *fmt, ...) {
 }
 
 // エラー箇所を報告する
-void error_at(char *loc, char *fmt, ...) {
+void error_at(char *loc, char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
 
@@ -22,38 +24,46 @@ void error_at(char *loc, char *fmt, ...) {
     exit(EXIT_FAILURE);
 }
 
-bool startsWith(char *p, char *q) {
+bool startsWith(char *p, char *q)
+{
     return memcmp(p, q, strlen(q)) == 0;
 }
 
-int is_alpha(char c) {
-  return ('a' <= c && c <= 'z') ||
-         ('A' <= c && c <= 'Z') ||
-         (c == '_');
+int is_alpha(char c)
+{
+    return ('a' <= c && c <= 'z') ||
+           ('A' <= c && c <= 'Z') ||
+           (c == '_');
 }
 
-int is_alnum(char c) {
-  return ('a' <= c && c <= 'z') ||
-         ('A' <= c && c <= 'Z') ||
-         ('0' <= c && c <= '9') ||
-         (c == '_');
+int is_alnum(char c)
+{
+    return ('a' <= c && c <= 'z') ||
+           ('A' <= c && c <= 'Z') ||
+           ('0' <= c && c <= '9') ||
+           (c == '_');
 }
 
-void str_advanve(char **p) {
-    while (is_alnum(**p)) {
+void str_advanve(char **p)
+{
+    while (is_alnum(**p))
+    {
         *p += 1;
     }
 }
 
-void next_token() {
+void next_token()
+{
     token = token->next;
 }
 
-Token *get_next_token() {
-  return token->next;
+Token *get_next_token()
+{
+    return token->next;
 }
 
-Vector *new_vec() {
+Vector *new_vec()
+{
     Vector *v = calloc(1, sizeof(Vector));
     v->body = calloc(16, sizeof(void *));
     v->capacity = 16;
@@ -61,52 +71,68 @@ Vector *new_vec() {
     return v;
 }
 
-void vec_push(Vector *v, void *elem) {
-    if (v->len == v->capacity) {
+void vec_push(Vector *v, void *elem)
+{
+    if (v->len == v->capacity)
+    {
         v->capacity *= 2;
         v->body = realloc(v->body, sizeof(void *) * v->capacity);
     }
     v->body[v->len++] = elem;
 }
 
-void vec_pushi(Vector *v, int val) {
+void vec_pushi(Vector *v, int val)
+{
     vec_push(v, &val);
 }
 
-void *vec_pop(Vector *v) {
-  assert(v->len);
-  return v->body[--v->len];
+void *vec_pop(Vector *v)
+{
+    assert(v->len);
+    return v->body[--v->len];
 }
 
-void *vec_last(Vector *v) {
-  assert(v->len);
-  return v->body[v->len - 1];
+void *vec_last(Vector *v)
+{
+    assert(v->len);
+    return v->body[v->len - 1];
 }
 
-bool vec_contains(Vector *v, void *elem) {
-  for (int i = 0; i < v->len; i++)
-    if (v->body[i] == elem)
-      return true;
-  return false;
-}
-
-bool vec_union1(Vector *v, void *elem) {
-  if (vec_contains(v, elem))
+bool vec_contains(Vector *v, void *elem)
+{
+    for (int i = 0; i < v->len; i++)
+        if (v->body[i] == elem)
+            return true;
     return false;
-  vec_push(v, elem);
-  return true;
 }
 
-char *my_strndup(const char *s, size_t n) {
+bool vec_union1(Vector *v, void *elem)
+{
+    if (vec_contains(v, elem))
+        return false;
+    vec_push(v, elem);
+    return true;
+}
+
+char *my_strndup(const char *s, size_t n)
+{
     char *p;
     size_t n1;
 
     for (n1 = 0; n1 < n && s[n1] != '\0'; n1++)
         continue;
     p = malloc(n + 1);
-    if (p != NULL) {
+    if (p != NULL)
+    {
         memcpy(p, s, n1);
         p[n1] = '\0';
     }
     return p;
+}
+
+void swap(void **p, void **q)
+{
+    void *tmp = *p;
+    *p = *q;
+    *q = tmp;
 }

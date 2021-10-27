@@ -86,4 +86,9 @@ assert 4 'int main() {int x;return sizeof x;}'
 assert 4 'int main() {int x;return sizeof(x);}'
 assert 12 'int main() {int x;int *y;return sizeof(x) + sizeof(y);}'
 assert 4 'int main() {int *x;return sizeof(*x);}'
+
+# 配列
+assert 3 'int main() {int a[2];*a = 1;*(a + 1) = 2;int *p;p = a;return *p + *(p + 1);}'
+assert 6 'int main() {int a[3];*(a)=1;*(a+1)=2;*(a+2)=3;int i;int sum;
+            for (i=0;i<3;i=i+1) {sum = sum + *(a+i);} return sum;}'
 echo OK
