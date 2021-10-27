@@ -1,16 +1,22 @@
 #include "9cc.h"
 
+/*
+ * ローカル変数を単方向の連結リストで持つ
+ * localsは後に出たローカル変数のポインタを持つ
+ */
 static LVar *locals;
 
+/* nodeの生成 */
+static Node *new_add(Node *lhs, Node *rhs);
+static Node *new_sub(Node *lhs, Node *rhs);
+static Node *new_mul(Node *lhs, Node *rhs);
+static Node *new_div(Node *lhs, Node *rhs);
+static Node *new_node_num(int val);
 static LVar *new_lvar(Token *tok, Type *type);
 static void create_lvar_from_params(LVar *params);
-LVar *find_lvar(Token *tok);
+static LVar *find_lvar(Token *tok);
 
-Node *new_add(Node *lhs, Node *rhs);
-Node *new_sub(Node *lhs, Node *rhs);
-Node *new_mul(Node *lhs, Node *rhs);
-Node *new_div(Node *lhs, Node *rhs);
-
+/* AST */
 static Type *declaration_specifier();
 static LVar *new_lvar(Token *tok, Type *type);
 static Function *func_define();
@@ -25,8 +31,8 @@ static Node *mul();
 static Node *unary();
 static Node *primary();
 
-// 演算子の比較
-bool consume(int op)
+/* 指定された演算子が来る可能性がある */
+static bool consume(int op)
 {
     if (token->kind != op)
     {
@@ -36,7 +42,7 @@ bool consume(int op)
     return true;
 }
 
-bool consume_nostep(int op)
+static bool consume_nostep(int op)
 {
     if (token->kind != op)
     {
@@ -45,7 +51,8 @@ bool consume_nostep(int op)
     return true;
 }
 
-void expect(int op)
+/* 指定された演算子が必ず来る */
+static void expect(int op)
 {
     if (token->kind != op)
     {
@@ -59,7 +66,7 @@ void expect(int op)
     next_token();
 }
 
-void expect_nostep(int op)
+static void expect_nostep(int op)
 {
     if (token->kind != op)
     {
@@ -72,8 +79,7 @@ void expect_nostep(int op)
     }
 }
 
-//
-int expect_number()
+static int expect_number()
 {
     if (token->kind != TK_NUM)
     {
@@ -84,20 +90,19 @@ int expect_number()
     return val;
 }
 
-// 文末
-bool at_eof()
+static bool at_eof()
 {
     return token->kind == TK_EOF;
 }
 
-// sizeofの実装
-int sizeOfNode(Node *node)
+/* ノードを引数にもつsizeofの実装 */
+static int sizeOfNode(Node *node)
 {
     add_type(node);
     return sizeOfType(node->type);
 }
 
-// ローカル変数の作成
+/* ローカル変数の作成 */
 static LVar *new_lvar(Token *tok, Type *type)
 {
     LVar *lvar = calloc(1, sizeof(LVar));
@@ -106,29 +111,30 @@ static LVar *new_lvar(Token *tok, Type *type)
     lvar->len = tok->len;
     lvar->type = type;
     lvar->offset = locals->offset + sizeOfType(type);
-    locals = lvar;
+    locals = lvar; // localsを新しいローカル変数に更新
     return lvar;
 }
 
-// 引数からローカル変数を作成する
+// TODO: 引数に適切な型をつけるようにする
+/* 引数からローカル変数を作成する(前から見ていく) */
 static void create_lvar_from_params(LVar *params)
 {
-    if (params)
-    {
-        LVar *lvar = calloc(1, sizeof(LVar));
-        lvar->name = params->name;
-        lvar->len = params->len;
-        lvar->type = new_type(TYPE_INT);
-        lvar->offset = locals->offset + sizeOfType(lvar->type);
-        lvar->next = locals;
+    if (!params)
+        return;
 
-        locals = lvar;
-        create_lvar_from_params(params->next);
-    }
+    LVar *lvar = calloc(1, sizeof(LVar));
+    lvar->name = params->name;
+    lvar->len = params->len;
+    lvar->type = params->type;
+    lvar->offset = locals->offset + sizeOfType(lvar->type);
+    lvar->next = locals;
+
+    locals = lvar;
+    create_lvar_from_params(params->next);
 }
 
-// ローカル変数を検索
-LVar *find_lvar(Token *tok)
+/* 既に定義されたローカル変数を検索 */
+static LVar *find_lvar(Token *tok)
 {
     for (LVar *var = locals; var; var = var->next)
     {
@@ -147,7 +153,7 @@ LVar *find_lvar(Token *tok)
 /*************************************/
 
 // ノード作成
-Node *new_node(NodeKind kind)
+static Node *new_node(NodeKind kind)
 {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -155,7 +161,7 @@ Node *new_node(NodeKind kind)
 }
 
 // 演算子ノード作成
-Node *new_binop(NodeKind kind, Node *lhs, Node *rhs)
+static Node *new_binop(NodeKind kind, Node *lhs, Node *rhs)
 {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -167,8 +173,9 @@ Node *new_binop(NodeKind kind, Node *lhs, Node *rhs)
 /*
  * 演算子には型のキャストがある
  */
-Node *new_add(Node *lhs, Node *rhs)
+static Node *new_add(Node *lhs, Node *rhs)
 {
+    // 型を伝搬する
     add_type(lhs);
     add_type(rhs);
 
@@ -178,10 +185,7 @@ Node *new_add(Node *lhs, Node *rhs)
         swap((void **)&lhs, (void **)&rhs);
     }
 
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_ADD;
-    node->lhs = lhs;
-    node->rhs = rhs;
+    Node *node = new_binop(ND_ADD, lhs, rhs);
 
     if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
     {
@@ -202,20 +206,16 @@ Node *new_add(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できないコードです");
+    error("実行できない型による演算です(ADD)");
 }
 
-Node *new_sub(Node *lhs, Node *rhs)
+static Node *new_sub(Node *lhs, Node *rhs)
 {
     add_type(lhs);
     add_type(rhs);
 
     // lhsとrhsの順番に関係あり
-
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_SUB;
-    node->lhs = lhs;
-    node->rhs = rhs;
+    Node *node = new_binop(ND_SUB, lhs, rhs);
 
     if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
     {
@@ -236,10 +236,10 @@ Node *new_sub(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できないコードです");
+    error("実行できない型による演算です(SUB)");
 }
 
-Node *new_mul(Node *lhs, Node *rhs)
+static Node *new_mul(Node *lhs, Node *rhs)
 {
     add_type(lhs);
     add_type(rhs);
@@ -250,53 +250,44 @@ Node *new_mul(Node *lhs, Node *rhs)
         swap((void **)&lhs, (void **)&rhs);
     }
 
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_MUL;
-    node->lhs = lhs;
-    node->rhs = rhs;
+    Node *node = new_binop(ND_MUL, lhs, rhs);
 
     if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
     {
         return node;
     }
 
-    error("実行できないコードです");
+    error("実行できない型による演算です(MUL)");
 }
 
-Node *new_div(Node *lhs, Node *rhs)
+static Node *new_div(Node *lhs, Node *rhs)
 {
     add_type(lhs);
     add_type(rhs);
 
     // lhsとrhsの順番に関係あり (lhs <= rhs)
-
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_DIV;
-    node->lhs = lhs;
-    node->rhs = rhs;
+    Node *node = new_binop(ND_DIV, lhs, rhs);
 
     if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
     {
         return node;
     }
 
-    error("実行できないコードです");
+    error("実行できない型による演算です(DIV)");
 }
 
-// 数値ノードを作成
-Node *new_node_num(int val)
+/* 数値ノードを作成 */
+static Node *new_node_num(int val)
 {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+    Node *node = new_node(ND_NUM);
     node->val = val;
     return node;
 }
 
-// ローカル変数を宣言
-Node *declear_node_ident(Token *tok, Type *type)
+/* ローカル変数を宣言 */
+static Node *declear_node_ident(Token *tok, Type *type)
 {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
+    Node *node = new_node(ND_LVAR);
     LVar *lvar = find_lvar(tok);
     if (lvar)
     {
@@ -309,14 +300,13 @@ Node *declear_node_ident(Token *tok, Type *type)
 }
 
 // ローカル変数のノードを取得
-Node *get_node_ident(Token *tok)
+static Node *get_node_ident(Token *tok)
 {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
+    Node *node = new_node(ND_LVAR);
     LVar *lvar = find_lvar(tok);
     if (!lvar)
     {
-        error("宣言されていません\n");
+        error("宣言されていません");
     }
 
     node->lvar = lvar;
@@ -340,15 +330,28 @@ void program()
     funcs[i] = NULL;
 }
 
+// declaration_specifier = int "*"*
+static Type *declaration_specifier()
+{
+    expect_nostep(TK_TYPE);
+    Type *type = token->type;
+    next_token();
+    while (consume('*'))
+    {
+        Type *t = new_ptr_type(type);
+        type = t;
+    }
+    return type;
+}
+
 // func_define = declaration_specifier ident "(" (declaration_specifier ident ("," declaration_specifier ident)*)? ")" compound_stmt
 static Function *func_define()
 {
     Type *type = declaration_specifier();
-
     Function *fn = calloc(1, sizeof(Function));
     Token *tok = token;
     LVar head = {};
-    LVar *cur = &head;
+    LVar *cur = &head; // 引数の単方向連結リスト
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
@@ -369,7 +372,7 @@ static Function *func_define()
         lvar->offset = cur->offset + sizeOfType(lvar->type);
         cur = cur->next = lvar;
     }
-    fn->params = head.next;
+    fn->params = head.next; // 前から見ていく
     locals = calloc(1, sizeof(LVar));
     locals->offset = 0;
     create_lvar_from_params(fn->params);
@@ -391,10 +394,11 @@ static Node *compound_stmt()
     return node;
 }
 
+// TODO: do~while,continue,break,switch,else if,
 /* stmt = expr ";"
  *     | "return" expr ";"
  *      | "if" "(" expr ")" stmt ("else" stmt)?
- *      | "while" "(" expr ")" stmt
+ *      | "while" "(" expr ")" stmt 
  *      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
  *      | compound_stmt
  */
@@ -463,25 +467,12 @@ static Node *stmt()
     return node;
 }
 
-// declaration_specifier = int "*"*
-static Type *declaration_specifier()
-{
-    expect_nostep(TK_TYPE);
-    Type *type = token->type;
-    next_token();
-    while (consume('*'))
-    {
-        Type *t = new_ptr_type(type);
-        type = t;
-    }
-    return type;
-}
-
-// expr = assign | declaration_specifier ident ("[" num "]")?
 // TODO: とりあえず一次元の配列だけを定義する
+// TODO: 多次元配列に対応
+// exprは一つの式で型の伝搬は大体ここまでありそう
+// expr = assign | declaration_specifier ident ("[" num "]")?
 static Node *expr()
 {
-
     if (consume_nostep(TK_TYPE))
     {
         Type *type = declaration_specifier();
@@ -500,6 +491,7 @@ static Node *expr()
     return assign();
 }
 
+// TODO: +=, -=, *=, /=, %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
 // assign = equality ("=" assign)?
 static Node *assign()
 {
@@ -527,6 +519,7 @@ static Node *assign()
     return node;
 }
 
+// TODO: &&, ||
 // equality = relational ("==" relational | "!=" relational)*
 static Node *equality()
 {
@@ -579,6 +572,7 @@ static Node *relational()
     }
 }
 
+// TODO: &, |, ^
 // add = mul ("+" mul | "-" mul)*
 static Node *add()
 {
@@ -601,6 +595,7 @@ static Node *add()
     }
 }
 
+// TODO: %
 // mul = unary ("*" unary | "/" unary)*
 static Node *mul()
 {
@@ -623,6 +618,7 @@ static Node *mul()
     }
 }
 
+// TODO: !(否定), 
 /* unary = "+"? primary
  *       | "-"? primary
  *       | "*" primary   ("*" unaryでもいい？)
@@ -640,34 +636,17 @@ static Node *unary()
         return new_sub(new_node_num(0), primary());
     }
     else if (consume('*'))
-    {
+    {   
         Node *node = new_node(ND_DEREF);
-        Node *top_node = node;
-        while (consume('*'))
-        {
-            Node *n = new_node(ND_DEREF);
-            node->lhs = n;
-            n->rhs = node;
-            node = n;
-        }
-        node->lhs = primary();
-
+        node->lhs = unary();
         add_type(node->lhs);
-
-        while (1)
+        Type *ty = node->lhs->type;
+        if (!ty->ptr_to)
         {
-            Type *ty = node->lhs->type;
-            if (!ty->ptr_to)
-            {
-                error("derefに失敗しました");
-            }
-            node->type = ty->ptr_to;
-            if (!node->rhs)
-                break;
-            node = node->rhs;
+            error("derefに失敗しました");
         }
-
-        return top_node;
+        node->type = ty->ptr_to;
+        return node;
     }
     else if (consume('&'))
     {
@@ -689,7 +668,6 @@ static Node *unary()
 // funcall = "(" (expr ("," expr)*)? ")"
 static Node *funcall(Token *tok)
 {
-
     expect('(');
     Node *node = new_node(ND_CALL);
     node->fn_name = my_strndup(tok->str, tok->len);
@@ -706,7 +684,6 @@ static Node *funcall(Token *tok)
 }
 
 // primary = "(" expr ")" | num | ident funcall?
-/* ※ funcallがBNFと一致していない */
 static Node *primary()
 {
     if (consume('('))
@@ -723,7 +700,6 @@ static Node *primary()
         Node *node;
         if (consume_nostep('('))
         {
-            // 関数の呼びだし
             node = funcall(tok);
         }
         else

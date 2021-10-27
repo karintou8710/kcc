@@ -1,5 +1,6 @@
 #include "9cc.h"
 
+/* 固定長の型のサイズを返す */
 static int tykind_to_size(TypeKind tykind)
 {
     switch (tykind)
@@ -12,9 +13,16 @@ static int tykind_to_size(TypeKind tykind)
         break;
     }
 
-    error("存在しない型です");
+    error("存在しないまたは固定長ではない型です");
 }
 
+// sizeofの実装
+int sizeOfType(Type *ty)
+{
+    return ty->size;
+}
+
+/* 基本の型を生成 */
 Type *new_type(TypeKind tykind)
 {
     Type *ty = calloc(1, sizeof(Type));
@@ -23,6 +31,7 @@ Type *new_type(TypeKind tykind)
     return ty;
 }
 
+/* ポインター型を生成 */
 Type *new_ptr_type(Type *ptr_to)
 {
     Type *ty = calloc(1, sizeof(Type));
@@ -32,6 +41,8 @@ Type *new_ptr_type(Type *ptr_to)
     return ty;
 }
 
+// TODO: baseの型(例えばint[2][3]ならint型)を全ての配列型で持つべき?
+/* 配列型を生成 */
 Type *new_array_type(Type *ptr_to, int array_size)
 {
     Type *ty = calloc(1, sizeof(Type));
@@ -42,6 +53,9 @@ Type *new_array_type(Type *ptr_to, int array_size)
     return ty;
 }
 
+/* キャスト */
+
+/* 配列型からポインターへキャスト */
 Type *cast_array_to_ptr(Type *ptr)
 {
     while (ptr->ptr_to)
@@ -50,10 +64,6 @@ Type *cast_array_to_ptr(Type *ptr)
     return ty;
 }
 
-int sizeOfType(Type *ty)
-{
-    return ty->size;
-}
 
 /*
  * 必要なノードが型を持つことを保証するようにする

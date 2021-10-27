@@ -6,9 +6,14 @@
 #include <string.h>
 #include <assert.h>
 
+/*
+ * ~ 構造体 ~
+ * Vector, Type, Token, LVar, Node, Function
+ *
+ */
+
 /* ベクターの定義 */
 typedef struct Vector Vector;
-
 struct Vector
 {
     void **body;
@@ -16,7 +21,7 @@ struct Vector
     int capacity;
 };
 
-// 型の定義
+/* 型の定義 */
 typedef enum
 {
     TYPE_INT,
@@ -25,7 +30,6 @@ typedef enum
 } TypeKind;
 
 typedef struct Type Type;
-
 struct Type
 {
     TypeKind kind;
@@ -35,8 +39,6 @@ struct Type
 };
 
 /* トークンの定義 */
-typedef struct Token Token;
-
 typedef enum
 {
     TK_NUM = 256, // number
@@ -59,6 +61,7 @@ typedef enum
     TK_SIZEOF,    // sizeof
 } TokenKind;
 
+typedef struct Token Token;
 struct Token
 {
     TokenKind kind; //
@@ -69,11 +72,8 @@ struct Token
     int len;        //
 };
 
-Token *token;
-
 /* ローカル変数の定義 */
 typedef struct LVar LVar;
-
 struct LVar
 {
     LVar *next; // 次の変数かNULL
@@ -84,7 +84,6 @@ struct LVar
 };
 
 /* ノードの定義 */
-
 typedef enum
 {
     ND_ADD,    // +
@@ -110,7 +109,6 @@ typedef enum
 } NodeKind;
 
 typedef struct Node Node;
-
 struct Node
 {
     NodeKind kind;
@@ -126,17 +124,16 @@ struct Node
     // if (cond) then els
     // while (cond) body
     // for (init;cond;inc) body
-    Node *cond; //
-    Node *then; //
-    Node *els;  //
-    Node *body; //
-    Node *init; //
-    Node *inc;  //
+    Node *cond;
+    Node *then;
+    Node *els;
+    Node *body;
+    Node *init;
+    Node *inc;
 };
 
 /* 関数型の定義 */
 typedef struct Function Function;
-
 struct Function
 {
     char *name;
@@ -148,15 +145,6 @@ struct Function
 
 // parse.c
 void program();
-
-Node *new_node_num(int val);
-Node *new_node(NodeKind kind);
-Node *new_binop(NodeKind kind, Node *lhs, Node *rhs);
-bool at_eof();
-int expect_number();
-void expect(int op);
-bool consume(int op);
-LVar *find_lvar(Token *tok);
 
 // util.c
 int is_alpha(char c);
@@ -170,6 +158,7 @@ void error(char *fmt, ...);
 char *my_strndup(const char *s, size_t n);
 void swap(void **p, void **q);
 
+// vector.c
 Vector *new_vec();
 void vec_push(Vector *v, void *elem);
 void vec_pushi(Vector *v, int val);
@@ -183,7 +172,6 @@ void codegen();
 
 // token.c
 Token *tokenize(char *p);
-Token *new_token(int kind, Token *cur, char *str, int len);
 
 // type.c
 Type *new_type(TypeKind tykind);
@@ -192,9 +180,9 @@ Type *new_array_type(Type *ptr_to, int size);
 void add_type(Node *node);
 int sizeOfType(Type *ty);
 
-// 変数
-char *user_input; // 入力プログラム
-Function *funcs[100];
-int label_if_count;
-int label_loop_count;
-int block_count;
+// グローバル変数
+Token *token;         // tokenは単方向の連結リスト
+char *user_input;     // 入力プログラム
+Function *funcs[100]; // TODO: Vectorに対応する
+int label_if_count;   // ifのラベル
+int label_loop_count; // forとwhileのラベル

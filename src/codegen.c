@@ -14,6 +14,7 @@ static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg16[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+
 static char *raxreg[] = {"rax", "eax", "ax", "al"};  // size: 8, 4, 2, 1
 static char *rdireg[] = {"rdi", "edi", "di", "dil"}; // size: 8, 4, 2, 1
 static Function *current_fn;
@@ -45,42 +46,21 @@ static char *get_argreg(int index, int size)
     error("サポートしてない引数です。");
 }
 
-static char *s_to_rax(int size)
+static int size_to_regindex(int size)
 {
     switch (size)
     {
     case 8:
-        return raxreg[0]; // rax
+        return 0; // 64bit
         break;
     case 4:
-        return raxreg[1]; // eax
+        return 1; // 32bit
         break;
     case 2:
-        return raxreg[2]; // ax
+        return 2; // 16bit
         break;
     case 1:
-        return raxreg[3]; // al
-        break;
-    }
-
-    error("サポートしてないレジスターのサイズです");
-}
-
-static char *s_to_rdi(int size)
-{
-    switch (size)
-    {
-    case 8:
-        return rdireg[0]; // rdi
-        break;
-    case 4:
-        return rdireg[1]; // edi
-        break;
-    case 2:
-        return rdireg[2]; // di
-        break;
-    case 1:
-        return rdireg[3]; // dil
+        return 3; // 8bit
         break;
     }
 
@@ -97,12 +77,14 @@ static char *proper_register(Type *ty, RegKind kind)
         size = ty->size;
     }
 
+    int index = size_to_regindex(size);
+
     switch (kind)
     {
     case REG_RAX:
-        return s_to_rax(size);
+        return raxreg[index];
     case REG_RDI:
-        return s_to_rdi(size);
+        return rdireg[index];
     }
 
     error("サポートしていないレジスターです");
@@ -113,9 +95,22 @@ static void push()
     printf("  push rax\n");
 }
 
+static void push_rdi() {
+    printf("  push rdi\n");
+}
+
+static void push_num(int num) {
+    printf("  push %d\n", num);
+}
+
 static void pop()
 {
     printf("  pop rax\n");
+}
+
+static void pop_rdi()
+{
+    printf("  pop rdi\n");
 }
 
 static void assign_lvar_offsets()
@@ -124,11 +119,6 @@ static void assign_lvar_offsets()
     {
         funcs[i]->stack_size = funcs[i]->locals->offset;
     }
-}
-
-static int firstElOffset(LVar *lvar)
-{
-    return lvar->offset;
 }
 
 // 左辺値は変数である必要がある
@@ -140,7 +130,7 @@ static void gen_lval(Node *node)
         error("代入の左辺値が変数ではありません");
     }
     printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", firstElOffset(node->lvar));
+    printf("  sub rax, %d\n", node->lvar->offset);
     push();
 }
 
@@ -182,7 +172,7 @@ static void gen(Node *node)
     switch (node->kind)
     {
     case ND_NUM:
-        printf("  push %d\n", node->val);
+        push_num(node->val);
         return;
     case ND_LVAR:
         gen_lval(node);
@@ -204,11 +194,11 @@ static void gen(Node *node)
     case ND_ASSIGN:
         gen_addr(node->lhs);
         gen(node->rhs);
-        printf("  pop rdi\n");
+        pop_rdi();
         pop();
         add_type(node->lhs);
         printf("  mov [rax], %s\n", proper_register(node->lhs->type, REG_RDI));
-        printf("  push rdi\n");
+        push_rdi();
         return;
     case ND_RETURN:
         gen(node->lhs);
@@ -303,7 +293,7 @@ static void gen(Node *node)
     gen(node->lhs);
     gen(node->rhs);
 
-    printf("  pop rdi\n");
+    pop_rdi();
     pop();
 
     switch (node->kind)

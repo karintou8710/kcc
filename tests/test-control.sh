@@ -80,12 +80,14 @@ assert 3 'int main() {int x;int *y;y = &x;*y = 3;return x;}'
 assert 10 'int main() {int a;int *b;int **c;int ***d;d = &c;c = &b;b = &a;a = 10;return ***d;}'
 assert 2 'int main() {int *p;alloc4(&p, 1, 2, 4, 8);int *q;q = p + 1;return *q;}'
 assert 4 'int main() {int *p;alloc4(&p, 1, 2, 4, 8);int *q;q = p + 3; q = q - 1;return *q;}'
+assert 10 'int ptr(int *a) {*a = 10;return 0;} int main() {int b;b = 1;ptr(&b);return b;}'
 
 # sizeof
 assert 4 'int main() {int x;return sizeof x;}'
 assert 4 'int main() {int x;return sizeof(x);}'
 assert 12 'int main() {int x;int *y;return sizeof(x) + sizeof(y);}'
 assert 4 'int main() {int *x;return sizeof(*x);}'
+assert 20 'int main() {int a[5]; return sizeof(a);}'
 
 # 配列
 assert 3 'int main() {int a[2];*a = 1;*(a + 1) = 2;int *p;p = a;return *p + *(p + 1);}'

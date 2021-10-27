@@ -3,7 +3,6 @@
 void init() {
     label_if_count = 0;   // ifのラベルにつけるユニークな値
     label_loop_count = 0; // loopのラベルにつけるユニークな値
-    block_count = 0;
 }
 
 int main(int argc, char **argv) {
