@@ -472,6 +472,9 @@ static Node *stmt()
     else if (consume_nostep('{'))
     {
         node = compound_stmt();
+    } else if (consume(';')) {
+        node = new_node(ND_BLOCK);
+        node->stmts = new_vec();
     }
     else
     {
