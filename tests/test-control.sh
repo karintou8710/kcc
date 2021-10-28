@@ -96,7 +96,7 @@ assert 20 'int main() {int a[5]; return sizeof(a);}'
 # 配列
 assert 3 'int main() {int a[2];*a = 1;*(a + 1) = 2;int *p;p = a;return *p + *(p + 1);}'
 assert 6 'int main() {int a[3];*(a)=1;*(a+1)=2;*(a+2)=3;int i;int sum;
-            for (i=0;i<3;i=i+1) {sum = sum + *(a+i);} return sum;}'
+            for (i=0;i<3;i+=1) {sum += *(a+i);} return sum;}'
 
 # MOD
 assert 30 'int gcd(int a,int b){if(b==0){return a;}return gcd(b,a%b);}int main(){return gcd(630,300);}'

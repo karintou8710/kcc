@@ -509,7 +509,7 @@ static Node *expr()
     return assign();
 }
 
-// TODO: +=, -=, *=, /=, %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
+// TODO: %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
 // assign = equality ("=" assign)?
 static Node *assign()
 {
