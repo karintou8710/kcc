@@ -43,16 +43,25 @@ assert 0 'int main() {int a; a=2*3; if (a<5) return a+4; else return 0;}'
 assert 1 'int main() {int a; int n; a=1; n=0; if(a==1){n=1;} if(a==2){n=2;} return n; }'
 assert 3 'int main() {int sum;sum=1;if(sum%2!=0)
         {sum+=1;if(sum%2==0){sum+=1;}else{sum=0;}}else{sum = 0;}return sum;}'
+assert 30 'int main() {int a;a=10;if (a==10) {a=20;} if (a==20) {a=30;} return a;}'
 
 # while
 assert 10 'int main() {int i; i=0; while (i<10) i+=1; return i;}'
 assert 12 'int main() {int i;i=0;int j;while (i<10) 
         { j=0;while (j<3) {i+=1;j+=1;} } return i;}'
+assert 10 'int main() {int i;int sum;sum=0;i=0;while(i<5){sum+=1;i+=1;}
+        while(i<10){sum+=1;i+=1;} return sum;}'
 
 # for
 assert 10 'int main() {int a; int i; a=0; for(i=0;i<10;i+=1) a=a+1; return a;}'
+assert 6 'int main() {int i;int sum;sum=0;for(i=0;i<3;i+=1)
+        {sum+= 1;}for(i=0;i<3;i+=1){sum += 1;}return sum;}'
 assert 9 'int main() {int sum;int i;int j;for (i=0;i<3;i+=1) 
         {for (j=0;j<3;j+=1) {sum += 1;}} return sum;}'
+
+# for-while
+assert 5 'int main() {int i;int sum;sum=0;for(i=0;i<3;i+=1)
+        {sum+= 1;}while(i<5){sum+=1;i+=1;} return sum;}'
 
 # block
 assert 1 'int main() {return 1;}'

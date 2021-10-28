@@ -9,6 +9,21 @@ void p() {
     printf("Hello, World\n");
 }
 
+int int_scanf(int *a) {
+    printf("%d\n", *a);
+    int c;
+    scanf("%d", &c);
+    return c;
+}
+
+void new_line() {
+    puts("");
+}
+
+void int_print_cumma(int d) {
+    printf("%d,", d);
+}
+
 void int_print(int d) {
     printf("%d\n", d);
 }
