@@ -285,8 +285,14 @@ static void gen(Node *node)
             LVar *l = node->args->body[i];
             printf("  pop %s\n", argreg64[i]);
         }
+        // rspを16の倍数にアライメントしてからコールする
         printf("  mov rax, 0\n");
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  and rsp, -16\n");
         printf("  call %s\n", node->fn_name);
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
         push(); // 数合わせ
         return;
     }

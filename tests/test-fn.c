@@ -9,8 +9,7 @@ void p() {
     printf("Hello, World\n");
 }
 
-int int_scanf(int *a) {
-    printf("%d\n", *a);
+int int_scanf() {
     int c;
     scanf("%d", &c);
     return c;
