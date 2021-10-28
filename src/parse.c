@@ -30,6 +30,7 @@ static Node *relational();
 static Node *add();
 static Node *mul();
 static Node *unary();
+static Node *array_suffix();
 static Node *primary();
 
 /* 指定された演算子が来る可能性がある */
@@ -61,7 +62,6 @@ static void expect(int op)
         {
             error("適当な位置に型がありません");
         }
-
         error_at(token->str, "'%s'ではありません", op);
     }
     next_token();
@@ -410,7 +410,7 @@ static Node *compound_stmt()
 }
 
 // TODO: do~while,continue,break,switch,else if,
-/* stmt = expr ";"
+/* stmt = expr? ";"
  *     | "return" expr ";"
  *      | "if" "(" expr ")" stmt ("else" stmt)?
  *      | "while" "(" expr ")" stmt 
@@ -610,7 +610,6 @@ static Node *add()
     }
 }
 
-// TODO: %
 // mul = unary ("*" unary | "/" unary)*
 static Node *mul()
 {
@@ -636,21 +635,21 @@ static Node *mul()
 }
 
 // TODO: !(否定), 
-/* unary = "+"? primary
- *       | "-"? primary
- *       | "*" primary   ("*" unaryでもいい？)
- *       | "&" primary
+/* unary = "+"? array_suffix
+ *       | "-"? array_suffix
+ *       | "*" array_suffix   ("*" unaryでもいい？)
+ *       | "&" array_suffix
  *       | "sizeof" unary
  */
 static Node *unary()
 {
     if (consume('+'))
     {
-        return primary();
+        return array_suffix();
     }
     else if (consume('-'))
     {
-        return new_sub(new_node_num(0), primary());
+        return new_sub(new_node_num(0), array_suffix());
     }
     else if (consume('*'))
     {   
@@ -668,7 +667,7 @@ static Node *unary()
     else if (consume('&'))
     {
         Node *node = new_node(ND_ADDR);
-        node->lhs = primary();
+        node->lhs = array_suffix();
         add_type(node->lhs);
         node->lhs->type = new_ptr_type(node->lhs->type);
         return node;
@@ -679,7 +678,27 @@ static Node *unary()
         return node;
     }
 
-    return primary();
+    return array_suffix();
+}
+
+static Node *array_suffix() {
+    Node *node = primary();
+
+    if (consume('[')) {
+        Node *deref = new_node(ND_DEREF);
+        deref->lhs = new_add(node, expr());
+        add_type(deref->lhs);
+        Type *ty = deref->lhs->type;
+        if (!ty->ptr_to)
+        {
+            error("derefに失敗しました");
+        }
+        deref->type = ty->ptr_to;
+        expect(']');
+        return deref;
+    }
+
+    return node;
 }
 
 // funcall = "(" (expr ("," expr)*)? ")"

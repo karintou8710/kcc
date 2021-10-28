@@ -1,5 +1,10 @@
 #include "9cc.h"
 
+/*
+ * TODO: 型のキャスト、静的型チェック
+ *
+ */
+
 /* 固定長の型のサイズを返す */
 static int tykind_to_size(TypeKind tykind)
 {
@@ -76,7 +81,7 @@ void add_type(Node *node)
     if (node->type != NULL)
         return;
 
-    if (node->kind == ND_LVAR || node->kind == ND_DEREF)
+    if (node->kind == ND_LVAR)
     {
         node->type = node->lvar->type;
         return;

@@ -261,6 +261,7 @@ static void gen(Node *node)
         }
         printf("  jmp .Lbegin%04d\n", label_loop_count);
         printf(".Lend%04d:\n", label_loop_count);
+        label_loop_count++;
         return;
     case ND_BLOCK:
         for (int i = 0; i < node->stmts->len; i++)
