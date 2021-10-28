@@ -9,6 +9,10 @@ void p() {
     printf("Hello, World\n");
 }
 
+void int_print(int d) {
+    printf("%d\n", d);
+}
+
 int constant(int a) {
     return a;
 }

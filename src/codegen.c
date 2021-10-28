@@ -207,6 +207,7 @@ static void gen(Node *node)
         // returnは終了なので数合わせなし
         return;
     case ND_IF:
+        label_if_count++;
         gen(node->cond);
         pop();
         printf("  cmp rax, 0\n");
@@ -228,9 +229,10 @@ static void gen(Node *node)
             push(); // 数合わせ
         }
 
-        label_if_count++;
+        label_if_count--;
         return;
     case ND_WHILE:
+        label_loop_count++;
         printf(".Lbegin%04d:\n", label_loop_count);
         gen(node->cond);
         pop();
@@ -239,9 +241,10 @@ static void gen(Node *node)
         gen(node->body);
         printf("  jmp .Lbegin%04d\n", label_loop_count);
         printf(".Lend%04d:\n", label_loop_count);
-        label_loop_count++;
+        label_loop_count--;
         return;
     case ND_FOR:
+        label_loop_count++;
         if (node->init)
         {
             gen(node->init);
@@ -261,7 +264,7 @@ static void gen(Node *node)
         }
         printf("  jmp .Lbegin%04d\n", label_loop_count);
         printf(".Lend%04d:\n", label_loop_count);
-        label_loop_count++;
+        label_loop_count--;
         return;
     case ND_BLOCK:
         for (int i = 0; i < node->stmts->len; i++)

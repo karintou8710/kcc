@@ -202,6 +202,7 @@ static Node *new_add(Node *lhs, Node *rhs)
 
     if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_ARRAY)
     {
+        // ポインター型として演算
         node->lhs = new_mul(lhs, new_node_num(rhs->type->ptr_to->size));
         add_type(node->lhs);
         return node;
@@ -232,6 +233,7 @@ static Node *new_sub(Node *lhs, Node *rhs)
 
     if (lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_INT)
     {
+        // ポインター型として演算
         node->rhs = new_mul(rhs, new_node_num(lhs->type->ptr_to->size));
         add_type(node->rhs);
         return node;
@@ -277,7 +279,8 @@ static Node *new_div(Node *lhs, Node *rhs)
     error("実行できない型による演算です(DIV)");
 }
 
-static Node *new_mod(Node *lhs, Node *rhs) {
+static Node *new_mod(Node *lhs, Node *rhs)
+{
     add_type(lhs);
     add_type(rhs);
 
@@ -359,7 +362,22 @@ static Type *declaration_specifier()
     return type;
 }
 
-// func_define = declaration_specifier ident "(" (declaration_specifier ident ("," declaration_specifier ident)*)? ")" compound_stmt
+// type_suffix = "[" num "]" type_suffix | ε
+static Type *type_suffix(Type *type)
+{   
+    if (consume('[')) {
+        int array_size = expect_number();
+        expect(']');
+        type = new_array_type(type_suffix(type), array_size);
+    }
+    
+    return type;
+}
+
+// func_define = declaration_specifier ident "("
+// (declaration_specifier ident ("," declaration_specifier ident)*)? ")" compound_stmt
+//
+// 
 static Function *func_define()
 {
     Type *type = declaration_specifier();
@@ -413,7 +431,7 @@ static Node *compound_stmt()
 /* stmt = expr? ";"
  *     | "return" expr ";"
  *      | "if" "(" expr ")" stmt ("else" stmt)?
- *      | "while" "(" expr ")" stmt 
+ *      | "while" "(" expr ")" stmt
  *      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
  *      | compound_stmt
  */
@@ -472,7 +490,9 @@ static Node *stmt()
     else if (consume_nostep('{'))
     {
         node = compound_stmt();
-    } else if (consume(';')) {
+    }
+    else if (consume(';'))
+    {
         node = new_node(ND_BLOCK);
         node->stmts = new_vec();
     }
@@ -488,7 +508,7 @@ static Node *stmt()
 // TODO: とりあえず一次元の配列だけを定義する
 // TODO: 多次元配列に対応
 // exprは一つの式で型の伝搬は大体ここまでありそう
-// expr = assign | declaration_specifier ident ("[" num "]")?
+// expr = assign | declaration_specifier ident type_suffix
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
@@ -496,13 +516,12 @@ static Node *expr()
         Type *type = declaration_specifier();
         Node *node = declear_node_ident(token, type);
         next_token();
-        if (consume('['))
-        {
-            int array_size = expect_number();
-            node->lvar->type = new_array_type(node->lvar->type, array_size);
-            node->lvar->offset = sizeOfType(node->lvar->type);
-            expect(']');
+        if (consume_nostep('[')) {
+            node->lvar->type = type_suffix(node->lvar->type);
+            // 新しい型のオフセットにする
+            node->lvar->offset += sizeOfType(node->lvar->type) - sizeOfType(type);
         }
+        
         return node;
     }
 
@@ -627,7 +646,9 @@ static Node *mul()
         else if (consume('/'))
         {
             node = new_div(node, unary());
-        } else if (consume('%')) {
+        }
+        else if (consume('%'))
+        {
             node = new_mod(node, unary());
         }
         else
@@ -637,7 +658,7 @@ static Node *mul()
     }
 }
 
-// TODO: !(否定), 
+// TODO: !(否定),
 /* unary = "+"? array_suffix
  *       | "-"? array_suffix
  *       | "*" array_suffix   ("*" unaryでもいい？)
@@ -655,16 +676,11 @@ static Node *unary()
         return new_sub(new_node_num(0), array_suffix());
     }
     else if (consume('*'))
-    {   
+    {
         Node *node = new_node(ND_DEREF);
         node->lhs = unary();
         add_type(node->lhs);
-        Type *ty = node->lhs->type;
-        if (!ty->ptr_to)
-        {
-            error("derefに失敗しました");
-        }
-        node->type = ty->ptr_to;
+        add_type(node);
         return node;
     }
     else if (consume('&'))
@@ -684,21 +700,19 @@ static Node *unary()
     return array_suffix();
 }
 
-static Node *array_suffix() {
+// array_suffix = primary ("[" expr "]")*
+static Node *array_suffix()
+{
     Node *node = primary();
 
-    if (consume('[')) {
+    while (consume('['))
+    {
         Node *deref = new_node(ND_DEREF);
         deref->lhs = new_add(node, expr());
         add_type(deref->lhs);
-        Type *ty = deref->lhs->type;
-        if (!ty->ptr_to)
-        {
-            error("derefに失敗しました");
-        }
-        deref->type = ty->ptr_to;
+        add_type(deref);
         expect(']');
-        return deref;
+        node = deref;
     }
 
     return node;

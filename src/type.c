@@ -60,15 +60,6 @@ Type *new_array_type(Type *ptr_to, int array_size)
 
 /* キャスト */
 
-/* 配列型からポインターへキャスト */
-Type *cast_array_to_ptr(Type *ptr)
-{
-    while (ptr->ptr_to)
-        ptr = ptr->ptr_to;
-    Type *ty = new_ptr_type(new_type(ptr->kind));
-    return ty;
-}
-
 
 /*
  * 必要なノードが型を持つことを保証するようにする
@@ -84,6 +75,16 @@ void add_type(Node *node)
     if (node->kind == ND_LVAR)
     {
         node->type = node->lvar->type;
+        return;
+    }
+
+    if (node->kind == ND_DEREF) {
+        Type *ty = node->lhs->type;
+        if (!ty->ptr_to)
+        {
+            error("derefに失敗しました");
+        }
+        node->type = ty->ptr_to;
         return;
     }
 
@@ -118,7 +119,7 @@ void add_type(Node *node)
 
         if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_ARRAY)
         {
-            node->type = cast_array_to_ptr(rhs->type); // 暗黙にポインター型にキャスト
+            node->type = rhs->type;
             return;
         }
 
@@ -142,7 +143,7 @@ void add_type(Node *node)
 
         if (lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_INT)
         {
-            node->type = cast_array_to_ptr(rhs->type); // 暗黙にポインター型にキャスト
+            node->type = rhs->type;
             return;
         }
 
