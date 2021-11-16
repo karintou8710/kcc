@@ -189,6 +189,10 @@ static void gen(Node *node)
     case ND_NUM:
         push_num(node->val);
         return;
+    case ND_STRING:
+        printf("  lea rax, [rip+.LC%d]\n", node->val);
+        push();
+        return;
     case ND_VAR:
         gen_lval(node);
         pop();
@@ -376,6 +380,13 @@ void codegen()
     for (Var *var = globals; var != NULL; var = var->next) {
         printf("%s:\n", var->name);
         printf("  .zero %d\n", var->type->size);
+    }
+
+    // 文字列リテラルの生成
+    for (int i = 0; i<string_literal->len; i++) {
+        Token *tok = (Token *)string_literal->body[i];
+        printf(".LC%d:\n", tok->str_literal_index);
+        printf("  .string \"%s\"\n", tok->str);
     }
 
     printf(".text\n");

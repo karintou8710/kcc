@@ -64,7 +64,7 @@ static void expect(int op)
     {
         if (op == TK_TYPE)
         {
-            error("適当な位置に型がありません");
+            error("%d 適当な位置に型がありません", op);
         }
         error_at(token->str, "'%s'ではありません", op);
     }
@@ -77,7 +77,7 @@ static void expect_nostep(int op)
     {
         if (op == TK_TYPE)
         {
-            error("適当な位置に型がありません");
+            error("%d 適当な位置に型がありません", op);
         }
 
         error_at(token->str, "'%s'ではありません", op);
@@ -785,7 +785,7 @@ static Node *funcall(Token *tok)
     return node;
 }
 
-// primary = "(" expr ")" | num | ident funcall?
+// primary = "(" expr ")" | num | string | ident funcall?
 static Node *primary()
 {
     if (consume('('))
@@ -808,6 +808,15 @@ static Node *primary()
         {
             node = get_node_ident(tok);
         }
+        return node;
+    }
+
+    if (consume_nostep(TK_STRING))
+    {
+        Node *node = new_node(ND_STRING);
+        node->str_literal = token->str;
+        node->val = token->str_literal_index;
+        next_token();
         return node;
     }
 

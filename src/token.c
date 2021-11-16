@@ -15,6 +15,7 @@ Token *tokenize(char *p)
     Token head;
     head.next = NULL;
     Token *cur = &head;
+    string_literal = new_vec();
 
     while (*p)
     {
@@ -93,6 +94,22 @@ Token *tokenize(char *p)
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            continue;
+        }
+
+        if (*p == '\"') {
+            p++;
+            cur = new_token(TK_STRING, cur, p, 0);
+            char *q = p;
+            int len = 0;
+            while (*p && *p != '"') {
+                len++; p++;
+            }
+            p++;
+            cur->str = my_strndup(q, len);
+            cur->len = p - q - 1;
+            cur->str_literal_index = string_literal->len;
+            vec_push(string_literal, cur);
             continue;
         }
 

@@ -116,6 +116,12 @@ void add_type(Node *node)
         return;
     }
 
+    if (node->kind == ND_STRING)
+    {
+        node->type = new_ptr_type(new_type(TYPE_CHAR));
+        return;
+    }
+
     if (node->kind == ND_CALL)
     {
         /* TODO: とりあえずINT型だけど、関数の戻り値の型に直す */

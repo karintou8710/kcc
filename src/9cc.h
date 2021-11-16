@@ -46,20 +46,21 @@ typedef enum
     TK_IDENT,     // ident
     TK_EQ,        // ==
     TK_NE,        // !=
-    TK_LE,        // <=
+    TK_LE,        // <= 260
     TK_GE,        // >=
     TK_ADD_EQ,    // +=
     TK_SUB_EQ,    // -=
     TK_MUL_EQ,    // *=
-    TK_DIV_EQ,    // /=
+    TK_DIV_EQ,    // /= 265
     TK_RETURN,    // return
     TK_IF,        // if
     TK_ELSE,      // else
     TK_FOR,       // for
-    TK_WHILE,     // while
+    TK_WHILE,     // while 270
     TK_EOF,       // eof
     TK_TYPE,      // int
     TK_SIZEOF,    // sizeof
+    TK_STRING,    // string
 } TokenKind;
 
 typedef struct Token Token;
@@ -70,6 +71,7 @@ struct Token
     Token *next;    //
     int val;        //
     char *str;      //
+    int str_literal_index; //
     int len;        //
 };
 
@@ -109,7 +111,8 @@ typedef enum
     ND_BLOCK,  // block {}
     ND_CALL,   // call
     ND_ADDR,   // & アドレス
-    ND_DEREF   // * ポインタ
+    ND_DEREF,  // * ポインタ
+    ND_STRING  // string literal
 } NodeKind;
 
 typedef struct Node Node;
@@ -118,9 +121,10 @@ struct Node
     NodeKind kind;
     Node *lhs;     // 左辺
     Node *rhs;     // 右辺
-    int val;       // ND_NUMの時に使う
+    int val;       // ND_NUM ND_STRINGの時に使う
     Var *var;     // kindがND_VARの場合のみ使う
     char *fn_name; //
+    char *str_literal; // ND_STRINGのときに使う
     Vector *args;  //
     Vector *stmts; //
     Type *type;    // 型
@@ -187,6 +191,7 @@ int is_numtype(TypeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 
 // グローバル変数
+Vector *string_literal;
 Var *globals;
 Token *token;         // tokenは単方向の連結リスト
 char *user_input;     // 入力プログラム

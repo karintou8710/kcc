@@ -129,4 +129,7 @@ assert 2 'int arr[3][3];int glo() {int i;int j;for (i=0;i<3;i+=1) {for (j=0;j<3;
 # char
 assert 3 'int main() {char x[3];x[0] = -1;x[1] = 2;int y;y = 4;return x[0] + y;}'
 
+# string_literal
+assert 0 'int main() {char *a;a = "Hello, C-compiler\n";printf("%s\n", a);return 0;}'
+
 echo OK
