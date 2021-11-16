@@ -25,9 +25,12 @@ typedef enum
     REG_RDI,
 } RegKind;
 
-static char *get_argreg(int index, int size)
+static char *get_argreg(int index, Type *ty)
 {
-    switch (size)
+    if (ty->kind == TYPE_ARRAY) 
+        return argreg64[index];
+
+    switch (ty->size)
     {
     case 8:
         return argreg64[index];
@@ -43,7 +46,7 @@ static char *get_argreg(int index, int size)
         break;
     }
 
-    error("サポートしてない引数です。");
+    error("size: %d はサポートしてない引数です。", ty->size);
 }
 
 static int size_to_regindex(int size)
@@ -407,7 +410,9 @@ void codegen()
         {
             printf("  mov rax, rbp\n");
             printf("  sub rax, %d\n", var->offset);
-            printf("  mov [rax], %s\n", get_argreg(j++, var->type->size));
+            Type *ty = var->type;
+            if (var->type->kind == TYPE_ARRAY) ty = new_ptr_type(var->type);
+            printf("  mov [rax], %s\n", get_argreg(j++, ty));
         }
 
         gen(current_fn->body);

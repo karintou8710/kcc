@@ -435,6 +435,13 @@ static Var *declaration_param(Var *cur) {
     lvar->len = tok->len;
     lvar->type = type;
     lvar->offset = cur->offset + sizeOfType(lvar->type);
+    if (consume_nostep('['))
+    {
+        // ポインタとして受け取る
+        lvar->type = type_suffix(lvar->type);
+        // 新しい型のオフセットにする
+        lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
+    }
     return lvar;
 }
 
@@ -458,9 +465,16 @@ static Function *func_define(Type *type)
         {
             expect(',');
         }
-        
-        cur = cur->next = declaration_param(cur);
+        Var *p = declaration_param(cur);
+        // 配列型は暗黙にポインターとして扱う
+        if (p->type->kind == TYPE_ARRAY) {
+            Type *t = p->type;
+            p->type = new_ptr_type(t->ptr_to);
+            p->offset += sizeOfType(p->type) - sizeOfType(t);
+        }
+        cur = cur->next = p;
     }
+
     fn->params = head.next; // 前から見ていく
     locals = calloc(1, sizeof(Var));
     locals->offset = 0;
