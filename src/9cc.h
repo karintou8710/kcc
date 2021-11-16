@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 /*
  * ~ 構造体 ~
@@ -161,7 +162,7 @@ void str_advanve(char **p);
 void next_token();
 Token *get_nafter_token(int n);
 bool startsWith(char *p, char *q);
-void error_at(char *loc, char *fmt, ...);
+void error_at(char *loc, char *msg);
 void error(char *fmt, ...);
 char *my_strndup(const char *s, size_t n);
 void swap(void **p, void **q);
@@ -195,6 +196,7 @@ Vector *string_literal;
 Var *globals;
 Token *token;         // tokenは単方向の連結リスト
 char *user_input;     // 入力プログラム
+char *file_name;
 Function *funcs[100]; // TODO: Vectorに対応する
 int label_if_count;   // ifのラベル
 int label_loop_count; // forとwhileのラベル

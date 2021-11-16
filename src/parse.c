@@ -66,7 +66,7 @@ static void expect(int op)
         {
             error("%d 適当な位置に型がありません", op);
         }
-        error_at(token->str, "'%s'ではありません", op);
+        error_at(token->str, "適切な演算子ではありません");
     }
     next_token();
 }
@@ -80,7 +80,7 @@ static void expect_nostep(int op)
             error("%d 適当な位置に型がありません", op);
         }
 
-        error_at(token->str, "'%s'ではありません", op);
+        error_at(token->str, "適切な演算子ではありません");
     }
 }
 
