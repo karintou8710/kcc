@@ -24,6 +24,7 @@ struct Vector
 /* 型の定義 */
 typedef enum
 {
+    TYPE_CHAR,
     TYPE_INT,
     TYPE_PTR,
     TYPE_ARRAY,
@@ -182,6 +183,8 @@ Type *new_ptr_type(Type *ptr_to);
 Type *new_array_type(Type *ptr_to, int size);
 void add_type(Node *node);
 int sizeOfType(Type *ty);
+int is_numtype(TypeKind kind);
+TypeKind large_numtype(Type *t1, Type *t2);
 
 // グローバル変数
 Var *globals;

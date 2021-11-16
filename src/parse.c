@@ -205,19 +205,19 @@ static Node *new_add(Node *lhs, Node *rhs)
 
     Node *node = new_binop(ND_ADD, lhs, rhs);
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
     {
         return node;
     }
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)
+    if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
     {
         node->lhs = new_mul(lhs, new_node_num(rhs->type->ptr_to->size));
         add_type(node->lhs);
         return node;
     }
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_ARRAY)
+    if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
     {
         // ポインター型として演算
         node->lhs = new_mul(lhs, new_node_num(rhs->type->ptr_to->size));
@@ -236,19 +236,19 @@ static Node *new_sub(Node *lhs, Node *rhs)
     // lhsとrhsの順番に関係あり
     Node *node = new_binop(ND_SUB, lhs, rhs);
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
     {
         return node;
     }
 
-    if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT)
+    if (lhs->type->kind == TYPE_PTR && is_numtype(rhs->type->kind))
     {
         node->rhs = new_mul(rhs, new_node_num(lhs->type->ptr_to->size));
         add_type(node->rhs);
         return node;
     }
 
-    if (lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_INT)
+    if (lhs->type->kind == TYPE_ARRAY && is_numtype(rhs->type->kind))
     {
         // ポインター型として演算
         node->rhs = new_mul(rhs, new_node_num(lhs->type->ptr_to->size));

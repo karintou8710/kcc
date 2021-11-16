@@ -172,6 +172,11 @@ static void load(Type *ty)
         return;
     }
 
+    if (ty->kind == TYPE_CHAR) {
+        printf("  movzx eax, BYTE PTR [rax]\n");
+        return;
+    }
+
     printf("  mov %s, [rax]\n", proper_register(ty, REG_RAX));
 }
 

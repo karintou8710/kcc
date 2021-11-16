@@ -10,6 +10,9 @@ static int tykind_to_size(TypeKind tykind)
 {
     switch (tykind)
     {
+    case TYPE_CHAR:
+        return 1;
+        break;
     case TYPE_INT:
         return 4;
         break;
@@ -56,6 +59,25 @@ Type *new_array_type(Type *ptr_to, int array_size)
     ty->array_size = array_size;
     ty->ptr_to = ptr_to;
     return ty;
+}
+
+int is_numtype(TypeKind kind) {
+    return (
+        kind == TYPE_CHAR ||
+        kind == TYPE_INT
+    );
+}
+
+TypeKind large_numtype(Type *t1, Type *t2) {
+    if (!is_numtype(t1->kind) || !is_numtype(t2->kind)) {
+        error("整数の型ではありません。\n");
+    }
+
+    if (t1->size >= t2->size) {
+        return t1->kind;
+    } else {
+        return t2->kind;
+    }
 }
 
 /* キャスト */
@@ -105,19 +127,19 @@ void add_type(Node *node)
     if (node->kind == ND_ADD)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+        if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
         {
-            node->type = new_type(TYPE_INT);
+            node->type = new_type(large_numtype(lhs->type, rhs->type));
             return;
         }
 
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)
+        if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
         {
             node->type = rhs->type;
             return;
         }
 
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_ARRAY)
+        if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
         {
             node->type = rhs->type;
             return;
@@ -129,19 +151,20 @@ void add_type(Node *node)
     if (node->kind == ND_SUB)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+
+        if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
         {
-            node->type = new_type(TYPE_INT);
+            node->type = new_type(large_numtype(lhs->type, rhs->type));
             return;
         }
 
-        if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT)
+        if (lhs->type->kind == TYPE_PTR && is_numtype(lhs->type->kind))
         {
             node->type = rhs->type;
             return;
         }
 
-        if (lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_INT)
+        if (lhs->type->kind == TYPE_ARRAY && is_numtype(lhs->type->kind))
         {
             node->type = rhs->type;
             return;
