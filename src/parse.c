@@ -4,7 +4,7 @@
  * ローカル変数を単方向の連結リストで持つ
  * localsは後に出たローカル変数のポインタを持つ
  */
-static LVar *locals;
+static Var *locals;
 
 /* nodeの生成 */
 static Node *new_add(Node *lhs, Node *rhs);
@@ -13,13 +13,16 @@ static Node *new_mul(Node *lhs, Node *rhs);
 static Node *new_div(Node *lhs, Node *rhs);
 static Node *new_mod(Node *lhs, Node *rhs);
 static Node *new_node_num(int val);
-static LVar *new_lvar(Token *tok, Type *type);
-static void create_lvar_from_params(LVar *params);
-static LVar *find_lvar(Token *tok);
+static Var *new_lvar(Token *tok, Type *type);
+static Var *new_gvar(Token *tok, Type *type);
+static void create_lvar_from_params(Var *params);
+static Var *find_var(Token *tok, bool is_global);
 
 /* AST */
 static Type *declaration_specifier();
-static LVar *new_lvar(Token *tok, Type *type);
+static Node *declaration_global(Type *type);
+static Node *declaration_var(Type *type, bool is_global);
+static Var *declaration_param(Var *cur);
 static Function *func_define();
 static Node *compound_stmt();
 static Node *stmt();
@@ -31,6 +34,7 @@ static Node *add();
 static Node *mul();
 static Node *unary();
 static Node *array_suffix();
+static Type *type_suffix(Type *type);
 static Node *primary();
 
 /* 指定された演算子が来る可能性がある */
@@ -104,11 +108,11 @@ static int sizeOfNode(Node *node)
 }
 
 /* ローカル変数の作成 */
-static LVar *new_lvar(Token *tok, Type *type)
+static Var *new_lvar(Token *tok, Type *type)
 {
-    LVar *lvar = calloc(1, sizeof(LVar));
+    Var *lvar = calloc(1, sizeof(Var));
     lvar->next = locals;
-    lvar->name = tok->str;
+    lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
     lvar->type = type;
     lvar->offset = locals->offset + sizeOfType(type);
@@ -116,14 +120,26 @@ static LVar *new_lvar(Token *tok, Type *type)
     return lvar;
 }
 
+static Var *new_gvar(Token *tok, Type *type)
+{
+    Var *gvar = calloc(1, sizeof(Var));
+    gvar->next = globals;
+    gvar->name = my_strndup(tok->str, tok->len);
+    gvar->len = tok->len;
+    gvar->type = type;
+    gvar->is_global = true;
+    globals = gvar; // globalsを新しいグローバル変数に更新
+    return gvar;
+}
+
 // TODO: 引数に適切な型をつけるようにする
 /* 引数からローカル変数を作成する(前から見ていく) */
-static void create_lvar_from_params(LVar *params)
+static void create_lvar_from_params(Var *params)
 {
     if (!params)
         return;
 
-    LVar *lvar = calloc(1, sizeof(LVar));
+    Var *lvar = calloc(1, sizeof(Var));
     lvar->name = params->name;
     lvar->len = params->len;
     lvar->type = params->type;
@@ -135,9 +151,10 @@ static void create_lvar_from_params(LVar *params)
 }
 
 /* 既に定義されたローカル変数を検索 */
-static LVar *find_lvar(Token *tok)
+static Var *find_var(Token *tok, bool is_global)
 {
-    for (LVar *var = locals; var; var = var->next)
+    Var *vars = is_global ? globals : locals;
+    for (Var *var = vars; var; var = var->next)
     {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
         {
@@ -302,32 +319,36 @@ static Node *new_node_num(int val)
     return node;
 }
 
-/* ローカル変数を宣言 */
-static Node *declear_node_ident(Token *tok, Type *type)
+/* 変数を宣言 */
+static Node *declear_node_ident(Token *tok, Type *type, bool is_global)
 {
-    Node *node = new_node(ND_LVAR);
-    LVar *lvar = find_lvar(tok);
-    if (lvar)
+    Node *node = new_node(ND_VAR);
+    Var *var = find_var(tok, is_global);
+    if (var)
     {
         error("既に宣言済みです");
     }
 
-    lvar = new_lvar(tok, type);
-    node->lvar = lvar;
+    var = is_global ? new_gvar(tok, type) : new_lvar(tok, type);
+    node->var = var;
     return node;
 }
 
-// ローカル変数のノードを取得
+// 変数のノードを取得
 static Node *get_node_ident(Token *tok)
 {
-    Node *node = new_node(ND_LVAR);
-    LVar *lvar = find_lvar(tok);
-    if (!lvar)
+    Node *node = new_node(ND_VAR);
+    Var *var;
+    var = find_var(tok, false); // ローカル変数を取得
+    if (!var)
     {
-        error("宣言されていません");
+        var = find_var(tok, true); // グローバル変数から取得
+        if (!var) {
+            error("宣言されていません");
+        }
     }
 
-    node->lvar = lvar;
+    node->var = var;
     return node;
 }
 
@@ -337,15 +358,44 @@ static Node *get_node_ident(Token *tok)
 /******                         ******/
 /*************************************/
 
-// program = func_define*
+// program = ( declaration_global | func_define )*
+// 関数かどうかの先読みが必要
 void program()
 {
     int i = 0;
     while (!at_eof())
     {
-        funcs[i++] = func_define();
+        Type *type = declaration_specifier();
+        Token *t = get_nafter_token(1);
+        if (t->kind == '(') {
+            funcs[i++] = func_define(type);
+        } else {
+            Node *node = declaration_global(type);
+        }
+        
     }
     funcs[i] = NULL;
+}
+
+// declaration_global = declaration_var ";"
+static Node *declaration_global(Type *type) {
+    Node *node = declaration_var(type, true);
+    expect(';');
+    return node;
+}
+
+// declaration_var = declaration_specifier ident type_suffix
+static Node *declaration_var(Type *type, bool is_global) {
+    Node *node = declear_node_ident(token, type, is_global);
+    next_token();
+    if (consume_nostep('['))
+    {
+        node->var->type = type_suffix(node->var->type);
+        // 新しい型のオフセットにする
+        node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
+    }
+
+    return node;
 }
 
 // declaration_specifier = int "*"*
@@ -364,27 +414,40 @@ static Type *declaration_specifier()
 
 // type_suffix = "[" num "]" type_suffix | ε
 static Type *type_suffix(Type *type)
-{   
-    if (consume('[')) {
+{
+    if (consume('['))
+    {
         int array_size = expect_number();
         expect(']');
         type = new_array_type(type_suffix(type), array_size);
     }
-    
+
     return type;
 }
 
-// func_define = declaration_specifier ident "("
-// (declaration_specifier ident ("," declaration_specifier ident)*)? ")" compound_stmt
-//
-// 
-static Function *func_define()
-{
+// declaration_param = declaration_specifier ident type_suffix
+static Var *declaration_param(Var *cur) {
     Type *type = declaration_specifier();
+    Token *tok = token;
+    expect(TK_IDENT);
+    Var *lvar = calloc(1, sizeof(Var));
+    lvar->name = tok->str;
+    lvar->len = tok->len;
+    lvar->type = type;
+    lvar->offset = cur->offset + sizeOfType(lvar->type);
+    return lvar;
+}
+
+// func_define = declaration_specifier ident "("
+// (declaration_param ("," declaration_param)* )? ")" compound_stmt
+//
+//
+static Function *func_define(Type *type)
+{
     Function *fn = calloc(1, sizeof(Function));
     Token *tok = token;
-    LVar head = {};
-    LVar *cur = &head; // 引数の単方向連結リスト
+    Var head = {};
+    Var *cur = &head; // 引数の単方向連結リスト
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
@@ -395,18 +458,11 @@ static Function *func_define()
         {
             expect(',');
         }
-        Type *type = declaration_specifier();
-        tok = token;
-        expect(TK_IDENT);
-        LVar *lvar = calloc(1, sizeof(LVar));
-        lvar->name = tok->str;
-        lvar->len = tok->len;
-        lvar->type = type;
-        lvar->offset = cur->offset + sizeOfType(lvar->type);
-        cur = cur->next = lvar;
+        
+        cur = cur->next = declaration_param(cur);
     }
     fn->params = head.next; // 前から見ていく
-    locals = calloc(1, sizeof(LVar));
+    locals = calloc(1, sizeof(Var));
     locals->offset = 0;
     create_lvar_from_params(fn->params);
     fn->body = compound_stmt();
@@ -508,20 +564,13 @@ static Node *stmt()
 // TODO: とりあえず一次元の配列だけを定義する
 // TODO: 多次元配列に対応
 // exprは一つの式で型の伝搬は大体ここまでありそう
-// expr = assign | declaration_specifier ident type_suffix
+// expr = assign | declaration_var
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
     {
         Type *type = declaration_specifier();
-        Node *node = declear_node_ident(token, type);
-        next_token();
-        if (consume_nostep('[')) {
-            node->lvar->type = type_suffix(node->lvar->type);
-            // 新しい型のオフセットにする
-            node->lvar->offset += sizeOfType(node->lvar->type) - sizeOfType(type);
-        }
-        
+        Node *node = declaration_var(type, false);
         return node;
     }
 

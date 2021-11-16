@@ -121,4 +121,9 @@ assert 5 'int main() {int a[3][3];int i;int j;for (i=0;i<3;i+=1)
 # MOD
 assert 30 'int gcd(int a,int b){if(b==0){return a;}return gcd(b,a%b);}int main(){return gcd(630,300);}'
 assert 1 'int main(){int a;int b;int c;a=100;b=21;c=3;return a%b%c;}'
+
+# global
+assert 3 'int a;int glo() {a = 2;}int main() {int a;a=1;int b;b = glo(); a+b;}'
+assert 2 'int arr[3][3];int glo() {int i;int j;for (i=0;i<3;i+=1) {for (j=0;j<3;j+=1) {arr[i][j] = i+j;}}}int main() {glo(); return arr[1][1];}'
+
 echo OK

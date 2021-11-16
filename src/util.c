@@ -59,9 +59,13 @@ void next_token()
     token = token->next;
 }
 
-Token *get_next_token()
+Token *get_nafter_token(int n)
 {
-    return token->next;
+    Token *t = token;
+    for (int i=0;i<n;i++) {
+        t = t->next;
+    }
+    return t;
 }
 
 // n文字複製する

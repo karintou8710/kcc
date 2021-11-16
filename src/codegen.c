@@ -95,11 +95,13 @@ static void push()
     printf("  push rax\n");
 }
 
-static void push_rdi() {
+static void push_rdi()
+{
     printf("  push rdi\n");
 }
 
-static void push_num(int num) {
+static void push_num(int num)
+{
     printf("  push %d\n", num);
 }
 
@@ -125,12 +127,18 @@ static void assign_lvar_offsets()
 // ローカル変数のアドレスを生成
 static void gen_lval(Node *node)
 {
-    if (node->kind != ND_LVAR)
+    if (node->kind != ND_VAR)
     {
         error("代入の左辺値が変数ではありません");
     }
-    printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", node->lvar->offset);
+
+    if (node->var->is_global) {
+        printf("  lea rax, [rip+%s]\n", node->var->name);
+    } else {
+        printf("  mov rax, rbp\n");
+        printf("  sub rax, %d\n", node->var->offset);
+    }
+    
     push();
 }
 
@@ -142,7 +150,7 @@ static void gen_addr(Node *node)
         gen(node->lhs);
         return;
     }
-    else if (node->kind == ND_LVAR)
+    else if (node->kind == ND_VAR)
     {
         gen_lval(node);
         return;
@@ -176,7 +184,7 @@ static void gen(Node *node)
     case ND_NUM:
         push_num(node->val);
         return;
-    case ND_LVAR:
+    case ND_VAR:
         gen_lval(node);
         pop();
         add_type(node);
@@ -282,7 +290,7 @@ static void gen(Node *node)
         }
         for (int i = nargs - 1; i >= 0; i--)
         {
-            LVar *l = node->args->body[i];
+            Var *l = node->args->body[i];
             printf("  pop %s\n", argreg64[i]);
         }
         // rspを16の倍数にアライメントしてからコールする
@@ -358,6 +366,14 @@ void codegen()
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
 
+    printf(".data\n");
+    // グローバル変数の生成
+    for (Var *var = globals; var != NULL; var = var->next) {
+        printf("%s:\n", var->name);
+        printf("  .zero %d\n", var->type->size);
+    }
+
+    printf(".text\n");
     // 先頭の式から順にコード生成
     for (int i = 0; funcs[i]; i++)
     {
@@ -371,7 +387,7 @@ void codegen()
         printf("  sub rsp, %d\n", current_fn->stack_size);
 
         int j = 0;
-        for (LVar *var = current_fn->params; var; var = var->next)
+        for (Var *var = current_fn->params; var; var = var->next)
         {
             printf("  mov rax, rbp\n");
             printf("  sub rax, %d\n", var->offset);

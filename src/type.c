@@ -60,11 +60,10 @@ Type *new_array_type(Type *ptr_to, int array_size)
 
 /* キャスト */
 
-
 /*
  * 必要なノードが型を持つことを保証するようにする
  * 演算子の前にadd_typeが必要
- * ND_NUM, ND_CALL, ND_LVAR, ND_ADD,SUB,MUL,DIV,
+ * ND_NUM, ND_CALL, ND_VAR, ND_ADD,SUB,MUL,DIV,
  */
 void add_type(Node *node)
 {
@@ -72,13 +71,14 @@ void add_type(Node *node)
     if (node->type != NULL)
         return;
 
-    if (node->kind == ND_LVAR)
+    if (node->kind == ND_VAR)
     {
-        node->type = node->lvar->type;
+        node->type = node->var->type;
         return;
     }
 
-    if (node->kind == ND_DEREF) {
+    if (node->kind == ND_DEREF)
+    {
         Type *ty = node->lhs->type;
         if (!ty->ptr_to)
         {
