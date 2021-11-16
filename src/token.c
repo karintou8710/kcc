@@ -25,6 +25,20 @@ Token *tokenize(char *p)
             continue;
         }
 
+        if (strncmp(p, "//", 2) == 0) {
+            p += 2;
+            while (*p != '\n') p++;
+            continue;
+        }
+
+        if (strncmp(p, "/*", 2) == 0) {
+            p += 2;
+            char *q = strstr(p, "*/");
+            if (!q) error("ブロックコメントが閉じられていません");
+            p = q + 2;
+            continue; 
+        }
+
         if (startsWith(p, "=="))
         {
             cur = new_token(TK_EQ, cur, p, 2);
