@@ -593,6 +593,7 @@ static Node *expr()
 
 // TODO: %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
 // assign = equality ("=" assign)?
+//        | equality ( "+=" | "-=" | "*=" | "/=" | "%=" ) equality
 static Node *assign()
 {
     Node *node = equality();
@@ -615,6 +616,10 @@ static Node *assign()
     else if (consume(TK_DIV_EQ))
     {
         node = new_binop(ND_ASSIGN, node, new_binop(ND_DIV, node, equality()));
+    }
+    else if (consume(TK_MOD_EQ))
+    {
+        node = new_binop(ND_ASSIGN, node, new_binop(ND_MOD, node, equality()));
     }
     return node;
 }

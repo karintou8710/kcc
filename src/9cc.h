@@ -53,11 +53,12 @@ typedef enum
     TK_SUB_EQ,    // -=
     TK_MUL_EQ,    // *=
     TK_DIV_EQ,    // /= 265
+    TK_MOD_EQ,    // %= 
     TK_RETURN,    // return
     TK_IF,        // if
     TK_ELSE,      // else
     TK_FOR,       // for
-    TK_WHILE,     // while 270
+    TK_WHILE,     // while 
     TK_EOF,       // eof
     TK_TYPE,      // int
     TK_SIZEOF,    // sizeof

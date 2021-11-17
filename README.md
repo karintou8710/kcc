@@ -32,7 +32,7 @@ stmt   = expr? ";"
 
 expr = assign | declaration_var
 
-assign = equality ("=" assign)?
+assign = equality ("=" assign)? | equality ( "+=" | "-=" | "*=" | "/=" | "%=" ) equality
 
 equality = relational ("==" relational | "!=" relational)*
 

@@ -554,17 +554,7 @@ int mod2()
     return a % b % c;
 }
 
-// char
 int char1()
-{
-    char x;
-    x = -1;
-    int y;
-    y = 4;
-    return x + y;
-}
-
-int char3()
 {
     char x[3];
     x[0] = -1;
@@ -581,6 +571,14 @@ int string_literal1()
     a = "Hello, C-compiler\n";
     printf("%s\n", a);
     return 0;
+}
+
+// %=
+int assign_mod1() {
+    int a;
+    a = 10;
+    a %= 4;
+    return a;
 }
 
 int main()
@@ -666,6 +664,8 @@ int main()
     ASSERT(3, char1(), "char1");
 
     ASSERT(0, string_literal1(), "string_literal");
+
+    ASSERT(2, assign_mod1(), "assign_mod1");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;
