@@ -197,6 +197,6 @@ Var *globals;
 Token *token;         // tokenは単方向の連結リスト
 char *user_input;     // 入力プログラム
 char *file_name;
-Function *funcs[100]; // TODO: Vectorに対応する
+Function *funcs[1000]; // TODO: Vectorに対応する
 int label_if_count;   // ifのラベル
 int label_loop_count; // forとwhileのラベル

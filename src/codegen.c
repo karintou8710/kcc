@@ -176,7 +176,7 @@ static void load(Type *ty)
     }
 
     if (ty->kind == TYPE_CHAR) {
-        printf("  movzx eax, BYTE PTR [rax]\n");
+        printf("  movsx eax, BYTE PTR [rax]\n");
         return;
     }
 
