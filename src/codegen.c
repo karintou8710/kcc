@@ -181,7 +181,18 @@ static void load(Type *ty)
     }
 
     printf("  mov %s, [rax]\n", proper_register(ty, REG_RAX));
-    printf("  cdqe\n"); // 符号拡張
+    switch (ty->size)
+    {
+    case 4:
+        printf("  cdqe\n");
+        break;
+    case 2:
+        printf("  cwde\n");
+        break;
+    case 1:
+        printf("  cbw\n");
+        break;
+    }
 }
 
 static void gen(Node *node)

@@ -109,16 +109,18 @@ int assign5()
 }
 int assign6()
 {
-    int a; int b;
+    int a;
+    int b;
     a = 0;
-    b = (a=a+1) + (a=a+1);
+    b = (a = a + 1) + (a = a + 1);
     return b + a;
 }
 int assign7()
 {
-    int a; int b;
+    int a;
+    int b;
     a = 0;
-    b = (a=a-1) + (a=a-1);
+    b = (a = a - 1) + (a = a - 1);
     return b * a;
 }
 // if else
@@ -588,7 +590,8 @@ int string_literal1()
 }
 
 // %=
-int assign_mod1() {
+int assign_mod1()
+{
     int a;
     a = 10;
     a %= 4;
@@ -598,7 +601,8 @@ int assign_mod1() {
 // preinc
 int preinc1()
 {
-    int a; int b;
+    int a;
+    int b;
     a = 0;
     b = (++a) + (++a);
     return b + a;
@@ -609,7 +613,8 @@ int preinc2()
     int i;
     int sum;
     sum = 0;
-    for (i=0;i<10;++i) {
+    for (i = 0; i < 10; ++i)
+    {
         sum += i;
     }
     return sum;
@@ -618,7 +623,8 @@ int preinc2()
 // predec
 int predec1()
 {
-    int a; int b;
+    int a;
+    int b;
     a = 0;
     b = (--a) + (--a);
     return b * a;
@@ -628,7 +634,8 @@ int predec2()
     int i;
     int sum;
     sum = 0;
-    for (i=9;i>=0;--i) {
+    for (i = 9; i >= 0; --i)
+    {
         sum += i;
     }
     return sum;
