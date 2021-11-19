@@ -607,7 +607,6 @@ int preinc1()
     b = (++a) + (++a);
     return b + a;
 }
-
 int preinc2()
 {
     int i;
@@ -615,6 +614,24 @@ int preinc2()
     sum = 0;
     for (i = 0; i < 10; ++i)
     {
+        sum += i;
+    }
+    return sum;
+}
+
+// postinc
+int postinc1() {
+    int a; int b;
+    a = 0;
+    b = 0;
+    a = b++;
+    return a;
+}
+int postinc2() {
+    int i;
+    int sum;
+    sum = 0;
+    for (i=0;i<10;i++) {
         sum += i;
     }
     return sum;
@@ -636,6 +653,24 @@ int predec2()
     sum = 0;
     for (i = 9; i >= 0; --i)
     {
+        sum += i;
+    }
+    return sum;
+}
+
+// postdec
+int postdec1() {
+    int a; int b;
+    a = 0;
+    b = 0;
+    a = b--;
+    return a;
+}
+int postdec2() {
+    int i;
+    int sum;
+    sum = 0;
+    for (i=9;i>=0;i--) {
         sum += i;
     }
     return sum;
@@ -733,6 +768,11 @@ int main()
     ASSERT(45, preinc2(), "preinc2");
     ASSERT(6, predec1(), "predec1");
     ASSERT(45, predec2(), "predec2");
+
+    ASSERT(0, postinc1(), "postinc1");
+    ASSERT(45, postinc2(), "postinc2");
+    ASSERT(0, postdec1(), "postdec1");
+    ASSERT(45, postdec2(), "postdec2");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;

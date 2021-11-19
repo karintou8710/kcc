@@ -787,7 +787,19 @@ static Node *unary()
         return new_assign(node, new_sub(node, new_node_num(1)));
     }
 
-    return array_suffix();
+    Node *node = array_suffix();
+    if (consume(TK_INC))
+    {
+        // 先に+1して保存してから-1する
+        return new_sub(new_assign(node, new_add(node, new_node_num(1))), new_node_num(1));
+    }
+    else if (consume(TK_DEC))
+    {
+        // 先に+-1して保存してから+1する
+        return new_add(new_assign(node, new_sub(node, new_node_num(1))), new_node_num(1));
+    }
+
+    return node;
 }
 
 // array_suffix = primary ("[" expr "]")*
