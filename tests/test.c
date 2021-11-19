@@ -107,6 +107,20 @@ int assign5()
     b = a += 5;
     return b;
 }
+int assign6()
+{
+    int a; int b;
+    a = 0;
+    b = (a=a+1) + (a=a+1);
+    return b + a;
+}
+int assign7()
+{
+    int a; int b;
+    a = 0;
+    b = (a=a-1) + (a=a-1);
+    return b * a;
+}
 // if else
 int if_else1()
 {
@@ -581,6 +595,45 @@ int assign_mod1() {
     return a;
 }
 
+// preinc
+int preinc1()
+{
+    int a; int b;
+    a = 0;
+    b = (++a) + (++a);
+    return b + a;
+}
+
+int preinc2()
+{
+    int i;
+    int sum;
+    sum = 0;
+    for (i=0;i<10;++i) {
+        sum += i;
+    }
+    return sum;
+}
+
+// predec
+int predec1()
+{
+    int a; int b;
+    a = 0;
+    b = (--a) + (--a);
+    return b * a;
+}
+int predec2()
+{
+    int i;
+    int sum;
+    sum = 0;
+    for (i=9;i>=0;--i) {
+        sum += i;
+    }
+    return sum;
+}
+
 int main()
 {
     ASSERT(6, local1(), "local1");
@@ -597,6 +650,8 @@ int main()
     ASSERT(6, assign3(), "assign3");
     ASSERT(10, assign4(), "assign4");
     ASSERT(10, assign5(), "assign5");
+    ASSERT(5, assign6(), "assign6");
+    ASSERT(6, assign7(), "assign7");
 
     ASSERT(4, if_else1(), "if_else1");
     ASSERT(6, if_else2(), "if_else2");
@@ -666,6 +721,11 @@ int main()
     ASSERT(0, string_literal1(), "string_literal");
 
     ASSERT(2, assign_mod1(), "assign_mod1");
+
+    ASSERT(5, preinc1(), "preinc1");
+    ASSERT(45, preinc2(), "preinc2");
+    ASSERT(6, predec1(), "predec1");
+    ASSERT(45, predec2(), "predec2");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;

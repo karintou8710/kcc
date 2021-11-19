@@ -129,6 +129,12 @@ void add_type(Node *node)
         return;
     }
 
+    if (node->kind == ND_ASSIGN)
+    {
+        node->type = new_type(node->lhs->type->kind);
+        return;
+    }
+
     // lhsとrhsの順番はparse側で保証する
     if (node->kind == ND_ADD)
     {
@@ -164,13 +170,13 @@ void add_type(Node *node)
             return;
         }
 
-        if (lhs->type->kind == TYPE_PTR && is_numtype(lhs->type->kind))
+        if (lhs->type->kind == TYPE_PTR && is_numtype(rhs->type->kind))
         {
             node->type = rhs->type;
             return;
         }
 
-        if (lhs->type->kind == TYPE_ARRAY && is_numtype(lhs->type->kind))
+        if (lhs->type->kind == TYPE_ARRAY && is_numtype(rhs->type->kind))
         {
             node->type = rhs->type;
             return;

@@ -52,6 +52,8 @@ typedef enum
     TK_ADD_EQ,    // +=
     TK_SUB_EQ,    // -=
     TK_MUL_EQ,    // *=
+    TK_INC,       // ++
+    TK_DEC,       // --
     TK_DIV_EQ,    // /= 265
     TK_MOD_EQ,    // %= 
     TK_RETURN,    // return

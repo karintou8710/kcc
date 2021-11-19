@@ -311,6 +311,17 @@ static Node *new_mod(Node *lhs, Node *rhs)
 
     error("実行できない型による演算です(MOD)");
 }
+
+static Node *new_assign(Node *lhs, Node *rhs)
+{
+    add_type(lhs);
+    add_type(rhs);
+
+    Node *node = new_binop(ND_ASSIGN, lhs, rhs);
+
+    return node;
+}
+
 /* 数値ノードを作成 */
 static Node *new_node_num(int val)
 {
@@ -599,27 +610,27 @@ static Node *assign()
     Node *node = equality();
     if (consume('='))
     {
-        node = new_binop(ND_ASSIGN, node, assign());
+        node = new_assign(node, assign());
     }
     else if (consume(TK_ADD_EQ))
     {
-        node = new_binop(ND_ASSIGN, node, new_binop(ND_ADD, node, equality()));
+        node = new_assign(node, new_add(node, equality()));
     }
     else if (consume(TK_SUB_EQ))
     {
-        node = new_binop(ND_ASSIGN, node, new_binop(ND_SUB, node, equality()));
+        node = new_assign(node, new_sub(node, equality()));
     }
     else if (consume(TK_MUL_EQ))
     {
-        node = new_binop(ND_ASSIGN, node, new_binop(ND_MUL, node, equality()));
+        node = new_assign(node, new_mul(node, equality()));
     }
     else if (consume(TK_DIV_EQ))
     {
-        node = new_binop(ND_ASSIGN, node, new_binop(ND_DIV, node, equality()));
+        node = new_assign(node, new_div(node, equality()));
     }
     else if (consume(TK_MOD_EQ))
     {
-        node = new_binop(ND_ASSIGN, node, new_binop(ND_MOD, node, equality()));
+        node = new_assign(node, new_mod(node, equality()));
     }
     return node;
 }
@@ -732,6 +743,7 @@ static Node *mul()
  *       | "*" array_suffix   ("*" unaryでもいい？)
  *       | "&" array_suffix
  *       | "sizeof" unary
+ *       | ("++" | "--") array_suffix
  */
 static Node *unary()
 {
@@ -763,6 +775,16 @@ static Node *unary()
     {
         Node *node = new_node_num(sizeOfNode(unary()));
         return node;
+    }
+    else if (consume(TK_INC))
+    {
+        Node *node = array_suffix();
+        return new_assign(node, new_add(node, new_node_num(1)));
+    }
+    else if (consume(TK_DEC))
+    {
+        Node *node = array_suffix();
+        return new_assign(node, new_sub(node, new_node_num(1)));
     }
 
     return array_suffix();
