@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int ASSERT(int expected, int actual, char *name)
 {
     if (expected == actual)

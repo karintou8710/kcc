@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int print_board(int board[8][8])
 {
     int i; int j;

@@ -25,6 +25,13 @@ Token *tokenize(char *p)
             continue;
         }
 
+        // includeはスキップする
+        if (strncmp(p, "#include", 8) == 0) {
+            p += 8;
+            while (*p != '\n') p++;
+            continue;
+        }
+
         if (strncmp(p, "//", 2) == 0) {
             p += 2;
             while (*p != '\n') p++;

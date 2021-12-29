@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int main() {
     int n; int i; int a[1000];
     n = 1000;
