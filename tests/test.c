@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 int ASSERT(int expected, int actual, char *name)
 {
@@ -678,6 +679,29 @@ int postdec2() {
     return sum;
 }
 
+// assign_initializer
+int assign_initializer1() {
+    int sum = 0;
+    for (int i=0;i<10;i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+int assign_initializer2() {
+    int height = 10;
+    int width = 20;
+    int res = height * width / 2;
+    return res;
+}
+
+int assign_initializer3() {
+    char *s1 = "Hello";
+    char *s2 = "Hello";
+    int is_same = (strcmp(s1, s2) == 0);
+    return is_same;
+}
+
 int main()
 {
     ASSERT(6, local1(), "local1");
@@ -775,6 +799,10 @@ int main()
     ASSERT(45, postinc2(), "postinc2");
     ASSERT(0, postdec1(), "postdec1");
     ASSERT(45, postdec2(), "postdec2");
+
+    ASSERT(45, assign_initializer1(), "assign_initializer1");
+    ASSERT(100, assign_initializer2(), "assign_initializer2");
+    ASSERT(1, assign_initializer3(), "assign_initializer3");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;
