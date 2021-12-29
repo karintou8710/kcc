@@ -369,7 +369,7 @@ static Node *get_node_ident(Token *tok)
 /******                         ******/
 /*************************************/
 
-// program = ( declaration_global | func_define )*
+// <program> = ( <declaration_global> | <func_define> )*
 // 関数かどうかの先読みが必要
 void program()
 {
@@ -388,22 +388,47 @@ void program()
     funcs[i] = NULL;
 }
 
-// declaration_global = declaration_var ";"
+// <declaration_global> = <declaration_var> ";"
 static Node *declaration_global(Type *type) {
     Node *node = declaration_var(type, true);
     expect(';');
     return node;
 }
 
-// declaration_var = declaration_specifier ident type_suffix
+// <initialize>  = "{" <initialize> (","  <initialize>)* "}"
+//               | <assign>
+static Node *initialize() {
+    Node *node = NULL;
+    // TODO 配列の初期化式
+    // if (consume('{')) {
+    //     node = initialize();
+    //     while (consume(',')) {
+    //         node = initialize();
+    //     }
+    //     expect('}');
+    //     return node;
+    // }
+
+    return assign();   
+}
+
+// declaration_var = declaration_specifier ident type_suffix ("=" initialize)?
 static Node *declaration_var(Type *type, bool is_global) {
     Node *node = declear_node_ident(token, type, is_global);
     next_token();
     if (consume_nostep('['))
     {
+        // 配列
         node->var->type = type_suffix(node->var->type);
         // 新しい型のオフセットにする
         node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
+
+        return node;
+    }
+    // 変数
+    if (consume('='))
+    {
+        return new_assign(node , initialize()); 
     }
 
     return node;

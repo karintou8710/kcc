@@ -155,6 +155,15 @@ struct Function
     int stack_size;
 };
 
+typedef struct Initializer Initializer;
+struct Initializer
+{
+    int val;
+    Vector *el;
+    Type *type;
+};
+
+
 // parse.c
 void program();
 
