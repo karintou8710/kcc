@@ -539,6 +539,7 @@ static Node *compound_stmt()
  *      | "if" "(" expr ")" stmt ("else" stmt)?
  *      | "while" "(" expr ")" stmt
  *      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+ *      | ("continue" | "break")
  *      | compound_stmt
  */
 static Node *stmt()
@@ -547,8 +548,7 @@ static Node *stmt()
 
     if (consume(TK_RETURN))
     {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_RETURN;
+        node = new_node(ND_RETURN);
         node->lhs = expr();
         expect(';');
     }
@@ -596,6 +596,16 @@ static Node *stmt()
     else if (consume_nostep('{'))
     {
         node = compound_stmt();
+    }
+    else if (consume(TK_BREAK))
+    {
+        node = new_node(ND_BREAK);
+        expect(';');
+    }
+    else if (consume(TK_CONTINUE))
+    {
+        node = new_node(ND_CONTINUE);
+        expect(';');
     }
     else if (consume(';'))
     {

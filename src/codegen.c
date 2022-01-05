@@ -19,6 +19,9 @@ static char *raxreg[] = {"rax", "eax", "ax", "al"};  // size: 8, 4, 2, 1
 static char *rdireg[] = {"rdi", "edi", "di", "dil"}; // size: 8, 4, 2, 1
 static Function *current_fn;
 
+// continue, breakに使う
+int now_loop_count = 0;
+
 typedef enum
 {
     REG_RAX,
@@ -27,7 +30,7 @@ typedef enum
 
 static char *get_argreg(int index, Type *ty)
 {
-    if (ty->kind == TYPE_ARRAY) 
+    if (ty->kind == TYPE_ARRAY)
         return argreg64[index];
 
     switch (ty->size)
@@ -135,13 +138,16 @@ static void gen_lval(Node *node)
         error("代入の左辺値が変数ではありません");
     }
 
-    if (node->var->is_global) {
+    if (node->var->is_global)
+    {
         printf("  lea rax, [rip+%s]\n", node->var->name);
-    } else {
+    }
+    else
+    {
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", node->var->offset);
     }
-    
+
     push();
 }
 
@@ -175,7 +181,8 @@ static void load(Type *ty)
         return;
     }
 
-    if (ty->kind == TYPE_CHAR) {
+    if (ty->kind == TYPE_CHAR)
+    {
         printf("  movsx eax, BYTE PTR [rax]\n");
         return;
     }
@@ -197,8 +204,10 @@ static void load(Type *ty)
 
 static void gen(Node *node)
 {
-    int loop_count = label_loop_count;
+    // 入れ子ループに対応するためにローカル変数で深さを持つ
+    int loop_count = label_loop_count; // ループカウントの一時保存にも使う
     int if_count = label_if_count;
+
     switch (node->kind)
     {
     case ND_NUM:
@@ -271,7 +280,15 @@ static void gen(Node *node)
         pop();
         printf("  cmp rax, 0\n");
         printf("  je  .Lloopend%04d\n", loop_count);
+
+        // 次のループカウントにする
+        now_loop_count = label_loop_count;
         gen(node->body);
+        // 元のループカウントに戻す
+        now_loop_count = loop_count;
+
+        // whileには必要ないが、for文との辻褄合わせに入れる
+        printf(".Lloopinc%04d:\n", loop_count);
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
         return;
@@ -289,13 +306,36 @@ static void gen(Node *node)
             printf("  cmp rax, 0\n");
             printf("  je  .Lloopend%04d\n", loop_count);
         }
+
+        now_loop_count = label_loop_count;
         gen(node->body);
+        now_loop_count = loop_count;
+
+        printf(".Lloopinc%04d:\n", loop_count);
         if (node->inc)
         {
             gen(node->inc);
         }
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
+        return;
+    case ND_BREAK:
+        // loop_countは次の深さになっているので１を引く
+        if (now_loop_count - 1 < 0)
+        {
+            error("forブロックの中でbreakを使用していません。");
+        }
+        push(); // 数合わせ
+        printf("  jmp .Lloopend%04d\n", now_loop_count - 1);
+        return;
+    case ND_CONTINUE:
+        // loop_countは次の深さになっているので１を引く
+        if (now_loop_count - 1 < 0)
+        {
+            error("forブロックの中でbreakを使用していません。");
+        }
+        push(); // 数合わせ
+        printf("  jmp .Lloopinc%04d\n", now_loop_count - 1);
         return;
     case ND_BLOCK:
         for (int i = 0; i < node->stmts->len; i++)
@@ -392,13 +432,15 @@ void codegen()
 
     printf(".data\n");
     // グローバル変数の生成
-    for (Var *var = globals; var != NULL; var = var->next) {
+    for (Var *var = globals; var != NULL; var = var->next)
+    {
         printf("%s:\n", var->name);
         printf("  .zero %d\n", var->type->size);
     }
 
     // 文字列リテラルの生成
-    for (int i = 0; i<string_literal->len; i++) {
+    for (int i = 0; i < string_literal->len; i++)
+    {
         Token *tok = (Token *)string_literal->body[i];
         printf(".LC%d:\n", tok->str_literal_index);
         printf("  .string \"%s\"\n", tok->str);
@@ -423,7 +465,8 @@ void codegen()
             printf("  mov rax, rbp\n");
             printf("  sub rax, %d\n", var->offset);
             Type *ty = var->type;
-            if (var->type->kind == TYPE_ARRAY) ty = new_ptr_type(var->type);
+            if (var->type->kind == TYPE_ARRAY)
+                ty = new_ptr_type(var->type);
             printf("  mov [rax], %s\n", get_argreg(j++, ty));
         }
 

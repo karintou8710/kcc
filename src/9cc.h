@@ -65,6 +65,8 @@ typedef enum
     TK_TYPE,      // int
     TK_SIZEOF,    // sizeof
     TK_STRING,    // string
+    TK_CONTINUE,  // continue
+    TK_BREAK,     // break
 } TokenKind;
 
 typedef struct Token Token;
@@ -95,28 +97,30 @@ struct Var
 /* ノードの定義 */
 typedef enum
 {
-    ND_ADD,    // +
-    ND_SUB,    // -
-    ND_MUL,    // *
-    ND_DIV,    // /
-    ND_MOD,    // %
-    ND_ASSIGN, // =
-    ND_EQ,     // ==
-    ND_NE,     // !=
-    ND_LT,     // <
-    ND_LE,     // <=
-    ND_VAR,    // local var
-    ND_NUM,    // num
-    ND_RETURN, // return
-    ND_IF,     // if
-    ND_ELSE,   // else
-    ND_FOR,    // for
-    ND_WHILE,  // while
-    ND_BLOCK,  // block {}
-    ND_CALL,   // call
-    ND_ADDR,   // & アドレス
-    ND_DEREF,  // * ポインタ
-    ND_STRING  // string literal
+    ND_ADD,      // +
+    ND_SUB,      // -
+    ND_MUL,      // *
+    ND_DIV,      // /
+    ND_MOD,      // %
+    ND_ASSIGN,   // =
+    ND_EQ,       // ==
+    ND_NE,       // !=
+    ND_LT,       // <
+    ND_LE,       // <=
+    ND_VAR,      // local var
+    ND_NUM,      // num
+    ND_RETURN,   // return
+    ND_IF,       // if
+    ND_ELSE,     // else
+    ND_FOR,      // for
+    ND_WHILE,    // while
+    ND_BLOCK,    // block {}
+    ND_CALL,     // call
+    ND_ADDR,     // & アドレス
+    ND_DEREF,    // * ポインタ
+    ND_STRING,   // string literal
+    ND_CONTINUE, // continue
+    ND_BREAK,    //break
 } NodeKind;
 
 typedef struct Node Node;
