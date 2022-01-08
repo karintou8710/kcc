@@ -32,6 +32,11 @@ Token *tokenize(char *p)
             continue;
         }
 
+        if (strncmp(p, "static", 6) == 0) {
+            p += 6;
+            continue;
+        }
+
         if (strncmp(p, "//", 2) == 0) {
             p += 2;
             while (*p != '\n') p++;
