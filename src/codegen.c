@@ -225,7 +225,7 @@ static void gen(Node *node)
         push();
         return;
     case ND_ADDR:
-        gen_lval(node->lhs);
+        gen_addr(node->lhs);
         return;
     case ND_DEREF:
         gen(node->lhs);

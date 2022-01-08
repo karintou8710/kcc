@@ -183,6 +183,11 @@ void error(char *fmt, ...);
 char *my_strndup(const char *s, size_t n);
 void swap(void **p, void **q);
 
+// debug.c
+void debug_var(Var *var);
+void debug_type(Type *ty);
+void debug_node(Node *node, char *pos);
+
 // vector.c
 Vector *new_vec();
 void vec_push(Vector *v, void *elem);
