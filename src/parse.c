@@ -110,7 +110,7 @@ static int sizeOfNode(Node *node)
 /* ローカル変数の作成 */
 static Var *new_lvar(Token *tok, Type *type)
 {
-    Var *lvar = calloc(1, sizeof(Var));
+    Var *lvar = memory_alloc(sizeof(Var));
     lvar->next = locals;
     lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
@@ -122,7 +122,7 @@ static Var *new_lvar(Token *tok, Type *type)
 
 static Var *new_gvar(Token *tok, Type *type)
 {
-    Var *gvar = calloc(1, sizeof(Var));
+    Var *gvar = memory_alloc(sizeof(Var));
     gvar->next = globals;
     gvar->name = my_strndup(tok->str, tok->len);
     gvar->len = tok->len;
@@ -139,7 +139,7 @@ static void create_lvar_from_params(Var *params)
     if (!params)
         return;
 
-    Var *lvar = calloc(1, sizeof(Var));
+    Var *lvar = memory_alloc(sizeof(Var));
     lvar->name = params->name;
     lvar->len = params->len;
     lvar->type = params->type;
@@ -173,7 +173,7 @@ static Var *find_var(Token *tok, bool is_global)
 // ノード作成
 static Node *new_node(NodeKind kind)
 {
-    Node *node = calloc(1, sizeof(Node));
+    Node *node = memory_alloc(sizeof(Node));
     node->kind = kind;
     return node;
 }
@@ -181,7 +181,7 @@ static Node *new_node(NodeKind kind)
 // 演算子ノード作成
 static Node *new_binop(NodeKind kind, Node *lhs, Node *rhs)
 {
-    Node *node = calloc(1, sizeof(Node));
+    Node *node = memory_alloc(sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
@@ -466,7 +466,7 @@ static Var *declaration_param(Var *cur) {
     Type *type = declaration_specifier();
     Token *tok = token;
     expect(TK_IDENT);
-    Var *lvar = calloc(1, sizeof(Var));
+    Var *lvar = memory_alloc(sizeof(Var));
     lvar->name = tok->str;
     lvar->len = tok->len;
     lvar->type = type;
@@ -487,7 +487,7 @@ static Var *declaration_param(Var *cur) {
 //
 static Function *func_define(Type *type)
 {
-    Function *fn = calloc(1, sizeof(Function));
+    Function *fn = memory_alloc(sizeof(Function));
     Token *tok = token;
     Var head = {};
     Var *cur = &head; // 引数の単方向連結リスト
@@ -512,7 +512,7 @@ static Function *func_define(Type *type)
     }
 
     fn->params = head.next; // 前から見ていく
-    locals = calloc(1, sizeof(Var));
+    locals = memory_alloc(sizeof(Var));
     locals->offset = 0;
     create_lvar_from_params(fn->params);
     fn->body = compound_stmt();

@@ -109,3 +109,11 @@ void swap(void **p, void **q)
     *p = *q;
     *q = tmp;
 }
+
+void *memory_alloc(size_t size) {
+    void *p = calloc(1, size);
+    if (p == NULL) {
+        error("calloc() failure");
+    }
+    return p;
+}

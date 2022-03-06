@@ -587,7 +587,7 @@ int char1()
 int string_literal1()
 {
     char *a;
-    a = "Hello, C-compiler\n";
+    a = "Hello, C-compiler";
     printf("%s\n", a);
     return 0;
 }

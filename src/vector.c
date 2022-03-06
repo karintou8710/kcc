@@ -2,8 +2,8 @@
 
 Vector *new_vec()
 {
-    Vector *v = calloc(1, sizeof(Vector));
-    v->body = calloc(16, sizeof(void *));
+    Vector *v = memory_alloc(sizeof(Vector));
+    v->body = memory_alloc(16 * sizeof(void *));
     v->capacity = 16;
     v->len = 0;
     return v;

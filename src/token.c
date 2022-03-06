@@ -2,7 +2,7 @@
 
 Token *new_token(int kind, Token *cur, char *str, int len)
 {
-    Token *tok = calloc(1, sizeof(Token));
+    Token *tok = memory_alloc(sizeof(Token));
     tok->kind = kind;
     tok->str = str;
     tok->len = len;

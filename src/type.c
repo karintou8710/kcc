@@ -33,7 +33,7 @@ int sizeOfType(Type *ty)
 /* 基本の型を生成 */
 Type *new_type(TypeKind tykind)
 {
-    Type *ty = calloc(1, sizeof(Type));
+    Type *ty = memory_alloc(sizeof(Type));
     ty->kind = tykind;
     ty->size = tykind_to_size(tykind);
     return ty;
@@ -42,7 +42,7 @@ Type *new_type(TypeKind tykind)
 /* ポインター型を生成 */
 Type *new_ptr_type(Type *ptr_to)
 {
-    Type *ty = calloc(1, sizeof(Type));
+    Type *ty = memory_alloc(sizeof(Type));
     ty->kind = TYPE_PTR;
     ty->size = tykind_to_size(TYPE_PTR);
     ty->ptr_to = ptr_to;
@@ -53,7 +53,7 @@ Type *new_ptr_type(Type *ptr_to)
 /* 配列型を生成 */
 Type *new_array_type(Type *ptr_to, int array_size)
 {
-    Type *ty = calloc(1, sizeof(Type));
+    Type *ty = memory_alloc(sizeof(Type));
     ty->kind = TYPE_ARRAY;
     ty->size = ptr_to->size * array_size;
     ty->array_size = array_size;

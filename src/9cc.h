@@ -183,6 +183,7 @@ void error_at(char *loc, char *msg);
 void error(char *fmt, ...);
 char *my_strndup(const char *s, size_t n);
 void swap(void **p, void **q);
+void *memory_alloc(size_t size);
 
 // debug.c
 void debug_var(Var *var);
