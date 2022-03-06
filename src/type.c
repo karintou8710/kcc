@@ -220,4 +220,10 @@ void add_type(Node *node)
 
         error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
     }
+
+    if (node->kind == ND_LOGICALNOT)
+    {
+        node->type = node->lhs->type;
+        return;
+    }
 }

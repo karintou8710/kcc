@@ -779,6 +779,7 @@ static Node *mul()
  *       | "&" array_suffix
  *       | "sizeof" unary
  *       | ("++" | "--") array_suffix
+ *       | "!" unary
  */
 static Node *unary()
 {
@@ -804,6 +805,13 @@ static Node *unary()
         node->lhs = array_suffix();
         add_type(node->lhs);
         node->lhs->type = new_ptr_type(node->lhs->type);
+        return node;
+    }
+    else if (consume('!'))
+    {
+        Node *node = new_node(ND_LOGICALNOT);
+        node->lhs = unary();
+        add_type(node->lhs);
         return node;
     }
     else if (consume(TK_SIZEOF))

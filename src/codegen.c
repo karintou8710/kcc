@@ -368,6 +368,14 @@ static void gen(Node *node)
         push(); // 数合わせ
         return;
     }
+    case ND_LOGICALNOT:
+        gen(node->lhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        push();
+        return;
     }
 
     // 主に演算のATSで読みこまれる

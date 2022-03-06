@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in tests/test.c tests/global.c tests/loop.c
+for i in tests/test.c tests/global.c tests/loop.c tests/op.c
 do
     ./9cc $i > tmp.s
     cc -static -o tmp tmp.s tmp2.o

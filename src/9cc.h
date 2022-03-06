@@ -121,6 +121,7 @@ typedef enum
     ND_STRING,   // string literal
     ND_CONTINUE, // continue
     ND_BREAK,    //break
+    ND_LOGICALNOT,   // !
 } NodeKind;
 
 typedef struct Node Node;
