@@ -74,6 +74,9 @@ void str_advanve(char **p)
 
 void next_token()
 {
+    if (token == NULL) {
+        error("next_token() failure");
+    }
     token = token->next;
 }
 

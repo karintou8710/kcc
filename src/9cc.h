@@ -186,9 +186,13 @@ void swap(void **p, void **q);
 void *memory_alloc(size_t size);
 
 // debug.c
+void print_node_kind(NodeKind kind);
+void print_token_kind(TokenKind kind);
+void print_type_kind(TypeKind kind);
 void debug_var(Var *var);
 void debug_type(Type *ty);
 void debug_node(Node *node, char *pos);
+void debug_token(Token *t);
 
 // vector.c
 Vector *new_vec();

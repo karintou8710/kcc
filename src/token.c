@@ -46,7 +46,7 @@ Token *tokenize(char *p)
         if (strncmp(p, "/*", 2) == 0) {
             p += 2;
             char *q = strstr(p, "*/");
-            if (!q) error("ブロックコメントが閉じられていません");
+            if (!q) error_at(p-2, "tokenize() failure: ブロックコメントが閉じられていません");
             p = q + 2;
             continue; 
         }
@@ -242,7 +242,7 @@ Token *tokenize(char *p)
             continue;
         }
 
-        error_at(p, "トークナイズできません");
+        error_at(p, "tokenize() failure: トークナイズできません");
     }
 
     new_token(TK_EOF, cur, p, 0);

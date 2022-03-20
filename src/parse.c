@@ -64,9 +64,10 @@ static void expect(int op)
     {
         if (op == TK_TYPE)
         {
-            error("%d 適当な位置に型がありません", op);
+            print_token_kind(op);
+            error_at(token->str, "expect() failure: 適当な位置に型がありません");
         }
-        error_at(token->str, "適切な演算子ではありません");
+        error_at(token->str, "expect() failure: 適切な演算子ではありません");
     }
     next_token();
 }
@@ -77,10 +78,11 @@ static void expect_nostep(int op)
     {
         if (op == TK_TYPE)
         {
-            error("%d 適当な位置に型がありません", op);
+            print_token_kind(op);
+            error_at(token->str, "expect_nostep() failure: 適当な位置に型がありません");
         }
 
-        error_at(token->str, "適切な演算子ではありません");
+        error_at(token->str, "expect_nostep() failure: 適切な演算子ではありません");
     }
 }
 
@@ -88,7 +90,7 @@ static int expect_number()
 {
     if (token->kind != TK_NUM)
     {
-        error_at(token->str, "数ではありません");
+        error_at(token->str, "expect_number() failure: 数ではありません");
     }
     int val = token->val;
     next_token();
@@ -225,7 +227,7 @@ static Node *new_add(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できない型による演算です(ADD)");
+    error("new_add() failure: 実行できない型による演算です");
 }
 
 static Node *new_sub(Node *lhs, Node *rhs)
@@ -256,7 +258,7 @@ static Node *new_sub(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できない型による演算です(SUB)");
+    error("new_sub() failure: 実行できない型による演算です");
 }
 
 static Node *new_mul(Node *lhs, Node *rhs)
@@ -277,7 +279,7 @@ static Node *new_mul(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できない型による演算です(MUL)");
+    error("new_mul() failure: 実行できない型による演算です");
 }
 
 static Node *new_div(Node *lhs, Node *rhs)
@@ -293,7 +295,7 @@ static Node *new_div(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できない型による演算です(DIV)");
+    error("new_div() failure: 実行できない型による演算です");
 }
 
 static Node *new_mod(Node *lhs, Node *rhs)
@@ -309,7 +311,7 @@ static Node *new_mod(Node *lhs, Node *rhs)
         return node;
     }
 
-    error("実行できない型による演算です(MOD)");
+    error("new_mod() failure: 実行できない型による演算です");
 }
 
 static Node *new_assign(Node *lhs, Node *rhs)
@@ -337,7 +339,7 @@ static Node *declear_node_ident(Token *tok, Type *type, bool is_global)
     Var *var = find_var(tok, is_global);
     if (var)
     {
-        error("既に宣言済みです");
+        error_at(tok->str, "declear_node_ident() failure: 既に宣言済みです");
     }
 
     var = is_global ? new_gvar(tok, type) : new_lvar(tok, type);
@@ -355,7 +357,7 @@ static Node *get_node_ident(Token *tok)
     {
         var = find_var(tok, true); // グローバル変数から取得
         if (!var) {
-            error("宣言されていません");
+            error_at(tok->str, "get_node_ident() failure: 宣言されていません");
         }
     }
 
@@ -921,5 +923,11 @@ static Node *primary()
         return new_node_num(expect_number());
     }
 
-    error("%sは不正なトークンです。", token->str);
+    debug_token(token);
+
+    if (token->kind == TK_EOF) {
+        // TK_EOFはtoken->strが入力を超える位置になる
+        error("primary() failure: 不正なコードです。");
+    }
+    error_at(token->str, "primary() failure: 不正なトークンです。");
 }

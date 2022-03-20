@@ -51,6 +51,80 @@ void print_node_kind(NodeKind kind)
         fprintf(stderr, "ND_CONTINUE"); // continue
     else if (kind == ND_BREAK)
         fprintf(stderr, "ND_BREAK"); // break
+    else
+        error("print_node_kind() failure");
+    
+    fprintf(stderr, "\n");
+}
+
+void print_token_kind(TokenKind kind) {
+    fprintf(stderr, "tokenkind -> ");
+    if (kind == TK_NUM)
+        fprintf(stderr, "TK_NUM");
+    else if (kind == TK_IDENT)
+        fprintf(stderr, "TK_IDENT");
+    else if (kind == TK_EQ)
+        fprintf(stderr, "TK_EQ");
+    else if (kind == TK_NE)
+        fprintf(stderr, "TK_NE");
+    else if (kind == TK_LE)
+        fprintf(stderr, "TK_LE");
+    else if (kind == TK_GE)
+        fprintf(stderr, "TK_GE");
+    else if (kind == TK_ADD_EQ)
+        fprintf(stderr, "TK_ADD_EQ");
+    else if (kind == TK_SUB_EQ)
+        fprintf(stderr, "TK_SUB_EQ");
+    else if (kind == TK_MUL_EQ)
+        fprintf(stderr, "TK_MUL_EQ");
+    else if (kind == TK_INC)
+        fprintf(stderr, "TK_INC");
+    else if (kind == TK_DEC)
+        fprintf(stderr, "TK_DEC");
+    else if (kind == TK_DIV_EQ)
+        fprintf(stderr, "TK_DIV_EQ");
+    else if (kind == TK_MOD_EQ)
+        fprintf(stderr, "TK_MOD_EQ");
+    else if (kind == TK_RETURN)
+        fprintf(stderr, "TK_RETURN");
+    else if (kind == TK_IF)
+        fprintf(stderr, "TK_IF");
+    else if (kind == TK_ELSE)
+        fprintf(stderr, "TK_ELSE");
+    else if (kind == TK_FOR)
+        fprintf(stderr, "TK_FOR");
+    else if (kind == TK_WHILE)
+        fprintf(stderr, "TK_WHILE");
+    else if (kind == TK_EOF)
+        fprintf(stderr, "TK_EOF");
+    else if (kind == TK_TYPE)
+        fprintf(stderr, "TK_TYPE");
+    else if (kind == TK_SIZEOF)
+        fprintf(stderr, "TK_SIZEOF");
+    else if (kind == TK_STRING)
+        fprintf(stderr, "TK_STRING");
+    else if (kind == TK_CONTINUE)
+        fprintf(stderr, "TK_CONTINUE");
+    else if (kind == TK_BREAK)
+        fprintf(stderr, "TK_BREAK");
+    else
+        error("print_token_kind() failure");
+    
+    fprintf(stderr, "\n");
+}
+
+void print_type_kind(TypeKind kind) {
+    fprintf(stderr, "tokenkind -> ");
+    if (kind == TYPE_CHAR)
+        fprintf(stderr, "TYPE_CHAR");
+    else if (kind == TYPE_INT)
+        fprintf(stderr, "TYPE_INT");
+    else if (kind == TYPE_PTR)
+        fprintf(stderr, "TYPE_PTR");
+    else if (kind == TYPE_ARRAY)
+        fprintf(stderr, "TYPE_ARRAY");
+    else
+        error("print_tyte_kind() failure: unexpected type");
     
     fprintf(stderr, "\n");
 }
@@ -92,14 +166,29 @@ void debug_type(Type *ty)
 {
     if (ty == NULL)
     {
-        fprintf(stderr, "type -> NULL\n");
+        fprintf(stderr, "type -> NULL\n\n");
         return;
     }
 
-    fprintf(stderr, "typekind -> %d\n", ty->kind);
+    print_type_kind(ty->kind);
     fprintf(stderr, "size -> %d\n", ty->size);
     fprintf(stderr, "array_size -> %d\n", ty->array_size);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "↓\n");
 
     debug_type(ty->ptr_to);
+}
+
+void debug_token(Token *t) {
+    if (t == NULL)
+    {
+        fprintf(stderr, "token -> NULL\n");
+        return;
+    }
+
+    print_token_kind(t->kind);
+    debug_type(t->type);
+    fprintf(stderr, "val -> %d\n", t->val);
+    fprintf(stderr, "str -> %s\n", t->str);
+    fprintf(stderr, "str_literal_index -> %d\n", t->str_literal_index);
+    fprintf(stderr, "len; -> %d\n", t->len);
 }
