@@ -10,15 +10,14 @@ static int tykind_to_size(TypeKind tykind)
 {
     switch (tykind)
     {
+    case TYPE_VOID:
+        return 0;
     case TYPE_CHAR:
         return 1;
-        break;
     case TYPE_INT:
         return 4;
-        break;
     case TYPE_PTR:
         return 8;
-        break;
     }
 
     error("存在しないまたは固定長ではない型です");
@@ -61,15 +60,31 @@ Type *new_array_type(Type *ptr_to, int array_size)
     return ty;
 }
 
-int is_numtype(TypeKind kind) {
+bool is_integertype(TypeKind kind) {
     return (
         kind == TYPE_CHAR ||
         kind == TYPE_INT
     );
 }
 
+bool is_scalartype(TypeKind kind) {
+    return (
+        is_integertype(kind) ||
+        kind == TYPE_PTR
+    );
+}
+
+bool is_relationalnode(NodeKind kind) {
+    return (
+        kind == ND_EQ ||
+        kind == ND_NE ||
+        kind == ND_LT ||
+        kind == ND_LE
+    );
+}
+
 TypeKind large_numtype(Type *t1, Type *t2) {
-    if (!is_numtype(t1->kind) || !is_numtype(t2->kind)) {
+    if (!is_integertype(t1->kind) || !is_integertype(t2->kind)) {
         error("整数の型ではありません。\n");
     }
 
@@ -81,6 +96,22 @@ TypeKind large_numtype(Type *t1, Type *t2) {
 }
 
 /* キャスト */
+bool type_cast(Type *ty, TypeKind to) {
+    TypeKind from = ty->kind;
+
+    if (to == TYPE_VOID) {
+        ty->kind = to;
+        return true;
+    }
+
+    if (!is_scalartype(from) || !is_scalartype(to)) {
+        return false;
+    }
+
+    ty->kind = to;
+
+    return true;
+}
 
 /*
  * 必要なノードが型を持つことを保証するようにする
@@ -99,12 +130,18 @@ void add_type(Node *node)
         return;
     }
 
+    if (node->kind == ND_ADDR)
+    {
+        node->type = new_ptr_type(node->lhs->type);
+        return;
+    }
+
     if (node->kind == ND_DEREF)
     {
         Type *ty = node->lhs->type;
         if (!ty->ptr_to)
         {
-            error("derefに失敗しました");
+            error("add_type() failure: derefに失敗しました");
         }
         node->type = ty->ptr_to;
         return;
@@ -131,27 +168,50 @@ void add_type(Node *node)
 
     if (node->kind == ND_ASSIGN)
     {
-        node->type = new_type(node->lhs->type->kind);
-        return;
+        if (node->rhs->type == NULL || node->lhs->type == NULL) {
+            fprintf(stderr, "[node->lhs->type]\n");
+            debug_type(node->lhs->type, 0);
+            fprintf(stderr, "[node->rhs->type]\n");
+            debug_type(node->rhs->type, 0);
+            debug_node(node->rhs, "root", 0);
+            error("add_type() failure: type not found(ND_ASSIGN)");
+        }
+
+        if (type_cast(node->rhs->type, node->lhs->type->kind)) {
+            node->type = new_type(node->lhs->type->kind);
+            return;
+        }
+
+        // 配列は暗黙にポインターとして扱う
+        if (node->rhs->type->kind == TYPE_ARRAY && node->lhs->type->kind == TYPE_PTR) {
+            node->type = new_type(node->lhs->type->kind);
+            return;
+        }
+        
+        fprintf(stderr, "node->lhs->type\n");
+        debug_type(node->lhs->type, 0);
+        fprintf(stderr, "node->rhs->type\n");
+        debug_type(node->rhs->type, 0);
+        error("add_type() failure: fail to cast %d %d", node->rhs->type->kind, node->lhs->type->kind);
     }
 
     // lhsとrhsの順番はparse側で保証する
     if (node->kind == ND_ADD)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
+        if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
         {
             node->type = new_type(large_numtype(lhs->type, rhs->type));
             return;
         }
 
-        if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
+        if (is_integertype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
         {
             node->type = rhs->type;
             return;
         }
 
-        if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
+        if (is_integertype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
         {
             node->type = rhs->type;
             return;
@@ -164,19 +224,19 @@ void add_type(Node *node)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
 
-        if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
+        if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
         {
             node->type = new_type(large_numtype(lhs->type, rhs->type));
             return;
         }
 
-        if (lhs->type->kind == TYPE_PTR && is_numtype(rhs->type->kind))
+        if (lhs->type->kind == TYPE_PTR && is_integertype(rhs->type->kind))
         {
             node->type = rhs->type;
             return;
         }
 
-        if (lhs->type->kind == TYPE_ARRAY && is_numtype(rhs->type->kind))
+        if (lhs->type->kind == TYPE_ARRAY && is_integertype(rhs->type->kind))
         {
             node->type = rhs->type;
             return;
@@ -226,4 +286,12 @@ void add_type(Node *node)
         node->type = node->lhs->type;
         return;
     }
+
+    if (is_relationalnode(node->kind)) {
+        node->type = new_type(TYPE_INT);
+        return;
+    }
+
+    debug_node(node, "root", 0);
+    error("add_type() failure: 対応していないノードタイプです。");
 }

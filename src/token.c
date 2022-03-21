@@ -232,6 +232,14 @@ Token *tokenize(char *p)
             continue;
         }
 
+        if (strncmp(p, "void", 4) == 0 && !is_alnum(p[4]))
+        {
+            cur = new_token(TK_TYPE, cur, p, 4);
+            cur->type = new_type(TYPE_VOID);
+            p += 4;
+            continue;
+        }
+
         // 小文字だけのローカル変数
         if (is_alpha(*p))
         {

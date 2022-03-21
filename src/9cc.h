@@ -29,6 +29,7 @@ typedef enum
     TYPE_INT,
     TYPE_PTR,
     TYPE_ARRAY,
+    TYPE_VOID,
 } TypeKind;
 
 typedef struct Type Type;
@@ -55,12 +56,12 @@ typedef enum
     TK_INC,       // ++
     TK_DEC,       // --
     TK_DIV_EQ,    // /= 265
-    TK_MOD_EQ,    // %= 
+    TK_MOD_EQ,    // %=
     TK_RETURN,    // return
     TK_IF,        // if
     TK_ELSE,      // else
     TK_FOR,       // for
-    TK_WHILE,     // while 
+    TK_WHILE,     // while
     TK_EOF,       // eof
     TK_TYPE,      // int
     TK_SIZEOF,    // sizeof
@@ -72,13 +73,13 @@ typedef enum
 typedef struct Token Token;
 struct Token
 {
-    TokenKind kind; //
-    Type *type;     //
-    Token *next;    //
-    int val;        //
-    char *str;      //
+    TokenKind kind;        //
+    Type *type;            //
+    Token *next;           //
+    int val;               //
+    char *str;             //
     int str_literal_index; //
-    int len;        //
+    int len;               //
 };
 
 /* 変数の定義 */
@@ -97,46 +98,46 @@ struct Var
 /* ノードの定義 */
 typedef enum
 {
-    ND_ADD,      // +
-    ND_SUB,      // -
-    ND_MUL,      // *
-    ND_DIV,      // /
-    ND_MOD,      // %
-    ND_ASSIGN,   // =
-    ND_EQ,       // ==
-    ND_NE,       // !=
-    ND_LT,       // <
-    ND_LE,       // <=
-    ND_VAR,      // local var
-    ND_NUM,      // num
-    ND_RETURN,   // return
-    ND_IF,       // if
-    ND_ELSE,     // else
-    ND_FOR,      // for
-    ND_WHILE,    // while
-    ND_BLOCK,    // block {}
-    ND_CALL,     // call
-    ND_ADDR,     // & アドレス
-    ND_DEREF,    // * ポインタ
-    ND_STRING,   // string literal
-    ND_CONTINUE, // continue
-    ND_BREAK,    //break
-    ND_LOGICALNOT,   // !
+    ND_ADD,        // +
+    ND_SUB,        // -
+    ND_MUL,        // *
+    ND_DIV,        // /
+    ND_MOD,        // %
+    ND_ASSIGN,     // =
+    ND_EQ,         // ==
+    ND_NE,         // !=
+    ND_LT,         // <
+    ND_LE,         // <=
+    ND_VAR,        // local var
+    ND_NUM,        // num
+    ND_RETURN,     // return
+    ND_IF,         // if
+    ND_ELSE,       // else
+    ND_FOR,        // for
+    ND_WHILE,      // while
+    ND_BLOCK,      // block {}
+    ND_CALL,       // call
+    ND_ADDR,       // & アドレス
+    ND_DEREF,      // * ポインタ
+    ND_STRING,     // string literal
+    ND_CONTINUE,   // continue
+    ND_BREAK,      // break
+    ND_LOGICALNOT, // !
 } NodeKind;
 
 typedef struct Node Node;
 struct Node
 {
     NodeKind kind;
-    Node *lhs;     // 左辺
-    Node *rhs;     // 右辺
-    int val;       // ND_NUM ND_STRINGの時に使う
-    Var *var;     // kindがND_VARの場合のみ使う
-    char *fn_name; //
+    Node *lhs;         // 左辺
+    Node *rhs;         // 右辺
+    int val;           // ND_NUM ND_STRINGの時に使う
+    Var *var;          // kindがND_VARの場合のみ使う
+    char *fn_name;     //
     char *str_literal; // ND_STRINGのときに使う
-    Vector *args;  //
-    Vector *stmts; //
-    Type *type;    // 型
+    Vector *args;      //
+    Vector *stmts;     //
+    Type *type;        // 型
 
     // if (cond) then els
     // while (cond) body
@@ -190,8 +191,8 @@ void print_node_kind(NodeKind kind);
 void print_token_kind(TokenKind kind);
 void print_type_kind(TypeKind kind);
 void debug_var(Var *var);
-void debug_type(Type *ty);
-void debug_node(Node *node, char *pos);
+void debug_type(Type *ty, int depth);
+void debug_node(Node *node, char *pos, int depth);
 void debug_token(Token *t);
 
 // vector.c
@@ -215,7 +216,7 @@ Type *new_ptr_type(Type *ptr_to);
 Type *new_array_type(Type *ptr_to, int size);
 void add_type(Node *node);
 int sizeOfType(Type *ty);
-int is_numtype(TypeKind kind);
+bool is_integertype(TypeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 
 // グローバル変数

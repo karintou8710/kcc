@@ -207,19 +207,19 @@ static Node *new_add(Node *lhs, Node *rhs)
 
     Node *node = new_binop(ND_ADD, lhs, rhs);
 
-    if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
+    if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
     {
         return node;
     }
 
-    if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
+    if (is_integertype(lhs->type->kind) && rhs->type->kind == TYPE_PTR)
     {
         node->lhs = new_mul(lhs, new_node_num(rhs->type->ptr_to->size));
         add_type(node->lhs);
         return node;
     }
 
-    if (is_numtype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
+    if (is_integertype(lhs->type->kind) && rhs->type->kind == TYPE_ARRAY)
     {
         // ポインター型として演算
         node->lhs = new_mul(lhs, new_node_num(rhs->type->ptr_to->size));
@@ -238,19 +238,19 @@ static Node *new_sub(Node *lhs, Node *rhs)
     // lhsとrhsの順番に関係あり
     Node *node = new_binop(ND_SUB, lhs, rhs);
 
-    if (is_numtype(lhs->type->kind) && is_numtype(rhs->type->kind))
+    if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
     {
         return node;
     }
 
-    if (lhs->type->kind == TYPE_PTR && is_numtype(rhs->type->kind))
+    if (lhs->type->kind == TYPE_PTR && is_integertype(rhs->type->kind))
     {
         node->rhs = new_mul(rhs, new_node_num(lhs->type->ptr_to->size));
         add_type(node->rhs);
         return node;
     }
 
-    if (lhs->type->kind == TYPE_ARRAY && is_numtype(rhs->type->kind))
+    if (lhs->type->kind == TYPE_ARRAY && is_integertype(rhs->type->kind))
     {
         // ポインター型として演算
         node->rhs = new_mul(rhs, new_node_num(lhs->type->ptr_to->size));
@@ -320,6 +320,8 @@ static Node *new_assign(Node *lhs, Node *rhs)
     add_type(rhs);
 
     Node *node = new_binop(ND_ASSIGN, lhs, rhs);
+    // 代入できるかチェック
+    add_type(node);
 
     return node;
 }
@@ -356,7 +358,8 @@ static Node *get_node_ident(Token *tok)
     if (!var)
     {
         var = find_var(tok, true); // グローバル変数から取得
-        if (!var) {
+        if (!var)
+        {
             error_at(tok->str, "get_node_ident() failure: 宣言されていません");
         }
     }
@@ -380,18 +383,21 @@ void program()
     {
         Type *type = declaration_specifier();
         Token *t = get_nafter_token(1);
-        if (t->kind == '(') {
+        if (t->kind == '(')
+        {
             funcs[i++] = func_define(type);
-        } else {
+        }
+        else
+        {
             Node *node = declaration_global(type);
         }
-        
     }
     funcs[i] = NULL;
 }
 
 // <declaration_global> = <declaration_var> ";"
-static Node *declaration_global(Type *type) {
+static Node *declaration_global(Type *type)
+{
     Node *node = declaration_var(type, true);
     expect(';');
     return node;
@@ -399,7 +405,8 @@ static Node *declaration_global(Type *type) {
 
 // <initialize>  = "{" <initialize> (","  <initialize>)* "}"
 //               | <assign>
-static Node *initialize() {
+static Node *initialize()
+{
     Node *node = NULL;
     // TODO 配列の初期化式
     // if (consume('{')) {
@@ -411,11 +418,12 @@ static Node *initialize() {
     //     return node;
     // }
 
-    return assign();   
+    return assign();
 }
 
 // declaration_var = declaration_specifier ident type_suffix ("=" initialize)?
-static Node *declaration_var(Type *type, bool is_global) {
+static Node *declaration_var(Type *type, bool is_global)
+{
     Node *node = declear_node_ident(token, type, is_global);
     next_token();
     if (consume_nostep('['))
@@ -430,7 +438,7 @@ static Node *declaration_var(Type *type, bool is_global) {
     // 変数
     if (consume('='))
     {
-        return new_assign(node , initialize()); 
+        return new_assign(node, initialize());
     }
 
     return node;
@@ -464,7 +472,8 @@ static Type *type_suffix(Type *type)
 }
 
 // declaration_param = declaration_specifier ident type_suffix
-static Var *declaration_param(Var *cur) {
+static Var *declaration_param(Var *cur)
+{
     Type *type = declaration_specifier();
     Token *tok = token;
     expect(TK_IDENT);
@@ -505,7 +514,8 @@ static Function *func_define(Type *type)
         }
         Var *p = declaration_param(cur);
         // 配列型は暗黙にポインターとして扱う
-        if (p->type->kind == TYPE_ARRAY) {
+        if (p->type->kind == TYPE_ARRAY)
+        {
             Type *t = p->type;
             p->type = new_ptr_type(t->ptr_to);
             p->offset += sizeOfType(p->type) - sizeOfType(t);
@@ -806,7 +816,6 @@ static Node *unary()
         Node *node = new_node(ND_ADDR);
         node->lhs = array_suffix();
         add_type(node->lhs);
-        node->lhs->type = new_ptr_type(node->lhs->type);
         return node;
     }
     else if (consume('!'))
@@ -925,7 +934,8 @@ static Node *primary()
 
     debug_token(token);
 
-    if (token->kind == TK_EOF) {
+    if (token->kind == TK_EOF)
+    {
         // TK_EOFはtoken->strが入力を超える位置になる
         error("primary() failure: 不正なコードです。");
     }

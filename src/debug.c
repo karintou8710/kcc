@@ -1,5 +1,13 @@
 #include "9cc.h"
 
+void recursion_line_printf(int depth, char *fmt, ...) {
+    va_list ap;
+    int space_width = 4;
+    va_start(ap, fmt);
+    fprintf(stderr, "%*s", depth * space_width, "");
+    vfprintf(stderr, fmt, ap);
+}
+
 void print_node_kind(NodeKind kind)
 {
     fprintf(stderr, "nodekind -> ");
@@ -129,22 +137,23 @@ void print_type_kind(TypeKind kind) {
     fprintf(stderr, "\n");
 }
 
-void debug_node(Node *node, char *pos)
+void debug_node(Node *node, char *pos, int depth)
 {
-    fprintf(stderr, "pos %s\n", pos);
+    
+    recursion_line_printf(depth, "[%s]\n", pos);
 
     if (node == NULL)
-    {
-        fprintf(stderr, "node -> NULL\n");
+    {  
+        recursion_line_printf(depth, "node -> NULL\n");
         return;
     }
 
+    recursion_line_printf(depth, "");
     print_node_kind(node->kind);
+    puts("");
 
-    debug_node(node->lhs, "lhs");
-    debug_node(node->rhs, "rhs");
-    // debug_var(node->var);
-    // debug_type(node->type);
+    debug_node(node->lhs, "lhs", depth+1);
+    debug_node(node->rhs, "rhs", depth+1);
 }
 
 void debug_var(Var *var)
@@ -159,23 +168,24 @@ void debug_var(Var *var)
     fprintf(stderr, "len -> %d\n", var->len);
     fprintf(stderr, "offset -> %d\n", var->offset);
 
-    debug_type(var->type);
+    debug_type(var->type, 0);
 }
 
-void debug_type(Type *ty)
+void debug_type(Type *ty, int depth)
 {
     if (ty == NULL)
     {
-        fprintf(stderr, "type -> NULL\n\n");
+        recursion_line_printf(depth, "type -> NULL\n");
         return;
     }
 
+    recursion_line_printf(depth, "");
     print_type_kind(ty->kind);
-    fprintf(stderr, "size -> %d\n", ty->size);
-    fprintf(stderr, "array_size -> %d\n", ty->array_size);
-    fprintf(stderr, "↓\n");
+    puts("");
+    recursion_line_printf(depth, "size -> %d\n", ty->size);
+    recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
 
-    debug_type(ty->ptr_to);
+    debug_type(ty->ptr_to, depth+1);
 }
 
 void debug_token(Token *t) {
@@ -186,7 +196,7 @@ void debug_token(Token *t) {
     }
 
     print_token_kind(t->kind);
-    debug_type(t->type);
+    debug_type(t->type, 0);
     fprintf(stderr, "val -> %d\n", t->val);
     fprintf(stderr, "str -> %s\n", t->str);
     fprintf(stderr, "str_literal_index -> %d\n", t->str_literal_index);
