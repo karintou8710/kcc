@@ -23,7 +23,9 @@ static Var *find_var(Token *tok, bool is_global);
 static Type *declaration_specifier();
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type, bool is_global);
+static Node *declaration_vars(Type *type, bool is_global);
 static Var *declaration_param(Var *cur);
+static Type *pointer(Type *type);
 static Function *func_define();
 static Node *compound_stmt();
 static Node *stmt();
@@ -397,6 +399,7 @@ void program()
     while (!at_eof())
     {
         Type *type = declaration_specifier();
+        type = pointer(type);
         Token *t = get_nafter_token(1);
         if (t->kind == '(')
         {
@@ -410,10 +413,10 @@ void program()
     funcs[i] = NULL;
 }
 
-// <declaration_global> = <declaration_var> ";"
+// <declaration_global> = <declaration_vars> ";"
 static Node *declaration_global(Type *type)
 {
-    Node *node = declaration_var(type, true);
+    Node *node = declaration_vars(type, true);
     expect(';');
     return node;
 }
@@ -436,9 +439,19 @@ static Node *initialize()
     return assign();
 }
 
-// declaration_var = declaration_specifier ident type_suffix ("=" initialize)?
-static Node *declaration_var(Type *type, bool is_global)
-{
+// pointer = "*"*
+static Type *pointer(Type *type) {
+    while (consume('*'))
+    {
+        Type *t = new_ptr_type(type);
+        type = t;
+    }
+    return type;
+}
+
+// declaration_var = declaration_specifier pointer ident type_suffix ("=" initialize)?
+static Node *declaration_var(Type *type, bool is_global) {
+    type = pointer(type);
     Node *node = declear_node_ident(token, type, is_global);
     next_token();
     if (consume_nostep('['))
@@ -459,17 +472,29 @@ static Node *declaration_var(Type *type, bool is_global)
     return node;
 }
 
-// declaration_specifier = int "*"*
+// declaration_vars = declaration_var ("," declaration_var)+
+static Node *declaration_vars(Type *type, bool is_global)
+{
+    Node *node = declaration_var(type, is_global);
+    if (consume_nostep(';')) {
+        return node;
+    }
+
+    Node *n = new_node(ND_SUGER);
+    n->stmts = new_vec();
+    vec_push(n->stmts, node);
+    while (consume(',')) {
+        vec_push(n->stmts, declaration_var(type, is_global));
+    }
+    return n;
+}
+
+// declaration_specifier = int
 static Type *declaration_specifier()
 {
     expect_nostep(TK_TYPE);
     Type *type = token->type;
     next_token();
-    while (consume('*'))
-    {
-        Type *t = new_ptr_type(type);
-        type = t;
-    }
     return type;
 }
 
@@ -486,10 +511,12 @@ static Type *type_suffix(Type *type)
     return type;
 }
 
-// declaration_param = declaration_specifier ident type_suffix
+// TODO: voidに対応
+// declaration_param = declaration_specifier pointer ident type_suffix
 static Var *declaration_param(Var *cur)
 {
     Type *type = declaration_specifier();
+    type = pointer(type);
     Token *tok = token;
     expect(TK_IDENT);
     Var *lvar = memory_alloc(sizeof(Var));
@@ -509,8 +536,6 @@ static Var *declaration_param(Var *cur)
 
 // func_define = declaration_specifier ident "("
 // (declaration_param ("," declaration_param)* )? ")" compound_stmt
-//
-//
 static Function *func_define(Type *type)
 {
     Function *fn = memory_alloc(sizeof(Function));
@@ -557,7 +582,12 @@ static Node *compound_stmt()
     node->stmts = new_vec();
     while (!consume('}'))
     {
-        vec_push(node->stmts, stmt());
+        Node *n = stmt();
+        if (n->kind == ND_SUGER) {
+            vec_concat(node->stmts, n->stmts);
+            continue;
+        }
+        vec_push(node->stmts, n);
     }
     return node;
 }
@@ -665,13 +695,13 @@ static Node *stmt()
 // TODO: とりあえず一次元の配列だけを定義する
 // TODO: 多次元配列に対応
 // exprは一つの式で型の伝搬は大体ここまでありそう
-// expr = assign | declaration_var
+// expr = assign | declaration_vars
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
     {
         Type *type = declaration_specifier();
-        Node *node = declaration_var(type, false);
+        Node *node = declaration_vars(type, false);
         return node;
     }
 

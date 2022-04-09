@@ -127,6 +127,7 @@ typedef enum
     ND_LOGICALNOT, // !
     ND_LOGICAL_AND, // &&
     ND_LOGICAL_OR,  // ||
+    ND_SUGER,      // 糖衣構文
 } NodeKind;
 
 typedef struct Node Node;
@@ -210,6 +211,7 @@ void *vec_pop(Vector *v);
 void *vec_last(Vector *v);
 bool vec_contains(Vector *v, void *elem);
 bool vec_union1(Vector *v, void *elem);
+void vec_concat(Vector *to, Vector *from);
 
 // codegen.c
 void codegen();

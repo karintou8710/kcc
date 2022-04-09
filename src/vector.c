@@ -51,3 +51,10 @@ bool vec_union1(Vector *v, void *elem)
     vec_push(v, elem);
     return true;
 }
+
+void vec_concat(Vector *to, Vector *from)
+{
+    for (int i=0;i<from->len;i++) {
+        vec_push(to, from->body[i]);
+    }
+}

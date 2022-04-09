@@ -126,6 +126,30 @@ int assign7()
     b = (a = a - 1) + (a = a - 1);
     return b * a;
 }
+int assign8()
+{
+    int a,b,c,d,e;
+    a=1;
+    b=1;
+    c=1;
+    d=1;
+    e=1;
+    return a+b+c+d+e;
+}
+int assign9()
+{
+    int a=1,b,c=1,d,e=1;
+    b=2;
+    d=2;
+    return a+b+c+d+e;
+}
+int assign10()
+{
+    int a=1,b,c=1;
+    int *d=&b, *e = &a;
+    b=1;
+    return a+b+c+*d+*e;
+}
 // if else
 int if_else1()
 {
@@ -720,6 +744,9 @@ int main()
     ASSERT(10, assign5(), "assign5");
     ASSERT(5, assign6(), "assign6");
     ASSERT(6, assign7(), "assign7");
+    ASSERT(5, assign8(), "assign8");
+    ASSERT(7, assign9(), "assign9");
+    ASSERT(5, assign10(), "assign10");
 
     ASSERT(4, if_else1(), "if_else1");
     ASSERT(6, if_else2(), "if_else2");

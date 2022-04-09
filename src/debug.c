@@ -142,28 +142,37 @@ void print_type_kind(TypeKind kind) {
 
 void debug_node(Node *node, char *pos, int depth)
 {
-    
-    recursion_line_printf(depth, "[%s]\n", pos);
-
     if (node == NULL)
     {  
-        recursion_line_printf(depth, "node -> NULL\n");
         return;
     }
+
+    recursion_line_printf(depth, "[%s]\n", pos);
 
     recursion_line_printf(depth, "");
     print_node_kind(node->kind);
     puts("");
 
-    debug_node(node->lhs, "lhs", depth+1);
-    debug_node(node->rhs, "rhs", depth+1);
+    switch (node->kind) {
+        case ND_NUM:
+            recursion_line_printf(depth, "");
+            fprintf(stderr, "num -> %d\n", node->val);
+            return;
+        case ND_VAR:
+            recursion_line_printf(depth, "");
+            fprintf(stderr, "name -> %s\n", node->var->name);
+            return;
+        default:
+            debug_node(node->lhs, "lhs", depth+1);
+            debug_node(node->rhs, "rhs", depth+1);
+            return;
+    }
 }
 
 void debug_var(Var *var)
 {
     if (var == NULL)
     {
-        fprintf(stderr, "var -> NULL\n");
         return;
     }
 
@@ -178,7 +187,6 @@ void debug_type(Type *ty, int depth)
 {
     if (ty == NULL)
     {
-        recursion_line_printf(depth, "type -> NULL\n");
         return;
     }
 
@@ -194,7 +202,6 @@ void debug_type(Type *ty, int depth)
 void debug_token(Token *t) {
     if (t == NULL)
     {
-        fprintf(stderr, "token -> NULL\n");
         return;
     }
 
