@@ -128,6 +128,20 @@ Token *tokenize(char *p)
             continue;
         }
 
+        if (startsWith(p, "&&"))
+        {
+            cur = new_token(TK_LOGICAL_AND, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (startsWith(p, "||"))
+        {
+            cur = new_token(TK_LOGICAL_OR, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
         if (strchr("+-*/%=;()<>{},&[]!", *p))
         {
             cur = new_token(*p, cur, p, 1);

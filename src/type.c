@@ -285,9 +285,9 @@ void add_type(Node *node)
         error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
     }
 
-    if (node->kind == ND_LOGICALNOT)
+    if (node->kind == ND_LOGICALNOT || node->kind == ND_LOGICAL_AND || node->kind == ND_LOGICAL_OR)
     {
-        node->type = node->lhs->type;
+        node->type = new_type(TYPE_INT);
         return;
     }
 

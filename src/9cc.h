@@ -68,6 +68,8 @@ typedef enum
     TK_STRING,    // string
     TK_CONTINUE,  // continue
     TK_BREAK,     // break
+    TK_LOGICAL_AND, // &&
+    TK_LOGICAL_OR,  // ||
 } TokenKind;
 
 typedef struct Token Token;
@@ -123,6 +125,8 @@ typedef enum
     ND_CONTINUE,   // continue
     ND_BREAK,      // break
     ND_LOGICALNOT, // !
+    ND_LOGICAL_AND, // &&
+    ND_LOGICAL_OR,  // ||
 } NodeKind;
 
 typedef struct Node Node;

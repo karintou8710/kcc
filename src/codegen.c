@@ -437,6 +437,24 @@ static void gen(Node *node)
         printf("  setle al\n");
         printf("  movzb rax, al\n");
         break;
+    case (ND_LOGICAL_AND):
+        printf("  cmp rax, 0\n");
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        printf("  cmp rdi, 0\n");
+        printf("  setne dil\n");
+        printf("  movzb rdi, dil\n");
+        printf("  and rax, rdi\n");
+        break;
+    case (ND_LOGICAL_OR):
+        printf("  cmp rax, 0\n");
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        printf("  cmp rdi, 0\n");
+        printf("  setne dil\n");
+        printf("  movzb rdi, dil\n");
+        printf("  or rax, rdi\n");
+        break;
     }
 
     push();

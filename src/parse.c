@@ -29,6 +29,7 @@ static Node *compound_stmt();
 static Node *stmt();
 static Node *expr();
 static Node *assign();
+static Node *logical_expression();
 static Node *equality();
 static Node *relational();
 static Node *add();
@@ -678,39 +679,60 @@ static Node *expr()
 }
 
 // TODO: %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
-// assign = equality ("=" assign)?
-//        | equality ( "+=" | "-=" | "*=" | "/=" | "%=" ) equality
+// assign = logical_expression ("=" assign)?
+//        | logical_expression ( "+=" | "-=" | "*=" | "/=" | "%=" ) logical_expression
 static Node *assign()
 {
-    Node *node = equality();
+    Node *node = logical_expression();
     if (consume('='))
     {
         node = new_assign(node, assign());
     }
     else if (consume(TK_ADD_EQ))
     {
-        node = new_assign(node, new_add(node, equality()));
+        node = new_assign(node, new_add(node, logical_expression()));
     }
     else if (consume(TK_SUB_EQ))
     {
-        node = new_assign(node, new_sub(node, equality()));
+        node = new_assign(node, new_sub(node, logical_expression()));
     }
     else if (consume(TK_MUL_EQ))
     {
-        node = new_assign(node, new_mul(node, equality()));
+        node = new_assign(node, new_mul(node, logical_expression()));
     }
     else if (consume(TK_DIV_EQ))
     {
-        node = new_assign(node, new_div(node, equality()));
+        node = new_assign(node, new_div(node, logical_expression()));
     }
     else if (consume(TK_MOD_EQ))
     {
-        node = new_assign(node, new_mod(node, equality()));
+        node = new_assign(node, new_mod(node, logical_expression()));
     }
     return node;
 }
 
-// TODO: &&, ||
+// logical_expression = equality ("&&" equality | "||" equality)*
+static Node *logical_expression()
+{
+    Node *node = equality();
+
+    for (;;)
+    {
+        if (consume(TK_LOGICAL_AND))
+        {
+            node = new_binop(ND_LOGICAL_AND, node, equality());
+        }
+        else if (consume(TK_LOGICAL_OR))
+        {
+            node = new_binop(ND_LOGICAL_OR, node, equality());
+        }
+        else
+        {
+            return node;
+        }
+    }
+}
+
 // equality = relational ("==" relational | "!=" relational)*
 static Node *equality()
 {
