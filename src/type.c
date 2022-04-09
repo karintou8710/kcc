@@ -96,19 +96,16 @@ TypeKind large_numtype(Type *t1, Type *t2) {
 }
 
 /* キャスト */
-bool type_cast(Type *ty, TypeKind to) {
+bool can_type_cast(Type *ty, TypeKind to) {
     TypeKind from = ty->kind;
 
     if (to == TYPE_VOID) {
-        ty->kind = to;
         return true;
     }
 
     if (!is_scalartype(from) || !is_scalartype(to)) {
         return false;
     }
-
-    ty->kind = to;
 
     return true;
 }
@@ -161,8 +158,15 @@ void add_type(Node *node)
 
     if (node->kind == ND_CALL)
     {
-        /* TODO: とりあえずINT型だけど、関数の戻り値の型に直す */
-        node->type = new_type(TYPE_INT);
+        Function *fn = find_func(node->fn_name);
+        if (!fn) {
+            // TODO: プロトタイプ宣言に対応
+            node->type = new_type(TYPE_INT);
+            // error("add_type() failure: can't find func, name=%s", node->fn_name);
+        } else {
+            node->type = fn->ret_type;
+        }
+        
         return;
     }
 
@@ -177,7 +181,7 @@ void add_type(Node *node)
             error("add_type() failure: type not found(ND_ASSIGN)");
         }
 
-        if (type_cast(node->rhs->type, node->lhs->type->kind)) {
+        if (can_type_cast(node->rhs->type, node->lhs->type->kind)) {
             node->type = new_type(node->lhs->type->kind);
             return;
         }
@@ -188,11 +192,11 @@ void add_type(Node *node)
             return;
         }
         
-        fprintf(stderr, "node->lhs->type\n");
+        fprintf(stderr, "[node->lhs->type]\n");
         debug_type(node->lhs->type, 0);
-        fprintf(stderr, "node->rhs->type\n");
+        fprintf(stderr, "[node->rhs->type]\n");
         debug_type(node->rhs->type, 0);
-        error("add_type() failure: fail to cast %d %d", node->rhs->type->kind, node->lhs->type->kind);
+        error("add_type() failure: fail to cast %d -> %d", node->rhs->type->kind, node->lhs->type->kind);
     }
 
     // lhsとrhsの順番はparse側で保証する

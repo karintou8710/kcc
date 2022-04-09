@@ -70,7 +70,7 @@ static int size_to_regindex(int size)
         break;
     }
 
-    error("サポートしてないレジスターのサイズです");
+    error("size_to_regindex() failure: サポートしてないレジスターのサイズです");
 }
 
 static char *proper_register(Type *ty, RegKind kind)
@@ -245,7 +245,19 @@ static void gen(Node *node)
         return;
     case ND_RETURN:
         gen(node->lhs);
-        pop();
+        pop_rdi();
+        if (current_fn->ret_type->kind == TYPE_CHAR) {
+            printf("  movsx rax, dil\n");
+        } else if (current_fn->ret_type->kind != TYPE_VOID) {
+            if (current_fn->ret_type->size < 8) {
+                printf("  movsx rax, %s\n", proper_register(current_fn->ret_type, REG_RDI));
+            } else if (current_fn->ret_type->size == 8) {
+                printf("  mov rax, rdi\n");
+            } else {
+                error("gen() failure: ND_RETURN can't return over 8 size.");
+            }
+        }
+        
         printf("  jmp .L.return.%s\n", current_fn->name);
         // returnは終了なので数合わせなし
         return;

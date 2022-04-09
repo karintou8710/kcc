@@ -131,8 +131,11 @@ void print_type_kind(TypeKind kind) {
         fprintf(stderr, "TYPE_PTR");
     else if (kind == TYPE_ARRAY)
         fprintf(stderr, "TYPE_ARRAY");
+    else if (kind == TYPE_VOID) {
+        fprintf(stderr, "TYPE_VOID");
+    }
     else
-        error("print_tyte_kind() failure: unexpected type");
+        error("print_type_kind() failure: unexpected type %d", kind);
     
     fprintf(stderr, "\n");
 }

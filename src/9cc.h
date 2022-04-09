@@ -159,6 +159,8 @@ struct Function
     Var *params;
     Var *locals;
     int stack_size;
+
+    Type *ret_type; // return_type
 };
 
 typedef struct Initializer Initializer;
@@ -172,6 +174,7 @@ struct Initializer
 
 // parse.c
 void program();
+Function *find_func(char *name);
 
 // util.c
 int is_alpha(char c);
@@ -218,6 +221,7 @@ void add_type(Node *node);
 int sizeOfType(Type *ty);
 bool is_integertype(TypeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
+bool can_type_cast(Type *ty, TypeKind to);
 
 // グローバル変数
 Vector *string_literal;

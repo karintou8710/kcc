@@ -5,6 +5,7 @@
  * localsは後に出たローカル変数のポインタを持つ
  */
 static Var *locals;
+static Function *cur_parse_func;
 
 /* nodeの生成 */
 static Node *new_add(Node *lhs, Node *rhs);
@@ -368,6 +369,19 @@ static Node *get_node_ident(Token *tok)
     return node;
 }
 
+Function *find_func(char *name)
+{
+    for (int i = 0; funcs[i]; i++)
+    {
+        if (!memcmp(name, funcs[i]->name, strlen(name)))
+        {
+            return funcs[i];
+        }
+    }
+    
+    return NULL;
+}
+
 /*************************************/
 /******                         ******/
 /******           AST           ******/
@@ -499,12 +513,14 @@ static Var *declaration_param(Var *cur)
 static Function *func_define(Type *type)
 {
     Function *fn = memory_alloc(sizeof(Function));
+    cur_parse_func = fn;
     Token *tok = token;
     Var head = {};
     Var *cur = &head; // 引数の単方向連結リスト
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
+    fn->ret_type = type;
     expect('(');
     while (!consume(')'))
     {
@@ -561,8 +577,20 @@ static Node *stmt()
     if (consume(TK_RETURN))
     {
         node = new_node(ND_RETURN);
-        node->lhs = expr();
-        expect(';');
+        if (consume(';')) {
+            // 何も返さない場合
+            node->lhs = new_node_num(0); // ダミーで数値ノードを生成。codegenでvoid型かどうかを使って分岐
+        } else {
+            node->lhs = expr();
+            add_type(node->lhs);
+            if (!can_type_cast(node->lhs->type, cur_parse_func->ret_type->kind)) {
+                error("stmt() failure: can_type_cast fail");
+            }
+            if (cur_parse_func->ret_type->kind == TYPE_VOID) {
+                node->lhs = new_node_num(0); // ダミーで数値ノードを生成。codegenでvoid型かどうかを使って分岐
+            }
+            expect(';');
+        }
     }
     else if (consume(TK_IF))
     {
