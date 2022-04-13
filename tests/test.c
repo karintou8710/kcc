@@ -746,6 +746,10 @@ int assign_initializer3() {
     return is_same;
 }
 
+int param_void(void) {
+    return 1;
+}
+
 int main()
 {
     ASSERT(6, local1(), "local1");
@@ -852,6 +856,8 @@ int main()
     ASSERT(45, assign_initializer1(), "assign_initializer1");
     ASSERT(100, assign_initializer2(), "assign_initializer2");
     ASSERT(1, assign_initializer3(), "assign_initializer3");
+
+    ASSERT(1, param_void(), "param_void");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;

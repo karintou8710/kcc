@@ -609,8 +609,10 @@ static Var *declaration_param(Var *cur)
     return lvar;
 }
 
-// func_define = type_specifier ident "("
-// (declaration_param ("," declaration_param)* )? ")" compound_stmt
+/* func_define = type_specifier ident
+ * "("   ((declaration_param ("," declaration_param)* )? | "void")  ")"
+ * compound_stmt
+ */ 
 static Function *func_define(Type *type)
 {
     Function *fn = memory_alloc(sizeof(Function));
@@ -625,6 +627,12 @@ static Function *func_define(Type *type)
     expect('(');
     while (!consume(')'))
     {
+        if (token->kind == TK_TYPE && token->type->kind == TYPE_VOID)
+        {
+            expect(TK_TYPE);
+            continue;
+        }
+
         if (cur != &head)
         {
             expect(',');
