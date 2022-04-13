@@ -516,6 +516,26 @@ int sizeof5()
     int a[5];
     return sizeof(a);
 }
+int sizeof6()
+{
+    struct A {
+		int a;
+		int b;
+		int c;
+		int d[20];
+		struct A *e;
+	};
+	return sizeof(struct A);
+}
+int sizeof7()
+{
+    int a1 = sizeof(int);
+    int a2 = sizeof(char);
+    int a3 = sizeof(void);
+    int a4 = sizeof(int *);
+    int a5 = sizeof(void *);
+    return a1 + a2 + a3 + a4 + a5;
+}
 
 // 配列
 int array1()
@@ -801,6 +821,8 @@ int main()
     ASSERT(12, sizeof3(), "sizeof3");
     ASSERT(4, sizeof4(), "sizeof4");
     ASSERT(20, sizeof5(), "sizeof5");
+    ASSERT(100, sizeof6(), "sizeof6");
+    ASSERT(21, sizeof7(), "sizeof7");
 
     ASSERT(3, array1(), "array1");
     ASSERT(6, array2(), "array2");

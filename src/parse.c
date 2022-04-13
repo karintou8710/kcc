@@ -973,6 +973,7 @@ static Node *mul()
  *       | "*" postfix   ("*" unaryでもいい？)
  *       | "&" postfix
  *       | "sizeof" unary
+ *       | "sizeof" "(" type_specifier pointer ")"
  *       | ("++" | "--") postfix
  *       | "!" unary
  */
@@ -1010,8 +1011,29 @@ static Node *unary()
     }
     else if (consume(TK_SIZEOF))
     {
-        Node *node = new_node_num(sizeOfNode(unary()));
-        return node;
+        Token *tok = get_nafter_token(1);
+        if (tok->kind == TK_TYPE)
+        {
+            expect('(');
+            Type *t = type_specifier();
+            t = pointer(t);
+            if (t->kind == TYPE_STRUCT)
+            {
+                Type *stype = find_struct_type(t->name);
+                if (stype == NULL)
+                {
+                    error("find_struct_type() failure: %s構造体は定義されていません。", t->name);
+                }
+                t = stype;
+            }
+            Node *node = new_node_num(sizeOfType(t));
+            expect(')');
+            return node;
+        }
+        else
+        {
+            return new_node_num(sizeOfNode(unary()));
+        }
     }
     else if (consume(TK_INC))
     {
@@ -1088,7 +1110,7 @@ static Node *postfix()
 
             if (member == NULL)
             {
-                error("primary() failure: %s構造体が定義されていません。", my_strndup(tok->str, tok->len));
+                error("postfix() failure: %s構造体が定義されていません。", my_strndup(tok->str, tok->len));
             }
 
             continue;

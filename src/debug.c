@@ -118,7 +118,7 @@ void print_token_kind(TokenKind kind) {
     else if (kind == TK_BREAK)
         fprintf(stderr, "TK_BREAK");
     else
-        error("print_token_kind() failure");
+        fprintf(stderr, "TK_[%c]", kind);
     
     fprintf(stderr, "\n");
 }
