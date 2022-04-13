@@ -13,8 +13,17 @@
  *
  */
 
-/* ベクターの定義 */
+
+typedef struct Var Var;
 typedef struct Vector Vector;
+typedef struct Type Type;
+typedef struct Token Token;
+typedef struct Node Node;
+typedef struct Function Function;
+typedef struct Initializer Initializer;
+
+/* ベクターの定義 */
+
 struct Vector
 {
     void **body;
@@ -30,49 +39,53 @@ typedef enum
     TYPE_PTR,
     TYPE_ARRAY,
     TYPE_VOID,
+    TYPE_STRUCT,
 } TypeKind;
 
-typedef struct Type Type;
 struct Type
 {
     TypeKind kind;
     Type *ptr_to;
     int size;
     int array_size;
+
+    // struct
+    char *name;
+    Var *member;
 };
 
 /* トークンの定義 */
 typedef enum
 {
-    TK_NUM = 256, // number
-    TK_IDENT,     // ident
-    TK_EQ,        // ==
-    TK_NE,        // !=
-    TK_LE,        // <= 260
-    TK_GE,        // >=
-    TK_ADD_EQ,    // +=
-    TK_SUB_EQ,    // -=
-    TK_MUL_EQ,    // *=
-    TK_INC,       // ++
-    TK_DEC,       // --
-    TK_DIV_EQ,    // /= 265
-    TK_MOD_EQ,    // %=
-    TK_RETURN,    // return
-    TK_IF,        // if
-    TK_ELSE,      // else
-    TK_FOR,       // for
-    TK_WHILE,     // while
-    TK_EOF,       // eof
-    TK_TYPE,      // int
-    TK_SIZEOF,    // sizeof
-    TK_STRING,    // string
-    TK_CONTINUE,  // continue
-    TK_BREAK,     // break
+    TK_NUM = 256,   // number
+    TK_IDENT,       // ident
+    TK_EQ,          // ==
+    TK_NE,          // !=
+    TK_LE,          // <= 260
+    TK_GE,          // >=
+    TK_ADD_EQ,      // +=
+    TK_SUB_EQ,      // -=
+    TK_MUL_EQ,      // *=
+    TK_INC,         // ++
+    TK_DEC,         // --
+    TK_DIV_EQ,      // /= 265
+    TK_MOD_EQ,      // %=
+    TK_RETURN,      // return
+    TK_IF,          // if
+    TK_ELSE,        // else
+    TK_FOR,         // for
+    TK_WHILE,       // while
+    TK_EOF,         // eof
+    TK_TYPE,        // int
+    TK_SIZEOF,      // sizeof
+    TK_STRING,      // string
+    TK_CONTINUE,    // continue
+    TK_BREAK,       // break
     TK_LOGICAL_AND, // &&
     TK_LOGICAL_OR,  // ||
+    TK_ARROW,       // ->
 } TokenKind;
 
-typedef struct Token Token;
 struct Token
 {
     TokenKind kind;        //
@@ -85,7 +98,6 @@ struct Token
 };
 
 /* 変数の定義 */
-typedef struct Var Var;
 struct Var
 {
     Var *next;  // 次の変数かNULL
@@ -100,37 +112,38 @@ struct Var
 /* ノードの定義 */
 typedef enum
 {
-    ND_ADD,        // +
-    ND_SUB,        // -
-    ND_MUL,        // *
-    ND_DIV,        // /
-    ND_MOD,        // %
-    ND_ASSIGN,     // =
-    ND_EQ,         // ==
-    ND_NE,         // !=
-    ND_LT,         // <
-    ND_LE,         // <=
-    ND_VAR,        // local var
-    ND_NUM,        // num
-    ND_RETURN,     // return
-    ND_IF,         // if
-    ND_ELSE,       // else
-    ND_FOR,        // for
-    ND_WHILE,      // while
-    ND_BLOCK,      // block {}
-    ND_CALL,       // call
-    ND_ADDR,       // & アドレス
-    ND_DEREF,      // * ポインタ
-    ND_STRING,     // string literal
-    ND_CONTINUE,   // continue
-    ND_BREAK,      // break
-    ND_LOGICALNOT, // !
-    ND_LOGICAL_AND, // &&
-    ND_LOGICAL_OR,  // ||
-    ND_SUGER,      // 糖衣構文
+    ND_ADD,           // +
+    ND_SUB,           // -
+    ND_MUL,           // *
+    ND_DIV,           // /
+    ND_MOD,           // %
+    ND_ASSIGN,        // =
+    ND_EQ,            // ==
+    ND_NE,            // !=
+    ND_LT,            // <
+    ND_LE,            // <=
+    ND_VAR,           // local var
+    ND_NUM,           // num
+    ND_RETURN,        // return
+    ND_IF,            // if
+    ND_ELSE,          // else
+    ND_FOR,           // for
+    ND_WHILE,         // while
+    ND_BLOCK,         // block {}
+    ND_CALL,          // call
+    ND_ADDR,          // & アドレス
+    ND_DEREF,         // * ポインタ
+    ND_STRING,        // string literal
+    ND_CONTINUE,      // continue
+    ND_BREAK,         // break
+    ND_LOGICALNOT,    // !
+    ND_LOGICAL_AND,   // &&
+    ND_LOGICAL_OR,    // ||
+    ND_SUGER,         // 糖衣構文
+    ND_NULL,          // 何もしない
+    ND_STRUCT_MEMBER, // struct member
 } NodeKind;
 
-typedef struct Node Node;
 struct Node
 {
     NodeKind kind;
@@ -156,7 +169,6 @@ struct Node
 };
 
 /* 関数型の定義 */
-typedef struct Function Function;
 struct Function
 {
     char *name;
@@ -168,14 +180,12 @@ struct Function
     Type *ret_type; // return_type
 };
 
-typedef struct Initializer Initializer;
 struct Initializer
 {
     int val;
     Vector *el;
     Type *type;
 };
-
 
 // parse.c
 void program();
@@ -202,6 +212,7 @@ void debug_var(Var *var);
 void debug_type(Type *ty, int depth);
 void debug_node(Node *node, char *pos, int depth);
 void debug_token(Token *t);
+void debug(char *fmt, ...);
 
 // vector.c
 Vector *new_vec();
@@ -232,9 +243,10 @@ bool can_type_cast(Type *ty, TypeKind to);
 // グローバル変数
 Vector *string_literal;
 Var *globals;
-Token *token;         // tokenは単方向の連結リスト
-char *user_input;     // 入力プログラム
+Token *token;     // tokenは単方向の連結リスト
+char *user_input; // 入力プログラム
 char *file_name;
-Function *funcs[1000]; // TODO: Vectorに対応する
-int label_if_count;   // ifのラベル
-int label_loop_count; // forとwhileのラベル
+Function *funcs[1000];      // TODO: Vectorに対応する
+int label_if_count;         // ifのラベル
+int label_loop_count;       // forとwhileのラベル
+Vector *struct_local_lists; // 既出の構造体

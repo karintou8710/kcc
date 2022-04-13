@@ -18,6 +18,9 @@ static int tykind_to_size(TypeKind tykind)
         return 4;
     case TYPE_PTR:
         return 8;
+    case TYPE_STRUCT:
+        // parser側でsizeを決める
+        return 0;
     }
 
     error("存在しないまたは固定長ではない型です");
@@ -252,7 +255,7 @@ void add_type(Node *node)
     if (node->kind == ND_MUL)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+        if (is_integertype(lhs->type->kind)&& is_integertype(rhs->type->kind))
         {
             node->type = new_type(TYPE_INT);
             return;
@@ -264,7 +267,7 @@ void add_type(Node *node)
     if (node->kind == ND_DIV)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+        if (is_integertype(lhs->type->kind) &&  is_integertype(rhs->type->kind))
         {
             node->type = new_type(TYPE_INT);
             return;
@@ -276,7 +279,7 @@ void add_type(Node *node)
     if (node->kind == ND_MOD)
     {
         Node *lhs = node->lhs, *rhs = node->rhs;
-        if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+        if (is_integertype(lhs->type->kind) &&  is_integertype(rhs->type->kind))
         {
             node->type = new_type(TYPE_INT);
             return;

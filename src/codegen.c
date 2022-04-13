@@ -9,6 +9,7 @@
  */
 
 static void gen(Node *node);
+static void load(Type *ty);
 
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
@@ -169,6 +170,14 @@ static void gen_addr(Node *node)
         gen(node);
         return;
     }
+    else if (node->kind == ND_STRUCT_MEMBER)
+    {
+        gen_addr(node->lhs);
+        pop();
+        printf("  add rax, %d\n", node->val);
+        push();
+        return;
+    }
 
     error("左辺値がポインターまたは変数ではありません");
 }
@@ -210,11 +219,21 @@ static void gen(Node *node)
 
     switch (node->kind)
     {
+    case ND_NULL:
+        push();
+        return;
     case ND_NUM:
         push_num(node->val);
         return;
     case ND_STRING:
         printf("  lea rax, [rip+.LC%d]\n", node->val);
+        push();
+        return;
+    case ND_STRUCT_MEMBER:
+        gen_addr(node);
+        pop();
+        add_type(node);
+        load(node->type);
         push();
         return;
     case ND_VAR:

@@ -142,7 +142,14 @@ Token *tokenize(char *p)
             continue;
         }
 
-        if (strchr("+-*/%=;()<>{},&[]!", *p))
+        if (startsWith(p, "->"))
+        {
+            cur = new_token(TK_ARROW, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (strchr("+-*/%=;()<>{},&[]!.", *p))
         {
             cur = new_token(*p, cur, p, 1);
             p++;
@@ -254,7 +261,26 @@ Token *tokenize(char *p)
             continue;
         }
 
-        // 小文字だけのローカル変数
+        if (strncmp(p, "struct", 6) == 0 && !is_alnum(p[6]))
+        {
+            cur = new_token(TK_TYPE, cur, p, 6);
+            cur->type = new_type(TYPE_STRUCT);
+            p += 6;
+
+            while (isspace(*p)) p++;
+
+            if (is_alpha(*p))
+            {
+                char *q = p;
+                str_advanve(&p);
+                cur->type->name = my_strndup(q, p-q);
+                continue;
+            } else {
+                error_at(p, "tokenize() failure: structの型名が存在しません。");
+            }
+           
+        }
+
         if (is_alpha(*p))
         {
             cur = new_token(TK_IDENT, cur, p, 0);

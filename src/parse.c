@@ -20,10 +20,10 @@ static void create_lvar_from_params(Var *params);
 static Var *find_var(Token *tok, bool is_global);
 
 /* AST */
-static Type *declaration_specifier();
+static Type *type_specifier();
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type, bool is_global);
-static Node *declaration_vars(Type *type, bool is_global);
+static Node *declaration(Type *type, bool is_global);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static Function *func_define();
@@ -37,7 +37,7 @@ static Node *relational();
 static Node *add();
 static Node *mul();
 static Node *unary();
-static Node *array_suffix();
+static Node *postfix();
 static Type *type_suffix(Type *type);
 static Node *primary();
 
@@ -71,7 +71,9 @@ static void expect(int op)
             print_token_kind(op);
             error_at(token->str, "expect() failure: 適当な位置に型がありません");
         }
-        error_at(token->str, "expect() failure: 適切な演算子ではありません");
+        char msg[100];
+        snprintf(msg, 100, "expect() failure: 「%c」ではありません。", op);
+        error_at(token->str, msg);
     }
     next_token();
 }
@@ -136,6 +138,18 @@ static Var *new_gvar(Token *tok, Type *type)
     gvar->is_global = true;
     globals = gvar; // globalsを新しいグローバル変数に更新
     return gvar;
+}
+
+static void new_struct_member(Token *tok, Type *member_type, Type *struct_type)
+{
+    Var *member = memory_alloc(sizeof(Var));
+    member->next = struct_type->member;
+    member->name = my_strndup(tok->str, tok->len);
+    member->len = tok->len;
+    member->type = member_type;
+    member->offset = struct_type->member->offset + sizeOfType(member_type);
+    struct_type->member = member;
+    struct_type->size += member_type->size;
 }
 
 // TODO: 引数に適切な型をつけるようにする
@@ -278,7 +292,7 @@ static Node *new_mul(Node *lhs, Node *rhs)
 
     Node *node = new_binop(ND_MUL, lhs, rhs);
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
     {
         return node;
     }
@@ -294,7 +308,7 @@ static Node *new_div(Node *lhs, Node *rhs)
     // lhsとrhsの順番に関係あり (lhs <= rhs)
     Node *node = new_binop(ND_DIV, lhs, rhs);
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
     {
         return node;
     }
@@ -310,7 +324,7 @@ static Node *new_mod(Node *lhs, Node *rhs)
     // lhsとrhsの順番に関係あり (lhs <= rhs)
     Node *node = new_binop(ND_MOD, lhs, rhs);
 
-    if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT)
+    if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind))
     {
         return node;
     }
@@ -381,7 +395,21 @@ Function *find_func(char *name)
             return funcs[i];
         }
     }
-    
+
+    return NULL;
+}
+
+Type *find_struct_type(char *name)
+{
+    for (int i = 0; i < struct_local_lists->len; i++)
+    {
+        Type *t = struct_local_lists->body[i];
+        if (strcmp(t->name, name) == 0)
+        {
+            return t;
+        }
+    }
+
     return NULL;
 }
 
@@ -398,7 +426,7 @@ void program()
     int i = 0;
     while (!at_eof())
     {
-        Type *type = declaration_specifier();
+        Type *type = type_specifier();
         type = pointer(type);
         Token *t = get_nafter_token(1);
         if (t->kind == '(')
@@ -413,10 +441,10 @@ void program()
     funcs[i] = NULL;
 }
 
-// <declaration_global> = <declaration_vars> ";"
+// <declaration_global> = <declaration> ";"
 static Node *declaration_global(Type *type)
 {
-    Node *node = declaration_vars(type, true);
+    Node *node = declaration(type, true);
     expect(';');
     return node;
 }
@@ -440,7 +468,8 @@ static Node *initialize()
 }
 
 // pointer = "*"*
-static Type *pointer(Type *type) {
+static Type *pointer(Type *type)
+{
     while (consume('*'))
     {
         Type *t = new_ptr_type(type);
@@ -449,8 +478,9 @@ static Type *pointer(Type *type) {
     return type;
 }
 
-// declaration_var = declaration_specifier pointer ident type_suffix ("=" initialize)?
-static Node *declaration_var(Type *type, bool is_global) {
+// declaration_var = pointer ident type_suffix ("=" initialize)?
+static Node *declaration_var(Type *type, bool is_global)
+{
     type = pointer(type);
     Node *node = declear_node_ident(token, type, is_global);
     next_token();
@@ -472,29 +502,74 @@ static Node *declaration_var(Type *type, bool is_global) {
     return node;
 }
 
-// declaration_vars = declaration_var ("," declaration_var)+
-static Node *declaration_vars(Type *type, bool is_global)
+// declaration = type_specifier (declaration_var ("," declaration_var)+)?
+static Node *declaration(Type *type, bool is_global)
 {
     Node *node = declaration_var(type, is_global);
-    if (consume_nostep(';')) {
+    if (consume_nostep(';'))
+    {
         return node;
     }
 
     Node *n = new_node(ND_SUGER);
     n->stmts = new_vec();
     vec_push(n->stmts, node);
-    while (consume(',')) {
+    while (consume(','))
+    {
         vec_push(n->stmts, declaration_var(type, is_global));
     }
     return n;
 }
 
-// declaration_specifier = int
-static Type *declaration_specifier()
+// type_specifier pointer ident ";"
+Type *struct_declaration(Type *type)
+{
+    Type *t = type_specifier();
+    t = pointer(t);
+    Token *tok = token;
+    next_token();
+    t = type_suffix(t);
+    new_struct_member(tok, t, type);
+    expect(';');
+    return type;
+}
+
+/* type_specifier = "int"
+ *                | "char"
+ *                | "void"
+ *                | "struct" ident
+ *                | "struct" ident "{" struct_declaration* "}"
+ */
+static Type *type_specifier()
 {
     expect_nostep(TK_TYPE);
     Type *type = token->type;
     next_token();
+    if (type->kind == TYPE_STRUCT && consume('{'))
+    {
+        if (find_struct_type(type->name) != NULL)
+        {
+            error("find_struct_type() failure: %s構造体は既に宣言済みです。", type->name);
+        }
+        vec_push(struct_local_lists, type);
+        // 構造体のメンバーの宣言
+        type->member = memory_alloc(sizeof(Var));
+        while (!consume('}'))
+        {
+            type = struct_declaration(type);
+        }
+        // 定義した順に並べ直す
+        Var *reverse_member = NULL;
+        while (type->member)
+        {
+            Var *tmp = type->member->next;
+            type->member->next = reverse_member;
+            reverse_member = type->member;
+            type->member = tmp;
+        }
+        type->member = reverse_member->next;
+    }
+
     return type;
 }
 
@@ -512,10 +587,10 @@ static Type *type_suffix(Type *type)
 }
 
 // TODO: voidに対応
-// declaration_param = declaration_specifier pointer ident type_suffix
+// declaration_param = type_specifier pointer ident type_suffix
 static Var *declaration_param(Var *cur)
 {
-    Type *type = declaration_specifier();
+    Type *type = type_specifier();
     type = pointer(type);
     Token *tok = token;
     expect(TK_IDENT);
@@ -534,7 +609,7 @@ static Var *declaration_param(Var *cur)
     return lvar;
 }
 
-// func_define = declaration_specifier ident "("
+// func_define = type_specifier ident "("
 // (declaration_param ("," declaration_param)* )? ")" compound_stmt
 static Function *func_define(Type *type)
 {
@@ -567,6 +642,7 @@ static Function *func_define(Type *type)
 
     fn->params = head.next; // 前から見ていく
     locals = memory_alloc(sizeof(Var));
+    struct_local_lists = new_vec(); // 関数毎に構造体を初期化
     locals->offset = 0;
     create_lvar_from_params(fn->params);
     fn->body = compound_stmt();
@@ -583,9 +659,15 @@ static Node *compound_stmt()
     while (!consume('}'))
     {
         Node *n = stmt();
-        if (n->kind == ND_SUGER) {
+        if (n->kind == ND_SUGER)
+        {
             vec_concat(node->stmts, n->stmts);
             continue;
+        }
+        else if (n->kind == ND_VAR)
+        {
+            // ローカル変数の宣言はコンパイルしない
+            n = new_node(ND_NULL);
         }
         vec_push(node->stmts, n);
     }
@@ -608,16 +690,21 @@ static Node *stmt()
     if (consume(TK_RETURN))
     {
         node = new_node(ND_RETURN);
-        if (consume(';')) {
+        if (consume(';'))
+        {
             // 何も返さない場合
             node->lhs = new_node_num(0); // ダミーで数値ノードを生成。codegenでvoid型かどうかを使って分岐
-        } else {
+        }
+        else
+        {
             node->lhs = expr();
             add_type(node->lhs);
-            if (!can_type_cast(node->lhs->type, cur_parse_func->ret_type->kind)) {
+            if (!can_type_cast(node->lhs->type, cur_parse_func->ret_type->kind))
+            {
                 error("stmt() failure: can_type_cast fail");
             }
-            if (cur_parse_func->ret_type->kind == TYPE_VOID) {
+            if (cur_parse_func->ret_type->kind == TYPE_VOID)
+            {
                 node->lhs = new_node_num(0); // ダミーで数値ノードを生成。codegenでvoid型かどうかを使って分岐
             }
             expect(';');
@@ -695,13 +782,29 @@ static Node *stmt()
 // TODO: とりあえず一次元の配列だけを定義する
 // TODO: 多次元配列に対応
 // exprは一つの式で型の伝搬は大体ここまでありそう
-// expr = assign | declaration_vars
+// expr = assign | declaration
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
     {
-        Type *type = declaration_specifier();
-        Node *node = declaration_vars(type, false);
+        Type *type = type_specifier();
+        if (type->kind == TYPE_STRUCT && type->member != NULL)
+        {
+            // 構造体の宣言
+            return new_node(ND_NULL);
+        }
+
+        if (type->kind == TYPE_STRUCT)
+        {
+            Type *t = find_struct_type(type->name);
+            if (t == NULL)
+            {
+                error("type_specifier() failure: %s構造体は宣言されていません。", type->name);
+            }
+            type = t;
+        }
+
+        Node *node = declaration(type, false);
         return node;
     }
 
@@ -865,23 +968,23 @@ static Node *mul()
 }
 
 // TODO: !(否定),
-/* unary = "+"? array_suffix
- *       | "-"? array_suffix
- *       | "*" array_suffix   ("*" unaryでもいい？)
- *       | "&" array_suffix
+/* unary = "+"? postfix
+ *       | "-"? postfix
+ *       | "*" postfix   ("*" unaryでもいい？)
+ *       | "&" postfix
  *       | "sizeof" unary
- *       | ("++" | "--") array_suffix
+ *       | ("++" | "--") postfix
  *       | "!" unary
  */
 static Node *unary()
 {
     if (consume('+'))
     {
-        return array_suffix();
+        return postfix();
     }
     else if (consume('-'))
     {
-        return new_sub(new_node_num(0), array_suffix());
+        return new_sub(new_node_num(0), postfix());
     }
     else if (consume('*'))
     {
@@ -894,7 +997,7 @@ static Node *unary()
     else if (consume('&'))
     {
         Node *node = new_node(ND_ADDR);
-        node->lhs = array_suffix();
+        node->lhs = postfix();
         add_type(node->lhs);
         return node;
     }
@@ -912,16 +1015,16 @@ static Node *unary()
     }
     else if (consume(TK_INC))
     {
-        Node *node = array_suffix();
+        Node *node = postfix();
         return new_assign(node, new_add(node, new_node_num(1)));
     }
     else if (consume(TK_DEC))
     {
-        Node *node = array_suffix();
+        Node *node = postfix();
         return new_assign(node, new_sub(node, new_node_num(1)));
     }
 
-    Node *node = array_suffix();
+    Node *node = postfix();
     if (consume(TK_INC))
     {
         // 先に+1して保存してから-1する
@@ -936,19 +1039,73 @@ static Node *unary()
     return node;
 }
 
-// array_suffix = primary ("[" expr "]")*
-static Node *array_suffix()
+// postfix = primary  ( ("[" expr "]") | "." | "->" ) *
+static Node *postfix()
 {
     Node *node = primary();
 
-    while (consume('['))
+    while (1)
     {
-        Node *deref = new_node(ND_DEREF);
-        deref->lhs = new_add(node, expr());
-        add_type(deref->lhs);
-        add_type(deref);
-        expect(']');
-        node = deref;
+        if (consume_nostep(TK_ARROW) || consume_nostep('.'))
+        {
+            if (consume_nostep(TK_ARROW))
+            {
+                Node *n = new_node(ND_DEREF);
+                n->lhs = node;
+                add_type(n->lhs);
+                add_type(n);
+                node = n;
+            }
+            next_token();
+            // 構造体のメンバーアクセス
+            Token *tok = token;
+            expect(TK_IDENT);
+            add_type(node);
+            if (node->type->kind != TYPE_STRUCT)
+            {
+                error("postfix() failure: struct型ではありません。");
+            }
+            Type *t = find_struct_type(node->type->name);
+            if (t == NULL)
+            {
+                error("find_struct_type() failure: %s構造体は定義されていません。", node->type->name);
+            }
+            Var *member = t->member;
+            while (member)
+            {
+                if (!strcmp(member->name, my_strndup(tok->str, tok->len)))
+                {
+                    Node *n = new_node(ND_STRUCT_MEMBER);
+                    // 変数をコピー
+                    n->lhs = node;
+                    n->val = member->offset - member->type->size;
+                    n->type = member->type;
+                    node = n;
+                    break;
+                }
+                member = member->next;
+            }
+
+            if (member == NULL)
+            {
+                error("primary() failure: %s構造体が定義されていません。", my_strndup(tok->str, tok->len));
+            }
+
+            continue;
+        }
+
+        if (consume('['))
+        {
+            Node *deref = new_node(ND_DEREF);
+            deref->lhs = new_add(node, expr());
+            add_type(deref->lhs);
+            add_type(deref);
+            expect(']');
+            node = deref;
+            continue;
+        }
+
+        break;
     }
 
     return node;
@@ -1011,8 +1168,6 @@ static Node *primary()
     {
         return new_node_num(expect_number());
     }
-
-    debug_token(token);
 
     if (token->kind == TK_EOF)
     {

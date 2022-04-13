@@ -1,7 +1,7 @@
-# 自作cコンパイラ
+# 自作 c コンパイラ
 
-Rui Ueyamaさんの「低レイヤを知りたい人のためのCコンパイラ作成入門」
-を参考に、セルフホストを目指して作成しています。  
+Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイラ作成入門」
+を参考に、セルフホストを目指して作成しています。
 
 ## 実装済みの機能
 
@@ -23,15 +23,15 @@ program = ( declaration_var | func_define )*
 
 declaration_global = declaration_var ;
 
-declaration_var = declaration_specifier ident type_suffix
+declaration_var = type_specifier ident type_suffix
 
-declaration_specifier = int "*"*
+type_specifier = int "*"*
 
 type_suffix = "[" num "]" type_suffix | ε
 
-declaration_param = declaration_specifier ident type_suffix
+declaration_param = type_specifier ident type_suffix
 
-func_define = declaration_specifier ident
+func_define = type_specifier ident
 "(" (declaration_param ("," declaration_param)*)?  ")" compound_stmt
 
 compound_stmt = { stmt* }
@@ -55,19 +55,15 @@ add = mul ("+" mul | "-" mul)*
 
 mul = unary ("*" unary | "/" unary)*
 
-unary   = "+"? array_suffix
-        | "-"? array_suffix
-        | "*" array_suffix   ("*" unaryでもいい？)
-        | "&" array_suffix
+unary   = "+"? postfix
+        | "-"? postfix
+        | "*" postfix   ("*" unaryでもいい？)
+        | "&" postfix
         | "sizeof" unary
 
-array_suffix = primary ("[" expr "]")*
+postfix = primary ("[" expr "]")*
 
 funcall = "(" (expr ("," expr)*)? ")"
 
 primary = "(" expr ")" | num | ident funcall?
 ```
-
-
-
-

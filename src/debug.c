@@ -59,6 +59,8 @@ void print_node_kind(NodeKind kind)
         fprintf(stderr, "ND_CONTINUE"); // continue
     else if (kind == ND_BREAK)
         fprintf(stderr, "ND_BREAK"); // break
+    else if (kind == ND_STRUCT_MEMBER)
+        fprintf(stderr, "ND_STRUCT_MEMBER"); // struct member
     else
         error("print_node_kind() failure");
     
@@ -134,6 +136,9 @@ void print_type_kind(TypeKind kind) {
     else if (kind == TYPE_VOID) {
         fprintf(stderr, "TYPE_VOID");
     }
+    else if (kind == TYPE_STRUCT) {
+        fprintf(stderr, "TYPE_STRUCT");
+    }
     else
         error("print_type_kind() failure: unexpected type %d", kind);
     
@@ -159,8 +164,8 @@ void debug_node(Node *node, char *pos, int depth)
             fprintf(stderr, "num -> %d\n", node->val);
             return;
         case ND_VAR:
-            recursion_line_printf(depth, "");
-            fprintf(stderr, "name -> %s\n", node->var->name);
+            recursion_line_printf(depth, "name -> %s\n", node->var->name);
+            recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
             return;
         default:
             debug_node(node->lhs, "lhs", depth+1);
@@ -180,7 +185,6 @@ void debug_var(Var *var)
     fprintf(stderr, "len -> %d\n", var->len);
     fprintf(stderr, "offset -> %d\n", var->offset);
 
-    debug_type(var->type, 0);
 }
 
 void debug_type(Type *ty, int depth)
@@ -193,10 +197,21 @@ void debug_type(Type *ty, int depth)
     recursion_line_printf(depth, "");
     print_type_kind(ty->kind);
     puts("");
-    recursion_line_printf(depth, "size -> %d\n", ty->size);
-    recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
-
-    debug_type(ty->ptr_to, depth+1);
+    switch (ty->kind) {
+        case TYPE_STRUCT:
+        recursion_line_printf(depth, "name -> %s\n", ty->name);
+            recursion_line_printf(depth, "size -> %d\n", ty->size);
+            for (Var *member = ty->member; member; member = member->next) {
+                recursion_line_printf(depth, "member -> %s\n", member->name);
+            }
+            break;
+        default:
+            recursion_line_printf(depth, "size -> %d\n", ty->size);
+            recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
+            debug_type(ty->ptr_to, depth+1);
+            break;
+    }
+    
 }
 
 void debug_token(Token *t) {
@@ -211,4 +226,12 @@ void debug_token(Token *t) {
     fprintf(stderr, "str -> %s\n", t->str);
     fprintf(stderr, "str_literal_index -> %d\n", t->str_literal_index);
     fprintf(stderr, "len; -> %d\n", t->len);
+}
+
+void debug(char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
 }
