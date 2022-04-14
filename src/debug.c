@@ -61,6 +61,10 @@ void print_node_kind(NodeKind kind)
         fprintf(stderr, "ND_BREAK"); // break
     else if (kind == ND_STRUCT_MEMBER)
         fprintf(stderr, "ND_STRUCT_MEMBER"); // struct member
+    else if (kind == ND_NULL)
+        fprintf(stderr, "ND_NULL"); // null
+    else if (kind == ND_SUGER)
+        fprintf(stderr, "ND_SUGER"); // null
     else
         error("print_node_kind() failure");
     

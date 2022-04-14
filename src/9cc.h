@@ -249,4 +249,5 @@ char *file_name;
 Function *funcs[1000];      // TODO: Vectorに対応する
 int label_if_count;         // ifのラベル
 int label_loop_count;       // forとwhileのラベル
+Vector *struct_global_lists;
 Vector *struct_local_lists; // 既出の構造体

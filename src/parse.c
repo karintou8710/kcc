@@ -6,6 +6,8 @@
  */
 static Var *locals;
 static Function *cur_parse_func;
+static bool is_global = true;
+static bool is_struct_create = false;
 
 /* nodeの生成 */
 static Node *new_add(Node *lhs, Node *rhs);
@@ -17,13 +19,14 @@ static Node *new_node_num(int val);
 static Var *new_lvar(Token *tok, Type *type);
 static Var *new_gvar(Token *tok, Type *type);
 static void create_lvar_from_params(Var *params);
-static Var *find_var(Token *tok, bool is_global);
+static Var *find_lvar(Token *tok);
+static Var *find_gvar(Token *tok);
 
 /* AST */
 static Type *type_specifier();
 static Node *declaration_global(Type *type);
-static Node *declaration_var(Type *type, bool is_global);
-static Node *declaration(Type *type, bool is_global);
+static Node *declaration_var(Type *type);
+static Node *declaration(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static Function *func_define();
@@ -171,9 +174,23 @@ static void create_lvar_from_params(Var *params)
 }
 
 /* 既に定義されたローカル変数を検索 */
-static Var *find_var(Token *tok, bool is_global)
+static Var *find_lvar(Token *tok)
 {
-    Var *vars = is_global ? globals : locals;
+    Var *vars = locals;
+    for (Var *var = vars; var; var = var->next)
+    {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+        {
+            return var;
+        }
+    }
+    return NULL;
+}
+
+/* 既に定義されたグローバル変数を検索 */
+static Var *find_gvar(Token *tok)
+{
+    Var *vars = globals;
     for (Var *var = vars; var; var = var->next)
     {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
@@ -353,10 +370,10 @@ static Node *new_node_num(int val)
 }
 
 /* 変数を宣言 */
-static Node *declear_node_ident(Token *tok, Type *type, bool is_global)
+static Node *declear_node_ident(Token *tok, Type *type)
 {
     Node *node = new_node(ND_VAR);
-    Var *var = find_var(tok, is_global);
+    Var *var = is_global ? find_gvar(tok) : find_lvar(tok);
     if (var)
     {
         error_at(tok->str, "declear_node_ident() failure: 既に宣言済みです");
@@ -372,10 +389,10 @@ static Node *get_node_ident(Token *tok)
 {
     Node *node = new_node(ND_VAR);
     Var *var;
-    var = find_var(tok, false); // ローカル変数を取得
+    var = find_lvar(tok); // ローカル変数を取得
     if (!var)
     {
-        var = find_var(tok, true); // グローバル変数から取得
+        var = find_gvar(tok); // グローバル変数から取得
         if (!var)
         {
             error_at(tok->str, "get_node_ident() failure: 宣言されていません");
@@ -399,7 +416,7 @@ Function *find_func(char *name)
     return NULL;
 }
 
-Type *find_struct_type(char *name)
+static Type *find_lstruct_type(char *name)
 {
     for (int i = 0; i < struct_local_lists->len; i++)
     {
@@ -413,6 +430,19 @@ Type *find_struct_type(char *name)
     return NULL;
 }
 
+static Type *find_gstruct_type(char *name)
+{
+    for (int i = 0; i < struct_global_lists->len; i++)
+    {
+        Type *t = struct_global_lists->body[i];
+        if (strcmp(t->name, name) == 0)
+        {
+            return t;
+        }
+    }
+
+    return NULL;
+}
 /*************************************/
 /******                         ******/
 /******           AST           ******/
@@ -431,7 +461,9 @@ void program()
         Token *t = get_nafter_token(1);
         if (t->kind == '(')
         {
+            is_global = false;
             funcs[i++] = func_define(type);
+            is_global = true;
         }
         else
         {
@@ -444,7 +476,14 @@ void program()
 // <declaration_global> = <declaration> ";"
 static Node *declaration_global(Type *type)
 {
-    Node *node = declaration(type, true);
+    if (type->kind == TYPE_STRUCT && is_struct_create)
+    {
+        // 構造体の作成
+        is_struct_create = false;
+        expect(';');
+        return new_node(ND_NULL);
+    }
+    Node *node = declaration(type);
     expect(';');
     return node;
 }
@@ -479,10 +518,10 @@ static Type *pointer(Type *type)
 }
 
 // declaration_var = pointer ident type_suffix ("=" initialize)?
-static Node *declaration_var(Type *type, bool is_global)
+static Node *declaration_var(Type *type)
 {
     type = pointer(type);
-    Node *node = declear_node_ident(token, type, is_global);
+    Node *node = declear_node_ident(token, type);
     next_token();
     if (consume_nostep('['))
     {
@@ -503,9 +542,9 @@ static Node *declaration_var(Type *type, bool is_global)
 }
 
 // declaration = type_specifier (declaration_var ("," declaration_var)+)?
-static Node *declaration(Type *type, bool is_global)
+static Node *declaration(Type *type)
 {
-    Node *node = declaration_var(type, is_global);
+    Node *node = declaration_var(type);
     if (consume_nostep(';'))
     {
         return node;
@@ -516,7 +555,7 @@ static Node *declaration(Type *type, bool is_global)
     vec_push(n->stmts, node);
     while (consume(','))
     {
-        vec_push(n->stmts, declaration_var(type, is_global));
+        vec_push(n->stmts, declaration_var(type));
     }
     return n;
 }
@@ -547,11 +586,23 @@ static Type *type_specifier()
     next_token();
     if (type->kind == TYPE_STRUCT && consume('{'))
     {
-        if (find_struct_type(type->name) != NULL)
+        is_struct_create = true;
+        if (is_global)
         {
-            error("find_struct_type() failure: %s構造体は既に宣言済みです。", type->name);
+            if (find_gstruct_type(type->name) != NULL)
+            {
+                error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+            }
         }
-        vec_push(struct_local_lists, type);
+        else
+        {
+            if (find_lstruct_type(type->name) != NULL)
+            {
+                error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+            }
+        }
+
+        vec_push(is_global ? struct_global_lists : struct_local_lists, type);
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}'))
@@ -568,6 +619,21 @@ static Type *type_specifier()
             type->member = tmp;
         }
         type->member = reverse_member->next;
+        return type;
+    }
+
+    if (type->kind == TYPE_STRUCT)
+    {
+        Type *stype = find_lstruct_type(type->name);
+        if (stype == NULL)
+        {
+            stype = find_gstruct_type(type->name);
+            if (stype == NULL)
+            {
+                error("type_specifier() failure: %s構造体は宣言されていません。", type->name);
+            }
+        }
+        type = stype;
     }
 
     return type;
@@ -612,7 +678,7 @@ static Var *declaration_param(Var *cur)
 /* func_define = type_specifier ident
  * "("   ((declaration_param ("," declaration_param)* )? | "void")  ")"
  * compound_stmt
- */ 
+ */
 static Function *func_define(Type *type)
 {
     Function *fn = memory_alloc(sizeof(Function));
@@ -787,32 +853,20 @@ static Node *stmt()
     return node;
 }
 
-// TODO: とりあえず一次元の配列だけを定義する
-// TODO: 多次元配列に対応
-// exprは一つの式で型の伝搬は大体ここまでありそう
 // expr = assign | declaration
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
     {
         Type *type = type_specifier();
-        if (type->kind == TYPE_STRUCT && type->member != NULL)
+        if (type->kind == TYPE_STRUCT && is_struct_create)
         {
-            // 構造体の宣言
+            // 構造体の作成
+            is_struct_create = false;
             return new_node(ND_NULL);
         }
 
-        if (type->kind == TYPE_STRUCT)
-        {
-            Type *t = find_struct_type(type->name);
-            if (t == NULL)
-            {
-                error("type_specifier() failure: %s構造体は宣言されていません。", type->name);
-            }
-            type = t;
-        }
-
-        Node *node = declaration(type, false);
+        Node *node = declaration(type);
         return node;
     }
 
@@ -1025,15 +1079,6 @@ static Node *unary()
             expect('(');
             Type *t = type_specifier();
             t = pointer(t);
-            if (t->kind == TYPE_STRUCT)
-            {
-                Type *stype = find_struct_type(t->name);
-                if (stype == NULL)
-                {
-                    error("find_struct_type() failure: %s構造体は定義されていません。", t->name);
-                }
-                t = stype;
-            }
             Node *node = new_node_num(sizeOfType(t));
             expect(')');
             return node;
@@ -1095,12 +1140,7 @@ static Node *postfix()
             {
                 error("postfix() failure: struct型ではありません。");
             }
-            Type *t = find_struct_type(node->type->name);
-            if (t == NULL)
-            {
-                error("find_struct_type() failure: %s構造体は定義されていません。", node->type->name);
-            }
-            Var *member = t->member;
+            Var *member = node->type->member;
             while (member)
             {
                 if (!strcmp(member->name, my_strndup(tok->str, tok->len)))
