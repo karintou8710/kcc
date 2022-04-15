@@ -1,9 +1,9 @@
-# 自作 c コンパイラ
+# kcc
 
 Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイラ作成入門」
 を参考に、セルフホストを目指して作成しています。
 
-## 実装済みの機能
+## Implemented
 
 - if, for, 配列, ポインター
 - グローバル変数の定義
@@ -18,7 +18,19 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - typedef 
 - enum
 
-# BNF
+## Build
+
+```bash
+# build
+$ git clone https://github.com/karintou8710/kcc
+$ cd kcc
+$ make
+
+# test
+$ make test
+```
+
+## BNF
 
 ```
 <program> = ( <declaration_global> | <func_define> )*
