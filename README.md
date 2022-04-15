@@ -8,62 +8,62 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - if, for, 配列, ポインター
 - グローバル変数の定義
 - 関数の定義、呼び出し
+- 構造体の基礎
 
 ## TODO
 
-- struct
 - 初期化式
 - else if, switch
 - スコープ
+- typedef 
+- enum
 
 # BNF
 
 ```
-program = ( declaration_var | func_define )*
-
-declaration_global = declaration_var ;
-
-declaration_var = type_specifier ident type_suffix
-
-type_specifier = int "*"*
-
-type_suffix = "[" num "]" type_suffix | ε
-
-declaration_param = type_specifier ident type_suffix
-
-func_define = type_specifier ident
-"(" (declaration_param ("," declaration_param)*)?  ")" compound_stmt
-
-compound_stmt = { stmt* }
-
-stmt   = expr? ";"
-       | "return" expr ";"
-       | "if" "(" expr ")" stmt ("else" stmt)?
-       | "while" "(" expr ")" stmt
-       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-       | compound_stmt
-
-expr = assign | declaration_var
-
-assign = equality ("=" assign)? | equality ( "+=" | "-=" | "*=" | "/=" | "%=" ) equality
-
-equality = relational ("==" relational | "!=" relational)*
-
-relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-
-add = mul ("+" mul | "-" mul)*
-
-mul = unary ("*" unary | "/" unary)*
-
-unary   = "+"? postfix
-        | "-"? postfix
-        | "*" postfix   ("*" unaryでもいい？)
-        | "&" postfix
-        | "sizeof" unary
-
-postfix = primary ("[" expr "]")*
-
-funcall = "(" (expr ("," expr)*)? ")"
-
-primary = "(" expr ")" | num | ident funcall?
+<program> = ( <declaration_global> | <func_define> )*
+<declaration_global> = <declaration> ";"
+<initialize> = <assign>
+<pointer> = "*"*
+<declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+<declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
+<struct_declaration> = <type_specifier> <pointer> <ident> ";"
+<type_specifier> = "int"
+                 | "char"
+                 | "void"
+                 | "struct" <ident>
+                 | "struct" <ident> "{" <struct_declaration>* "}"
+<type_suffix> = "[" <num> "]" <type_suffix> | ε
+<declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
+<func_define> = <type_specifier> <pointer> <ident>
+                "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
+                <compound_stmt>
+<compound_stmt> = { <stmt>* }
+<stmt> = <expr>? ";"
+       | "return" <expr>? ";"
+       | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
+       | "while" "(" <expr> ")" <stmt>
+       | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
+       | ("continue" | "break")
+       | <compound_stmt>
+<expr> = <assign> | <declaration>
+<assign> = <logical_expression> ("=" <assign>)?
+         | <logical_expression> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <logical_expression>
+<logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
+<equality> = <relational> ("==" <relational> | "!=" <relational>)*
+<relational> = <add> ("<" <add> | "<=" <add> | ">" <add> | ">=" <add>)*
+<add> = <mul> ("+" <mul> | "-" <mul>)*
+<mul> = <unary> ("*" <unary> | "/" <unary> | "%" <unary> )*
+<unary> = "+"? <postfix>
+        | "-"? <postfix>
+        | "*" <unary>
+        | "&" <postfix>
+        | "sizeof" <unary>
+        | "sizeof" "(" <type_specifier> <pointer> ")"
+        | ("++" | "--") <postfix>
+        | <postfix> ("++" | "--")
+        | "!" <unary>
+<postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
+<funcall> = "(" (<expr> ("," <expr>)*)? ")"
+<primary> = "(" <expr> ")" | <num> | <string> | <ident> <funcall>?
 ```

@@ -40,6 +40,11 @@ int globaltest2()
     return globaltest2_arr[1][1];
 }
 
+int *s1, s2, **s3, s4;
+int globaltest3() {
+    return sizeof(s1) + sizeof(s2) + sizeof s3 + sizeof s4;
+}
+
 struct A {
 	int num;
 	int num2;
@@ -150,6 +155,7 @@ int main() {
 
     ASSERT(3, globaltest1(), "globaltest1");
     ASSERT(2, globaltest2(), "globaltest2");
+    ASSERT(24, globaltest3(), "globaltest3");
 
     ASSERT(111, globalstruct1(), "globalstruct1");
     ASSERT(122, globalstruct2(), "globalstruct2");

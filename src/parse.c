@@ -71,7 +71,6 @@ static void expect(int op)
     {
         if (op == TK_TYPE)
         {
-            print_token_kind(op);
             error_at(token->str, "expect() failure: 適当な位置に型がありません");
         }
         char msg[100];
@@ -87,11 +86,12 @@ static void expect_nostep(int op)
     {
         if (op == TK_TYPE)
         {
-            print_token_kind(op);
             error_at(token->str, "expect_nostep() failure: 適当な位置に型がありません");
         }
 
-        error_at(token->str, "expect_nostep() failure: 適切な演算子ではありません");
+        char msg[100];
+        snprintf(msg, 100, "expect_nostep() failure: 「%c」ではありません。", op);
+        error_at(token->str, msg);
     }
 }
 
@@ -99,7 +99,7 @@ static int expect_number()
 {
     if (token->kind != TK_NUM)
     {
-        error_at(token->str, "expect_number() failure: 数ではありません");
+        error_at(token->str, "expect_number() failure: 数値ではありません");
     }
     int val = token->val;
     next_token();
@@ -109,6 +109,20 @@ static int expect_number()
 static bool at_eof()
 {
     return token->kind == TK_EOF;
+}
+
+// ポインターを読み進めて関数かグローバル変数か判断
+static bool is_func(Token *tok)
+{
+    while (tok->kind == '*')
+    {
+        tok = tok->next;
+    }
+
+    if (tok->kind != TK_IDENT)
+        return false;
+    tok = tok->next;
+    return tok->kind == '(';
 }
 
 /* ノードを引数にもつsizeofの実装 */
@@ -198,6 +212,47 @@ static Var *find_gvar(Token *tok)
             return var;
         }
     }
+    return NULL;
+}
+
+Function *find_func(char *name)
+{
+    for (int i = 0; funcs[i]; i++)
+    {
+        if (!memcmp(name, funcs[i]->name, strlen(name)))
+        {
+            return funcs[i];
+        }
+    }
+
+    return NULL;
+}
+
+static Type *find_lstruct_type(char *name)
+{
+    for (int i = 0; i < struct_local_lists->len; i++)
+    {
+        Type *t = struct_local_lists->body[i];
+        if (strcmp(t->name, name) == 0)
+        {
+            return t;
+        }
+    }
+
+    return NULL;
+}
+
+static Type *find_gstruct_type(char *name)
+{
+    for (int i = 0; i < struct_global_lists->len; i++)
+    {
+        Type *t = struct_global_lists->body[i];
+        if (strcmp(t->name, name) == 0)
+        {
+            return t;
+        }
+    }
+
     return NULL;
 }
 
@@ -403,63 +458,22 @@ static Node *get_node_ident(Token *tok)
     return node;
 }
 
-Function *find_func(char *name)
-{
-    for (int i = 0; funcs[i]; i++)
-    {
-        if (!memcmp(name, funcs[i]->name, strlen(name)))
-        {
-            return funcs[i];
-        }
-    }
-
-    return NULL;
-}
-
-static Type *find_lstruct_type(char *name)
-{
-    for (int i = 0; i < struct_local_lists->len; i++)
-    {
-        Type *t = struct_local_lists->body[i];
-        if (strcmp(t->name, name) == 0)
-        {
-            return t;
-        }
-    }
-
-    return NULL;
-}
-
-static Type *find_gstruct_type(char *name)
-{
-    for (int i = 0; i < struct_global_lists->len; i++)
-    {
-        Type *t = struct_global_lists->body[i];
-        if (strcmp(t->name, name) == 0)
-        {
-            return t;
-        }
-    }
-
-    return NULL;
-}
 /*************************************/
 /******                         ******/
 /******           AST           ******/
 /******                         ******/
 /*************************************/
 
-// <program> = ( <declaration_global> | <func_define> )*
-// 関数かどうかの先読みが必要
+/*
+ *  <program> = ( <declaration_global> | <func_define> )*
+ */
 void program()
 {
     int i = 0;
     while (!at_eof())
     {
         Type *type = type_specifier();
-        type = pointer(type);
-        Token *t = get_nafter_token(1);
-        if (t->kind == '(')
+        if (is_func(token))
         {
             is_global = false;
             funcs[i++] = func_define(type);
@@ -473,7 +487,9 @@ void program()
     funcs[i] = NULL;
 }
 
-// <declaration_global> = <declaration> ";"
+/*
+ *  <declaration_global> = <declaration> ";"
+ */
 static Node *declaration_global(Type *type)
 {
     if (type->kind == TYPE_STRUCT && is_struct_create)
@@ -488,8 +504,9 @@ static Node *declaration_global(Type *type)
     return node;
 }
 
-// <initialize>  = "{" <initialize> (","  <initialize>)* "}"
-//               | <assign>
+/*
+ *  <initialize> = <assign>
+ */
 static Node *initialize()
 {
     Node *node = NULL;
@@ -506,7 +523,9 @@ static Node *initialize()
     return assign();
 }
 
-// pointer = "*"*
+/*
+ *  <pointer> = "*"*
+ */
 static Type *pointer(Type *type)
 {
     while (consume('*'))
@@ -517,7 +536,9 @@ static Type *pointer(Type *type)
     return type;
 }
 
-// declaration_var = pointer ident type_suffix ("=" initialize)?
+/*
+ *  <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+ */
 static Node *declaration_var(Type *type)
 {
     type = pointer(type);
@@ -541,7 +562,9 @@ static Node *declaration_var(Type *type)
     return node;
 }
 
-// declaration = type_specifier (declaration_var ("," declaration_var)+)?
+/*
+ *  <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
+ */
 static Node *declaration(Type *type)
 {
     Node *node = declaration_var(type);
@@ -560,7 +583,9 @@ static Node *declaration(Type *type)
     return n;
 }
 
-// type_specifier pointer ident ";"
+/*
+ *  <struct_declaration> = <type_specifier> <pointer> <ident> ";"
+ */
 Type *struct_declaration(Type *type)
 {
     Type *t = type_specifier();
@@ -573,11 +598,12 @@ Type *struct_declaration(Type *type)
     return type;
 }
 
-/* type_specifier = "int"
- *                | "char"
- *                | "void"
- *                | "struct" ident
- *                | "struct" ident "{" struct_declaration* "}"
+/*
+ *  <type_specifier> = "int"
+ *                   | "char"
+ *                   | "void"
+ *                   | "struct" <ident>
+ *                   | "struct" <ident> "{" <struct_declaration>* "}"
  */
 static Type *type_specifier()
 {
@@ -639,7 +665,9 @@ static Type *type_specifier()
     return type;
 }
 
-// type_suffix = "[" num "]" type_suffix | ε
+/*
+ *  <type_suffix> = "[" <num> "]" <type_suffix> | ε
+ */
 static Type *type_suffix(Type *type)
 {
     if (consume('['))
@@ -652,8 +680,9 @@ static Type *type_suffix(Type *type)
     return type;
 }
 
-// TODO: voidに対応
-// declaration_param = type_specifier pointer ident type_suffix
+/*
+ *  <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
+ */
 static Var *declaration_param(Var *cur)
 {
     Type *type = type_specifier();
@@ -675,12 +704,14 @@ static Var *declaration_param(Var *cur)
     return lvar;
 }
 
-/* func_define = type_specifier ident
- * "("   ((declaration_param ("," declaration_param)* )? | "void")  ")"
- * compound_stmt
+/*
+ *  <func_define> = <type_specifier> <pointer> <ident>
+ *                  "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
+ *                  <compound_stmt>
  */
 static Function *func_define(Type *type)
 {
+    type = pointer(type);
     Function *fn = memory_alloc(sizeof(Function));
     cur_parse_func = fn;
     Token *tok = token;
@@ -724,7 +755,9 @@ static Function *func_define(Type *type)
     return fn;
 }
 
-// compound_stmt = { stmt* }
+/*
+ *  <compound_stmt> = { <stmt>* }
+ */
 static Node *compound_stmt()
 {
     expect('{');
@@ -748,14 +781,15 @@ static Node *compound_stmt()
     return node;
 }
 
-// TODO: do~while,continue,break,switch,else if,
-/* stmt = expr? ";"
- *     | "return" expr ";"
- *      | "if" "(" expr ")" stmt ("else" stmt)?
- *      | "while" "(" expr ")" stmt
- *      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
- *      | ("continue" | "break")
- *      | compound_stmt
+// TODO: do~while,switch,else if
+/*
+ *  <stmt> = <expr>? ";"
+ *         | "return" <expr>? ";"
+ *         | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
+ *         | "while" "(" <expr> ")" <stmt>
+ *         | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
+ *         | ("continue" | "break")
+ *         | <compound_stmt>
  */
 static Node *stmt()
 {
@@ -853,7 +887,9 @@ static Node *stmt()
     return node;
 }
 
-// expr = assign | declaration
+/*
+ *  <expr> = <assign> | <declaration>
+ */
 static Node *expr()
 {
     if (consume_nostep(TK_TYPE))
@@ -873,9 +909,11 @@ static Node *expr()
     return assign();
 }
 
-// TODO: %=, ++, --, ?:, <<=, >>=, &=, ^=, |=, ","
-// assign = logical_expression ("=" assign)?
-//        | logical_expression ( "+=" | "-=" | "*=" | "/=" | "%=" ) logical_expression
+// TODO: ?:, <<=, >>=, &=, ^=, |=
+/*
+ *  <assign> = <logical_expression> ("=" <assign>)?
+ *           | <logical_expression> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <logical_expression>
+ */
 static Node *assign()
 {
     Node *node = logical_expression();
@@ -906,7 +944,9 @@ static Node *assign()
     return node;
 }
 
-// logical_expression = equality ("&&" equality | "||" equality)*
+/*
+ *  <logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
+ */
 static Node *logical_expression()
 {
     Node *node = equality();
@@ -928,7 +968,9 @@ static Node *logical_expression()
     }
 }
 
-// equality = relational ("==" relational | "!=" relational)*
+/*
+ *  <equality> = <relational> ("==" <relational> | "!=" <relational>)*
+ */
 static Node *equality()
 {
     Node *node = relational();
@@ -950,7 +992,9 @@ static Node *equality()
     }
 }
 
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+/*
+ *  <relational> = <add> ("<" <add> | "<=" <add> | ">" <add> | ">=" <add>)*
+ */
 static Node *relational()
 {
     Node *node = add();
@@ -981,7 +1025,9 @@ static Node *relational()
 }
 
 // TODO: &, |, ^
-// add = mul ("+" mul | "-" mul)*
+/*
+ *  <add> = <mul> ("+" <mul> | "-" <mul>)*
+ */
 static Node *add()
 {
     Node *node = mul();
@@ -1003,7 +1049,9 @@ static Node *add()
     }
 }
 
-// mul = unary ("*" unary | "/" unary)*
+/*
+ *  <mul> = <unary> ("*" <unary> | "/" <unary> | "%" <unary> )*
+ */
 static Node *mul()
 {
     Node *node = unary();
@@ -1029,15 +1077,16 @@ static Node *mul()
     }
 }
 
-// TODO: !(否定),
-/* unary = "+"? postfix
- *       | "-"? postfix
- *       | "*" postfix   ("*" unaryでもいい？)
- *       | "&" postfix
- *       | "sizeof" unary
- *       | "sizeof" "(" type_specifier pointer ")"
- *       | ("++" | "--") postfix
- *       | "!" unary
+/*
+ *  <unary> = "+"? <postfix>
+ *          | "-"? <postfix>
+ *          | "*" <unary>
+ *          | "&" <postfix>
+ *          | "sizeof" <unary>
+ *          | "sizeof" "(" <type_specifier> <pointer> ")"
+ *          | ("++" | "--") <postfix>
+ *          | <postfix> ("++" | "--")
+ *          | "!" <unary>
  */
 static Node *unary()
 {
@@ -1114,7 +1163,9 @@ static Node *unary()
     return node;
 }
 
-// postfix = primary  ( ("[" expr "]") | "." | "->" ) *
+/*
+ *  <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
+ */
 static Node *postfix()
 {
     Node *node = primary();
@@ -1181,7 +1232,9 @@ static Node *postfix()
     return node;
 }
 
-// funcall = "(" (expr ("," expr)*)? ")"
+/*
+ *  <funcall> = "(" (<expr> ("," <expr>)*)? ")"
+ */
 static Node *funcall(Token *tok)
 {
     expect('(');
@@ -1199,7 +1252,9 @@ static Node *funcall(Token *tok)
     return node;
 }
 
-// primary = "(" expr ")" | num | string | ident funcall?
+/*
+ *  <primary> = "(" <expr> ")" | <num> | <string> | <ident> <funcall>?
+ */
 static Node *primary()
 {
     if (consume('('))
