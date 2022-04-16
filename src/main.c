@@ -1,9 +1,9 @@
 #include "9cc.h"
 
 void init() {
-    label_if_count = 0;   // ifのラベルにつけるユニークな値
-    label_loop_count = 0; // loopのラベルにつけるユニークな値
-    globals = NULL; // グローバル変数の初期化
+    label_if_count = 0;    // ifのラベルにつけるユニークな値
+    label_loop_count = 0;  // loopのラベルにつけるユニークな値
+    globals = NULL;        // グローバル変数の初期化
     struct_global_lists = new_vec();
     struct_local_lists = new_vec();
 }

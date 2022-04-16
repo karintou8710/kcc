@@ -1,12 +1,10 @@
 #include <stdio.h>
 
-int print_board(int board[8][8])
-{
-    int i; int j;
-    for (i=0; i<8; i++)
-    {
-        for (j=0; j<8; j++)
-        {
+int print_board(int board[8][8]) {
+    int i;
+    int j;
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 8; j++) {
             if (board[i][j])
                 printf("Q ");
             else
@@ -17,11 +15,9 @@ int print_board(int board[8][8])
     printf("\n\n");
 }
 
-int conflict(int board[8][8], int row, int col)
-{
+int conflict(int board[8][8], int row, int col) {
     int i;
-    for (i=0; i<row; i++)
-    {
+    for (i = 0; i < row; i++) {
         if (board[i][col]) return 1;
         int j;
         j = row - i;
@@ -36,18 +32,14 @@ int conflict(int board[8][8], int row, int col)
     return 0;
 }
 
-int solve(int board[8][8], int row)
-{
-    if (row == 8)
-    {
+int solve(int board[8][8], int row) {
+    if (row == 8) {
         print_board(board);
         return 0;
     }
     int i;
-    for (i=0; i<8; i++)
-    {
-        if (conflict(board, row, i) == 0)
-        {
+    for (i = 0; i < 8; i++) {
+        if (conflict(board, row, i) == 0) {
             board[row][i] = 1;
             solve(board, row + 1);
             board[row][i] = 0;
@@ -55,11 +47,10 @@ int solve(int board[8][8], int row)
     }
 }
 
-int main()
-{
+int main() {
     int board[64];
     int i;
-    for (i=0; i<64; i++) board[i] = 0;
+    for (i = 0; i < 64; i++) board[i] = 0;
 
     solve(board, 0);
     return 0;

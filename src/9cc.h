@@ -1,11 +1,11 @@
+#include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <errno.h>
 
 /*
  * ~ 構造体 ~
@@ -23,16 +23,14 @@ typedef struct Initializer Initializer;
 
 /* ベクターの定義 */
 
-struct Vector
-{
+struct Vector {
     void **body;
     int len;
     int capacity;
 };
 
 /* 型の定義 */
-typedef enum
-{
+typedef enum {
     TYPE_CHAR,
     TYPE_INT,
     TYPE_PTR,
@@ -41,8 +39,7 @@ typedef enum
     TYPE_STRUCT,
 } TypeKind;
 
-struct Type
-{
+struct Type {
     TypeKind kind;
     Type *ptr_to;
     int size;
@@ -54,108 +51,103 @@ struct Type
 };
 
 /* トークンの定義 */
-typedef enum
-{
-    TK_NUM = 256,   // number
-    TK_IDENT,       // ident
-    TK_EQ,          // ==
-    TK_NE,          // !=
-    TK_LE,          // <= 260
-    TK_GE,          // >=
-    TK_ADD_EQ,      // +=
-    TK_SUB_EQ,      // -=
-    TK_MUL_EQ,      // *=
-    TK_INC,         // ++
-    TK_DEC,         // --
-    TK_DIV_EQ,      // /= 265
-    TK_MOD_EQ,      // %=
-    TK_RETURN,      // return
-    TK_IF,          // if
-    TK_ELSE,        // else
-    TK_FOR,         // for
-    TK_WHILE,       // while
-    TK_EOF,         // eof
-    TK_TYPE,        // int
-    TK_SIZEOF,      // sizeof
-    TK_STRING,      // string
-    TK_CONTINUE,    // continue
-    TK_BREAK,       // break
-    TK_LOGICAL_AND, // &&
-    TK_LOGICAL_OR,  // ||
-    TK_ARROW,       // ->
+typedef enum {
+    TK_NUM = 256,    // number
+    TK_IDENT,        // ident
+    TK_EQ,           // ==
+    TK_NE,           // !=
+    TK_LE,           // <= 260
+    TK_GE,           // >=
+    TK_ADD_EQ,       // +=
+    TK_SUB_EQ,       // -=
+    TK_MUL_EQ,       // *=
+    TK_INC,          // ++
+    TK_DEC,          // --
+    TK_DIV_EQ,       // /= 265
+    TK_MOD_EQ,       // %=
+    TK_RETURN,       // return
+    TK_IF,           // if
+    TK_ELSE,         // else
+    TK_FOR,          // for
+    TK_WHILE,        // while
+    TK_EOF,          // eof
+    TK_TYPE,         // int
+    TK_SIZEOF,       // sizeof
+    TK_STRING,       // string
+    TK_CONTINUE,     // continue
+    TK_BREAK,        // break
+    TK_LOGICAL_AND,  // &&
+    TK_LOGICAL_OR,   // ||
+    TK_ARROW,        // ->
 } TokenKind;
 
-struct Token
-{
-    TokenKind kind;        //
-    Type *type;            //
-    Token *next;           //
-    int val;               //
-    char *str;             //
-    int str_literal_index; //
-    int len;               //
+struct Token {
+    TokenKind kind;         //
+    Type *type;             //
+    Token *next;            //
+    int val;                //
+    char *str;              //
+    int str_literal_index;  //
+    int len;                //
 };
 
 /* 変数の定義 */
-struct Var
-{
-    Var *next;       // 次の変数かNULL
-    char *name;      // 変数の名前
-    int len;         // 名前の長さ
-    int offset;      // RBPからのオフセット
-    int next_offset; // ローカルスコープでのオフセットを管理
-    Type *type;      // 型情報
+struct Var {
+    Var *next;        // 次の変数かNULL
+    char *name;       // 変数の名前
+    int len;          // 名前の長さ
+    int offset;       // RBPからのオフセット
+    int next_offset;  // ローカルスコープでのオフセットを管理
+    Type *type;       // 型情報
 
     bool is_global;
 };
 
 /* ノードの定義 */
-typedef enum
-{
-    ND_ADD,           // +
-    ND_SUB,           // -
-    ND_MUL,           // *
-    ND_DIV,           // /
-    ND_MOD,           // %
-    ND_ASSIGN,        // =
-    ND_EQ,            // ==
-    ND_NE,            // !=
-    ND_LT,            // <
-    ND_LE,            // <=
-    ND_VAR,           // local var
-    ND_NUM,           // num
-    ND_RETURN,        // return
-    ND_IF,            // if
-    ND_ELSE,          // else
-    ND_FOR,           // for
-    ND_WHILE,         // while
-    ND_BLOCK,         // block {}
-    ND_CALL,          // call
-    ND_ADDR,          // & アドレス
-    ND_DEREF,         // * ポインタ
-    ND_STRING,        // string literal
-    ND_CONTINUE,      // continue
-    ND_BREAK,         // break
-    ND_LOGICALNOT,    // !
-    ND_LOGICAL_AND,   // &&
-    ND_LOGICAL_OR,    // ||
-    ND_SUGER,         // 糖衣構文
-    ND_NULL,          // 何もしない
-    ND_STRUCT_MEMBER, // struct member
+typedef enum {
+    ND_ADD,            // +
+    ND_SUB,            // -
+    ND_MUL,            // *
+    ND_DIV,            // /
+    ND_MOD,            // %
+    ND_ASSIGN,         // =
+    ND_EQ,             // ==
+    ND_NE,             // !=
+    ND_LT,             // <
+    ND_LE,             // <=
+    ND_VAR,            // local var
+    ND_NUM,            // num
+    ND_RETURN,         // return
+    ND_IF,             // if
+    ND_ELSE,           // else
+    ND_FOR,            // for
+    ND_WHILE,          // while
+    ND_BLOCK,          // block {}
+    ND_CALL,           // call
+    ND_ADDR,           // & アドレス
+    ND_DEREF,          // * ポインタ
+    ND_STRING,         // string literal
+    ND_CONTINUE,       // continue
+    ND_BREAK,          // break
+    ND_LOGICALNOT,     // !
+    ND_LOGICAL_AND,    // &&
+    ND_LOGICAL_OR,     // ||
+    ND_SUGER,          // 糖衣構文
+    ND_NULL,           // 何もしない
+    ND_STRUCT_MEMBER,  // struct member
 } NodeKind;
 
-struct Node
-{
+struct Node {
     NodeKind kind;
-    Node *lhs;         // 左辺
-    Node *rhs;         // 右辺
-    int val;           // ND_NUM ND_STRINGの時に使う
-    Var *var;          // kindがND_VARの場合のみ使う
-    char *fn_name;     //
-    char *str_literal; // ND_STRINGのときに使う
-    Vector *args;      //
-    Vector *stmts;     //
-    Type *type;        // 型
+    Node *lhs;          // 左辺
+    Node *rhs;          // 右辺
+    int val;            // ND_NUM ND_STRINGの時に使う
+    Var *var;           // kindがND_VARの場合のみ使う
+    char *fn_name;      //
+    char *str_literal;  // ND_STRINGのときに使う
+    Vector *args;       //
+    Vector *stmts;      //
+    Type *type;         // 型
 
     // if (cond) then els
     // while (cond) body
@@ -169,19 +161,17 @@ struct Node
 };
 
 /* 関数型の定義 */
-struct Function
-{
+struct Function {
     char *name;
     Node *body;
     Var *params;
     Var *locals;
     int stack_size;
 
-    Type *ret_type; // return_type
+    Type *ret_type;  // return_type
 };
 
-struct Initializer
-{
+struct Initializer {
     int val;
     Vector *el;
     Type *type;
@@ -243,11 +233,11 @@ bool can_type_cast(Type *ty, TypeKind to);
 // グローバル変数
 Vector *string_literal;
 Var *globals;
-Token *token;     // tokenは単方向の連結リスト
-char *user_input; // 入力プログラム
+Token *token;      // tokenは単方向の連結リスト
+char *user_input;  // 入力プログラム
 char *file_name;
-Function *funcs[1000]; // TODO: Vectorに対応する
-int label_if_count;    // ifのラベル
-int label_loop_count;  // forとwhileのラベル
+Function *funcs[1000];  // TODO: Vectorに対応する
+int label_if_count;     // ifのラベル
+int label_loop_count;   // forとwhileのラベル
 Vector *struct_global_lists;
-Vector *struct_local_lists; // 既出の構造体
+Vector *struct_local_lists;  // 既出の構造体

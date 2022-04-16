@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int ASSERT(int expected, int actual, char *name)
-{
+int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
         return 0;
 
@@ -13,8 +12,8 @@ int ASSERT(int expected, int actual, char *name)
 
 int logical_not1() {
     int ret = 0;
-    for (int i=-10;i<10;i++) {
-        if (i==0) continue;
+    for (int i = -10; i < 10; i++) {
+        if (i == 0) continue;
         if (!i) {
             ret++;
         }
@@ -72,7 +71,7 @@ int logical_and4() {
 int logical_and5() {
     int a = 2 && 100;
     int b = 0 && 131;
-    return a+b;
+    return a + b;
 }
 
 int logical_or1() {
@@ -96,11 +95,10 @@ int logical_or5() {
 }
 
 int logical_expr1() {
-    return (0 && 1==0) || (123> 2 && 13 || !0) && !123;
+    return (0 && 1 == 0) || (123 > 2 && 13 || !0) && !123;
 }
 
 int main() {
-
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
     ASSERT(0, logical_not3(), "logical_not3");

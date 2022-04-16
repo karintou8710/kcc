@@ -1,9 +1,8 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-int ASSERT(int expected, int actual, char *name)
-{
+int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
         return 0;
 
@@ -37,7 +36,7 @@ int return_type_cast2() {
 }
 
 char _return_type_cast3_sub() {
-    return 257; // 1,00000001
+    return 257;  // 1,00000001
 }
 
 int return_type_cast3() {
@@ -70,7 +69,6 @@ int *assign_type_cast4() {
 
 // 配列を戻り値とするのは未対応
 int main() {
-
     ASSERT(15, return_type_cast1(), "return_type_cast1");
     ASSERT(0, return_type_cast2(), "return_type_cast2");
     ASSERT(1, return_type_cast3(), "return_type_cast3");

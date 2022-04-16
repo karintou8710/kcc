@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int ASSERT(int expected, int actual, char *name)
-{
+int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
         return 0;
 
@@ -12,22 +11,19 @@ int ASSERT(int expected, int actual, char *name)
 }
 
 // ローカル変数
-int local1()
-{
+int local1() {
     int a;
     a = 6;
     return a;
 }
-int local2()
-{
+int local2() {
     int a;
     int b;
     a = 2;
     b = a;
     return b;
 }
-int local3()
-{
+int local3() {
     int a;
     int b;
     int c;
@@ -36,37 +32,32 @@ int local3()
     c = a + b;
     return c;
 }
-int local4()
-{
+int local4() {
     int value;
     value = 12;
     return value;
 }
-int local5()
-{
+int local5() {
     int val;
     int t;
     val = 1;
     t = 3 * (val + 1);
     return t;
 }
-int local6()
-{
+int local6() {
     int num;
     int test;
     num = 1;
     test = (num * 10) / 2;
     return test;
 }
-int local7()
-{
+int local7() {
     int a;
     a = 1;
     a = a + 3;
     return a;
 }
-int local8()
-{
+int local8() {
     int a2;
     int A_1;
     a2 = 1;
@@ -74,60 +65,52 @@ int local8()
     return a2 * A_1;
 }
 // 代入演算子
-int assign1()
-{
+int assign1() {
     int a;
     a = 1;
     a += 1;
     return a;
 }
-int assign2()
-{
+int assign2() {
     int a;
     a = 10;
     a -= 6;
     return a;
 }
-int assign3()
-{
+int assign3() {
     int a;
     a = 2;
     a *= 3;
     return a;
 }
-int assign4()
-{
+int assign4() {
     int a;
     a = 20;
     a /= 2;
     return a;
 }
-int assign5()
-{
+int assign5() {
     int a;
     int b;
     a = 5;
     b = a += 5;
     return b;
 }
-int assign6()
-{
+int assign6() {
     int a;
     int b;
     a = 0;
     b = (a = a + 1) + (a = a + 1);
     return b + a;
 }
-int assign7()
-{
+int assign7() {
     int a;
     int b;
     a = 0;
     b = (a = a - 1) + (a = a - 1);
     return b * a;
 }
-int assign8()
-{
+int assign8() {
     int a, b, c, d, e;
     a = 1;
     b = 1;
@@ -136,33 +119,28 @@ int assign8()
     e = 1;
     return a + b + c + d + e;
 }
-int assign9()
-{
+int assign9() {
     int a = 1, b, c = 1, d, e = 1;
     b = 2;
     d = 2;
     return a + b + c + d + e;
 }
-int assign10()
-{
+int assign10() {
     int a = 1, b, c = 1;
     int *d = &b, *e = &a;
     b = 1;
     return a + b + c + *d + *e;
 }
 // if else
-int if_else1()
-{
+int if_else1() {
     if (1)
         return 4;
 }
-int if_else2()
-{
+int if_else2() {
     if (2 + 3 == 5)
         return 3 * 2;
 }
-int if_else3()
-{
+int if_else3() {
     int a;
     a = 2 * 3;
     if (a == 6)
@@ -170,8 +148,7 @@ int if_else3()
     else
         return 0;
 }
-int if_else4()
-{
+int if_else4() {
     int a;
     a = 2 * 3;
     if (a < 5)
@@ -179,71 +156,53 @@ int if_else4()
     else
         return 0;
 }
-int if_else5()
-{
+int if_else5() {
     int a;
     int n;
     a = 1;
     n = 0;
-    if (a == 1)
-    {
+    if (a == 1) {
         n = 1;
     }
-    if (a == 2)
-    {
+    if (a == 2) {
         n = 2;
     }
     return n;
 }
-int if_else6()
-{
+int if_else6() {
     int sum;
     sum = 1;
-    if (sum % 2 != 0)
-    {
+    if (sum % 2 != 0) {
         sum += 1;
-        if (sum % 2 == 0)
-        {
+        if (sum % 2 == 0) {
             sum += 1;
-        }
-        else
-        {
+        } else {
             sum = 0;
         }
-    }
-    else
-    {
+    } else {
         sum = 0;
     }
     return sum;
 }
-int if_else7()
-{
+int if_else7() {
     int a;
     a = 10;
-    if (a == 10)
-    {
+    if (a == 10) {
         a = 20;
     }
-    if (a == 20)
-    {
+    if (a == 20) {
         a = 30;
     }
     return a;
 }
 
-int if_else8()
-{
+int if_else8() {
     int res = 4;
-    if (res == 1)
-    {
+    if (res == 1) {
         return 1;
-    }
-    else if (res == 2)
-    {
+    } else if (res == 2) {
         return 2;
-    }
-    else if (res == 3)
+    } else if (res == 3)
         return 3;
     else if (res == 4)
         return 4;
@@ -253,43 +212,36 @@ int if_else8()
 }
 
 // while
-int while1()
-{
+int while1() {
     int i;
     i = 0;
     while (i < 10)
         i += 1;
     return i;
 }
-int while2()
-{
+int while2() {
     int i;
     i = 0;
     int j;
-    while (i < 10)
-    {
+    while (i < 10) {
         j = 0;
-        while (j < 3)
-        {
+        while (j < 3) {
             i += 1;
             j += 1;
         }
     }
     return i;
 }
-int while3()
-{
+int while3() {
     int i;
     int sum;
     sum = 0;
     i = 0;
-    while (i < 5)
-    {
+    while (i < 5) {
         sum += 1;
         i += 1;
     }
-    while (i < 10)
-    {
+    while (i < 10) {
         sum += 1;
         i += 1;
     }
@@ -297,8 +249,7 @@ int while3()
 }
 
 // for
-int for1()
-{
+int for1() {
     int a;
     int i;
     a = 0;
@@ -306,31 +257,25 @@ int for1()
         a = a + 1;
     return a;
 }
-int for2()
-{
+int for2() {
     int i;
     int sum;
     sum = 0;
-    for (i = 0; i < 3; i += 1)
-    {
+    for (i = 0; i < 3; i += 1) {
         sum += 1;
     }
-    for (i = 0; i < 3; i += 1)
-    {
+    for (i = 0; i < 3; i += 1) {
         sum += 1;
     }
     return sum;
 }
-int for3()
-{
+int for3() {
     int sum;
     int i;
     int j;
     sum = 0;
-    for (i = 0; i < 3; i += 1)
-    {
-        for (j = 0; j < 3; j += 1)
-        {
+    for (i = 0; i < 3; i += 1) {
+        for (j = 0; j < 3; j += 1) {
             sum += 1;
         }
     }
@@ -338,17 +283,14 @@ int for3()
 }
 
 // for-while
-int for_while1()
-{
+int for_while1() {
     int i;
     int sum;
     sum = 0;
-    for (i = 0; i < 3; i += 1)
-    {
+    for (i = 0; i < 3; i += 1) {
         sum += 1;
     }
-    while (i < 5)
-    {
+    while (i < 5) {
         sum += 1;
         i += 1;
     }
@@ -357,27 +299,21 @@ int for_while1()
 
 // block
 int block1() { return 1; }
-int block2()
-{
+int block2() {
     int a;
     a = 1;
-    if (a / 2 == 0)
-    {
+    if (a / 2 == 0) {
         a *= 2;
         return a;
-    }
-    else
-    {
+    } else {
         return a;
     }
 }
-int block3()
-{
+int block3() {
     int a;
     int i;
     a = 0;
-    for (i = 1; i <= 5; i += 1)
-    {
+    for (i = 1; i <= 5; i += 1) {
         a += i;
         a += 1;
     }
@@ -385,8 +321,7 @@ int block3()
 }
 
 // null statement
-int null_statement1()
-{
+int null_statement1() {
     ;
     ;
     ;
@@ -399,8 +334,7 @@ int null_statement1()
 // func call (関数の実態はリンクする)
 int func_call1() { return ret(); }
 int func_call2() { return ret(); }
-int func_call3()
-{
+int func_call3() {
     int a;
     a = 1;
     return ret() + a * 2;
@@ -415,8 +349,7 @@ int func_call8() { return add6(1, 2, add6(3, add6(4, 5, 6, 7, 8, 9), 10, 11, 12,
 int func_define1_test() { return 2; }
 int func_define1() { return func_define1_test(); }
 int func_define2_test() { return 4; }
-int func_define2()
-{
+int func_define2() {
     int a;
     a = 1;
     return a + func_define2_test();
@@ -428,30 +361,24 @@ int func_define4_test(int a) { return a; }
 int func_define4() { return func_define4_test(6); }
 int func_define5_add2(int a, int b) { return a + b; }
 int func_define5() { return func_define5_add2(1, 2); }
-int func_define6_test(int a, int b)
-{
+int func_define6_test(int a, int b) {
     int c;
     c = 10;
     return c + a + b;
 }
 int func_define6() { return func_define6_test(2, 3); }
-int func_define7_sum(int n)
-{
-    if (n == 1)
-    {
+int func_define7_sum(int n) {
+    if (n == 1) {
         return 1;
     }
     return func_define7_sum(n - 1) + func_define7_sum(n - 1);
 }
 int func_define7() { return func_define7_sum(4); }
-int func_define8_fib(int n)
-{
-    if (n == 1)
-    {
+int func_define8_fib(int n) {
+    if (n == 1) {
         return 1;
     }
-    if (n == 2)
-    {
+    if (n == 2) {
         return 1;
     }
     return func_define8_fib(n - 1) + func_define8_fib(n - 2);
@@ -459,16 +386,14 @@ int func_define8_fib(int n)
 int func_define8() { return func_define8_fib(10); }
 
 // ポインター
-int pointer1()
-{
+int pointer1() {
     int x;
     int *y;
     y = &x;
     *y = 3;
     return x;
 }
-int pointer2()
-{
+int pointer2() {
     int a;
     int *b;
     int **c;
@@ -479,16 +404,14 @@ int pointer2()
     a = 10;
     return ***d;
 }
-int pointer3()
-{
+int pointer3() {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
     int *q;
     q = p + 1;
     return *q;
 }
-int pointer4()
-{
+int pointer4() {
     int *p;
     alloc4(&p, 1, 2, 4, 8);
     int *q;
@@ -496,13 +419,11 @@ int pointer4()
     q = q - 1;
     return *q;
 }
-int pointer5_ptr(int *a)
-{
+int pointer5_ptr(int *a) {
     *a = 10;
     return 0;
 }
-int pointer5()
-{
+int pointer5() {
     int b;
     b = 1;
     pointer5_ptr(&b);
@@ -510,36 +431,29 @@ int pointer5()
 }
 
 // sizeof
-int sizeof1()
-{
+int sizeof1() {
     int x;
     return sizeof x;
 }
-int sizeof2()
-{
+int sizeof2() {
     int x;
     return sizeof(x);
 }
-int sizeof3()
-{
+int sizeof3() {
     int x;
     int *y;
     return sizeof(x) + sizeof(y);
 }
-int sizeof4()
-{
+int sizeof4() {
     int *x;
     return sizeof(*x);
 }
-int sizeof5()
-{
+int sizeof5() {
     int a[5];
     return sizeof(a);
 }
-int sizeof6()
-{
-    struct A
-    {
+int sizeof6() {
+    struct A {
         int a;
         int b;
         int c;
@@ -548,8 +462,7 @@ int sizeof6()
     };
     return sizeof(struct A);
 }
-int sizeof7()
-{
+int sizeof7() {
     int a1 = sizeof(int);
     int a2 = sizeof(char);
     int a3 = sizeof(void);
@@ -559,8 +472,7 @@ int sizeof7()
 }
 
 // 配列
-int array1()
-{
+int array1() {
     int a[2];
     *a = 1;
     *(a + 1) = 2;
@@ -568,30 +480,26 @@ int array1()
     p = a;
     return *p + *(p + 1);
 }
-int array2()
-{
+int array2() {
     int a[3];
     *(a) = 1;
     *(a + 1) = 2;
     *(a + 2) = 3;
     int i;
     int sum;
-    for (i = 0; i < 3; i += 1)
-    {
+    for (i = 0; i < 3; i += 1) {
         sum += *(a + i);
     }
     return sum;
 }
-int array3()
-{
+int array3() {
     int a;
     int b[2];
     a = 1;
     b[1] = a;
     return b[1] * 2;
 }
-int array4()
-{
+int array4() {
     int a[2];
     int b[2];
     int c;
@@ -602,15 +510,12 @@ int array4()
     b[1] = b[0] + 1;
     return b[1];
 }
-int array5()
-{
+int array5() {
     int a[3][3];
     int i;
     int j;
-    for (i = 0; i < 3; i += 1)
-    {
-        for (j = 0; j < 3; j += 1)
-        {
+    for (i = 0; i < 3; i += 1) {
+        for (j = 0; j < 3; j += 1) {
             a[i][j] = 2 * i + j;
         }
     }
@@ -618,17 +523,14 @@ int array5()
 }
 
 // MOD
-int mod1_gcd(int a, int b)
-{
-    if (b == 0)
-    {
+int mod1_gcd(int a, int b) {
+    if (b == 0) {
         return a;
     }
     return mod1_gcd(b, a % b);
 }
 int mod1() { return mod1_gcd(630, 300); }
-int mod2()
-{
+int mod2() {
     int a;
     int b;
     int c;
@@ -638,8 +540,7 @@ int mod2()
     return a % b % c;
 }
 
-int char1()
-{
+int char1() {
     char x[3];
     x[0] = -1;
     x[1] = 2;
@@ -649,8 +550,7 @@ int char1()
 }
 
 // string_literal
-int string_literal1()
-{
+int string_literal1() {
     char *a;
     a = "Hello, C-compiler";
     printf("%s\n", a);
@@ -658,8 +558,7 @@ int string_literal1()
 }
 
 // %=
-int assign_mod1()
-{
+int assign_mod1() {
     int a;
     a = 10;
     a %= 4;
@@ -667,29 +566,25 @@ int assign_mod1()
 }
 
 // preinc
-int preinc1()
-{
+int preinc1() {
     int a;
     int b;
     a = 0;
     b = (++a) + (++a);
     return b + a;
 }
-int preinc2()
-{
+int preinc2() {
     int i;
     int sum;
     sum = 0;
-    for (i = 0; i < 10; ++i)
-    {
+    for (i = 0; i < 10; ++i) {
         sum += i;
     }
     return sum;
 }
 
 // postinc
-int postinc1()
-{
+int postinc1() {
     int a;
     int b;
     a = 0;
@@ -697,42 +592,36 @@ int postinc1()
     a = b++;
     return a;
 }
-int postinc2()
-{
+int postinc2() {
     int i;
     int sum;
     sum = 0;
-    for (i = 0; i < 10; i++)
-    {
+    for (i = 0; i < 10; i++) {
         sum += i;
     }
     return sum;
 }
 
 // predec
-int predec1()
-{
+int predec1() {
     int a;
     int b;
     a = 0;
     b = (--a) + (--a);
     return b * a;
 }
-int predec2()
-{
+int predec2() {
     int i;
     int sum;
     sum = 0;
-    for (i = 9; i >= 0; --i)
-    {
+    for (i = 9; i >= 0; --i) {
         sum += i;
     }
     return sum;
 }
 
 // postdec
-int postdec1()
-{
+int postdec1() {
     int a;
     int b;
     a = 0;
@@ -740,52 +629,44 @@ int postdec1()
     a = b--;
     return a;
 }
-int postdec2()
-{
+int postdec2() {
     int i;
     int sum;
     sum = 0;
-    for (i = 9; i >= 0; i--)
-    {
+    for (i = 9; i >= 0; i--) {
         sum += i;
     }
     return sum;
 }
 
 // assign_initializer
-int assign_initializer1()
-{
+int assign_initializer1() {
     int sum = 0;
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         sum += i;
     }
     return sum;
 }
 
-int assign_initializer2()
-{
+int assign_initializer2() {
     int height = 10;
     int width = 20;
     int res = height * width / 2;
     return res;
 }
 
-int assign_initializer3()
-{
+int assign_initializer3() {
     char *s1 = "Hello";
     char *s2 = "Hello";
     int is_same = (strcmp(s1, s2) == 0);
     return is_same;
 }
 
-int param_void(void)
-{
+int param_void(void) {
     return 1;
 }
 
-int main()
-{
+int main() {
     ASSERT(6, local1(), "local1");
     ASSERT(2, local2(), "local2");
     ASSERT(3, local3(), "local3");

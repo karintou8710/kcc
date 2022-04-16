@@ -8,66 +8,65 @@ void recursion_line_printf(int depth, char *fmt, ...) {
     vfprintf(stderr, fmt, ap);
 }
 
-void print_node_kind(NodeKind kind)
-{
+void print_node_kind(NodeKind kind) {
     fprintf(stderr, "nodekind -> ");
     if (kind == ND_ADD)
-        fprintf(stderr, "ND_ADD"); // +
+        fprintf(stderr, "ND_ADD");  // +
     else if (kind == ND_SUB)
-        fprintf(stderr, "ND_SUB"); // -
+        fprintf(stderr, "ND_SUB");  // -
     else if (kind == ND_MUL)
-        fprintf(stderr, "ND_MUL"); // *
+        fprintf(stderr, "ND_MUL");  // *
     else if (kind == ND_DIV)
-        fprintf(stderr, "ND_DIV"); // /
+        fprintf(stderr, "ND_DIV");  // /
     else if (kind == ND_MOD)
-        fprintf(stderr, "ND_MOD"); // %
+        fprintf(stderr, "ND_MOD");  // %
     else if (kind == ND_ASSIGN)
-        fprintf(stderr, "ND_ASSIGN"); // =
+        fprintf(stderr, "ND_ASSIGN");  // =
     else if (kind == ND_EQ)
-        fprintf(stderr, "ND_EQ"); // ==
+        fprintf(stderr, "ND_EQ");  // ==
     else if (kind == ND_NE)
-        fprintf(stderr, "ND_NE"); // !=
+        fprintf(stderr, "ND_NE");  // !=
     else if (kind == ND_LT)
-        fprintf(stderr, "ND_LT"); // <
+        fprintf(stderr, "ND_LT");  // <
     else if (kind == ND_LE)
-        fprintf(stderr, "ND_LE"); // <=
+        fprintf(stderr, "ND_LE");  // <=
     else if (kind == ND_VAR)
-        fprintf(stderr, "ND_VAR"); // local var
+        fprintf(stderr, "ND_VAR");  // local var
     else if (kind == ND_NUM)
-        fprintf(stderr, "ND_NUM"); // num
+        fprintf(stderr, "ND_NUM");  // num
     else if (kind == ND_RETURN)
-        fprintf(stderr, "ND_RETURN"); // return
+        fprintf(stderr, "ND_RETURN");  // return
     else if (kind == ND_IF)
-        fprintf(stderr, "ND_IF"); // if
+        fprintf(stderr, "ND_IF");  // if
     else if (kind == ND_ELSE)
-        fprintf(stderr, "ND_ELSE"); // else
+        fprintf(stderr, "ND_ELSE");  // else
     else if (kind == ND_FOR)
-        fprintf(stderr, "ND_FOR"); // for
+        fprintf(stderr, "ND_FOR");  // for
     else if (kind == ND_WHILE)
-        fprintf(stderr, "ND_WHILE"); // while
+        fprintf(stderr, "ND_WHILE");  // while
     else if (kind == ND_BLOCK)
-        fprintf(stderr, "ND_BLOCK"); // block {}
+        fprintf(stderr, "ND_BLOCK");  // block {}
     else if (kind == ND_CALL)
-        fprintf(stderr, "ND_CALL"); // call
+        fprintf(stderr, "ND_CALL");  // call
     else if (kind == ND_ADDR)
-        fprintf(stderr, "ND_ADDR"); // & アドレス
+        fprintf(stderr, "ND_ADDR");  // & アドレス
     else if (kind == ND_DEREF)
-        fprintf(stderr, "ND_DEREF"); // * ポインタ
+        fprintf(stderr, "ND_DEREF");  // * ポインタ
     else if (kind == ND_STRING)
-        fprintf(stderr, "ND_STRING"); // string literal
+        fprintf(stderr, "ND_STRING");  // string literal
     else if (kind == ND_CONTINUE)
-        fprintf(stderr, "ND_CONTINUE"); // continue
+        fprintf(stderr, "ND_CONTINUE");  // continue
     else if (kind == ND_BREAK)
-        fprintf(stderr, "ND_BREAK"); // break
+        fprintf(stderr, "ND_BREAK");  // break
     else if (kind == ND_STRUCT_MEMBER)
-        fprintf(stderr, "ND_STRUCT_MEMBER"); // struct member
+        fprintf(stderr, "ND_STRUCT_MEMBER");  // struct member
     else if (kind == ND_NULL)
-        fprintf(stderr, "ND_NULL"); // null
+        fprintf(stderr, "ND_NULL");  // null
     else if (kind == ND_SUGER)
-        fprintf(stderr, "ND_SUGER"); // null
+        fprintf(stderr, "ND_SUGER");  // null
     else
         error("print_node_kind() failure");
-    
+
     fprintf(stderr, "\n");
 }
 
@@ -123,7 +122,7 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_BREAK");
     else
         fprintf(stderr, "TK_[%c]", kind);
-    
+
     fprintf(stderr, "\n");
 }
 
@@ -139,20 +138,16 @@ void print_type_kind(TypeKind kind) {
         fprintf(stderr, "TYPE_ARRAY");
     else if (kind == TYPE_VOID) {
         fprintf(stderr, "TYPE_VOID");
-    }
-    else if (kind == TYPE_STRUCT) {
+    } else if (kind == TYPE_STRUCT) {
         fprintf(stderr, "TYPE_STRUCT");
-    }
-    else
+    } else
         error("print_type_kind() failure: unexpected type %d", kind);
-    
+
     fprintf(stderr, "\n");
 }
 
-void debug_node(Node *node, char *pos, int depth)
-{
-    if (node == NULL)
-    {  
+void debug_node(Node *node, char *pos, int depth) {
+    if (node == NULL) {
         return;
     }
 
@@ -172,16 +167,14 @@ void debug_node(Node *node, char *pos, int depth)
             recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
             return;
         default:
-            debug_node(node->lhs, "lhs", depth+1);
-            debug_node(node->rhs, "rhs", depth+1);
+            debug_node(node->lhs, "lhs", depth + 1);
+            debug_node(node->rhs, "rhs", depth + 1);
             return;
     }
 }
 
-void debug_var(Var *var)
-{
-    if (var == NULL)
-    {
+void debug_var(Var *var) {
+    if (var == NULL) {
         return;
     }
 
@@ -189,13 +182,10 @@ void debug_var(Var *var)
     fprintf(stderr, "len -> %d\n", var->len);
     fprintf(stderr, "offset -> %d\n", var->offset);
     fprintf(stderr, "next_offset -> %d\n", var->next_offset);
-
 }
 
-void debug_type(Type *ty, int depth)
-{
-    if (ty == NULL)
-    {
+void debug_type(Type *ty, int depth) {
+    if (ty == NULL) {
         return;
     }
 
@@ -204,7 +194,7 @@ void debug_type(Type *ty, int depth)
     puts("");
     switch (ty->kind) {
         case TYPE_STRUCT:
-        recursion_line_printf(depth, "name -> %s\n", ty->name);
+            recursion_line_printf(depth, "name -> %s\n", ty->name);
             recursion_line_printf(depth, "size -> %d\n", ty->size);
             for (Var *member = ty->member; member; member = member->next) {
                 recursion_line_printf(depth, "member -> %s\n", member->name);
@@ -213,15 +203,13 @@ void debug_type(Type *ty, int depth)
         default:
             recursion_line_printf(depth, "size -> %d\n", ty->size);
             recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
-            debug_type(ty->ptr_to, depth+1);
+            debug_type(ty->ptr_to, depth + 1);
             break;
     }
-    
 }
 
 void debug_token(Token *t) {
-    if (t == NULL)
-    {
+    if (t == NULL) {
         return;
     }
 
@@ -233,8 +221,7 @@ void debug_token(Token *t) {
     fprintf(stderr, "len; -> %d\n", t->len);
 }
 
-void debug(char *fmt, ...)
-{
+void debug(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

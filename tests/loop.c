@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int ASSERT(int expected, int actual, char *name)
-{
+int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
         return 0;
 
@@ -13,27 +12,27 @@ int ASSERT(int expected, int actual, char *name)
 
 int for1() {
     int res = 0;
-    for (int i=0;i<3;i++) {
-        for (int j=0;j<2;j++) {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 2; j++) {
             res++;
         }
-        for (int k=0;k<2;k++) {
-            for (int ii = 0;ii<5;ii++) {
+        for (int k = 0; k < 2; k++) {
+            for (int ii = 0; ii < 5; ii++) {
                 res++;
             }
-            for (int jj = 0;jj<5;jj++) {
+            for (int jj = 0; jj < 5; jj++) {
                 res++;
             }
         }
     }
-    
+
     return res;
 }
 
 int break_for1() {
     int res = 0;
-    for (int i=0;i<100;i++) {
-        if (i==10) break;
+    for (int i = 0; i < 100; i++) {
+        if (i == 10) break;
         res++;
     }
     return res;
@@ -41,18 +40,18 @@ int break_for1() {
 
 int break_for2() {
     int res = 0;
-    for (int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++) {
         if (i == 2) {
             res += i;
             break;
         }
-        for (int j=0;j<10;j++) {
-            if (j==1) {
+        for (int j = 0; j < 10; j++) {
+            if (j == 1) {
                 res += j;
                 break;
             }
-            for (int k=0;k<10;k++) {
-                if (k==5) {
+            for (int k = 0; k < 10; k++) {
+                if (k == 5) {
                     res += k;
                     break;
                 }
@@ -63,7 +62,7 @@ int break_for2() {
 }
 
 int break_while1() {
-    int i=0;
+    int i = 0;
     while (1) {
         if (i == 10) break;
         i++;
@@ -72,27 +71,29 @@ int break_while1() {
 }
 
 int break_while2() {
-    int i=0; int j=0; int k=0;
+    int i = 0;
+    int j = 0;
+    int k = 0;
     while (1) {
-        if (i==5) break;
+        if (i == 5) break;
         while (1) {
-            if (j==5) break;
+            if (j == 5) break;
             while (1) {
-                if (k==5) break;
+                if (k == 5) break;
                 k++;
             }
             j++;
         }
         i++;
     }
-    return i+j+k;
+    return i + j + k;
 }
 
 int break_for_loop1() {
     int j = 0;
     int i = 0;
-    for (i=0;i<10;i++) {
-        if  (i == 5) break;
+    for (i = 0; i < 10; i++) {
+        if (i == 5) break;
         while (1) {
             if (j == 3) break;
             j++;
@@ -103,8 +104,8 @@ int break_for_loop1() {
 
 int continue_for1() {
     int res = 0;
-    for (int i=0;i<10;i++) {
-        if (i%2==0) continue;
+    for (int i = 0; i < 10; i++) {
+        if (i % 2 == 0) continue;
         res += i;
     }
     // 1 + 3 + 5 + 7 + 9 = 25
@@ -113,42 +114,42 @@ int continue_for1() {
 
 int continue_for2() {
     int res = 0;
-    for (int i=0;i<3;i++) {
-        if (i%2==0) continue;
+    for (int i = 0; i < 3; i++) {
+        if (i % 2 == 0) continue;
         res++;
-        for (int j=0;j<3;j++) {
-            if (j%2==0) continue;
+        for (int j = 0; j < 3; j++) {
+            if (j % 2 == 0) continue;
             res++;
-            for (int k=0;k<3;k++) {
-                if (k%2==0) continue;
+            for (int k = 0; k < 3; k++) {
+                if (k % 2 == 0) continue;
                 res++;
             }
         }
     }
-    
+
     return res;
 }
 
 int continue_for3() {
     int res = 0;
-    for (int i=0;i<3;i++) {
-        if (i%2==0) continue;
+    for (int i = 0; i < 3; i++) {
+        if (i % 2 == 0) continue;
         res++;
-        for (int j=0;j<3;j++) {
-            if (j%2==0) continue;
+        for (int j = 0; j < 3; j++) {
+            if (j % 2 == 0) continue;
             res++;
-            for (int k=0;k<3;k++) {
-                if (k%2==0) continue;
+            for (int k = 0; k < 3; k++) {
+                if (k % 2 == 0) continue;
                 res++;
             }
         }
 
-        for (int ii = 0;ii<5;ii++) {
-            if (ii%2==0) continue;
+        for (int ii = 0; ii < 5; ii++) {
+            if (ii % 2 == 0) continue;
             res++;
         }
     }
-    
+
     return res;
 }
 
@@ -158,7 +159,7 @@ int continue_while1() {
     while (1) {
         i++;
         if (i == 10) break;
-        if (i%2 == 0) continue;
+        if (i % 2 == 0) continue;
         res += i;
     }
     return res;
@@ -176,7 +177,7 @@ int continue_while2() {
             continue;
         }
         while (j < 5) {
-            if (j%2 == 0) {
+            if (j % 2 == 0) {
                 j++;
                 continue;
             }
@@ -184,7 +185,7 @@ int continue_while2() {
             res++;
         }
         while (k < 5) {
-            if (k%2 == 0) {
+            if (k % 2 == 0) {
                 k++;
                 continue;
             }
@@ -193,26 +194,26 @@ int continue_while2() {
         }
         i++;
     }
-    
+
     return res;
 }
 
 int complex_loop1() {
     int res = 0;
-    for (int i=0;i<3;i++) {
-        if (i%2==0) continue;
+    for (int i = 0; i < 3; i++) {
+        if (i % 2 == 0) continue;
         res++;
-        for (int j=0;j<3;j++) {
-            if (j%2==0) continue;
+        for (int j = 0; j < 3; j++) {
+            if (j % 2 == 0) continue;
             res++;
-            for (int k=0;k<3;k++) {
-                if (k%2==0) continue;
+            for (int k = 0; k < 3; k++) {
+                if (k % 2 == 0) continue;
                 res++;
             }
         }
 
-        for (int ii = 0;ii<5;ii++) {
-            if (ii%2==0) continue;
+        for (int ii = 0; ii < 5; ii++) {
+            if (ii % 2 == 0) continue;
             res++;
         }
 
@@ -226,7 +227,7 @@ int complex_loop1() {
                 continue;
             }
             while (j1 < 5) {
-                if (j1%2 == 0) {
+                if (j1 % 2 == 0) {
                     j1++;
                     continue;
                 }
@@ -234,7 +235,7 @@ int complex_loop1() {
                 res++;
             }
             while (k1 < 5) {
-                if (k1%2 == 0) {
+                if (k1 % 2 == 0) {
                     k1++;
                     continue;
                 }
@@ -244,7 +245,7 @@ int complex_loop1() {
             i1++;
         }
     }
-    
+
     return res;
 }
 
