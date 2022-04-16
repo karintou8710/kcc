@@ -13,7 +13,6 @@
  *
  */
 
-
 typedef struct Var Var;
 typedef struct Vector Vector;
 typedef struct Type Type;
@@ -100,11 +99,12 @@ struct Token
 /* 変数の定義 */
 struct Var
 {
-    Var *next;  // 次の変数かNULL
-    char *name; // 変数の名前
-    int len;    // 名前の長さ
-    int offset; // RBPからのオフセット
-    Type *type; // 型情報
+    Var *next;       // 次の変数かNULL
+    char *name;      // 変数の名前
+    int len;         // 名前の長さ
+    int offset;      // RBPからのオフセット
+    int next_offset; // ローカルスコープでのオフセットを管理
+    Type *type;      // 型情報
 
     bool is_global;
 };
@@ -246,8 +246,8 @@ Var *globals;
 Token *token;     // tokenは単方向の連結リスト
 char *user_input; // 入力プログラム
 char *file_name;
-Function *funcs[1000];      // TODO: Vectorに対応する
-int label_if_count;         // ifのラベル
-int label_loop_count;       // forとwhileのラベル
+Function *funcs[1000]; // TODO: Vectorに対応する
+int label_if_count;    // ifのラベル
+int label_loop_count;  // forとwhileのラベル
 Vector *struct_global_lists;
 Vector *struct_local_lists; // 既出の構造体

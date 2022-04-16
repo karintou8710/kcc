@@ -6,6 +6,7 @@
  */
 static Var *locals;
 static Function *cur_parse_func;
+static Vector *local_scope;
 static bool is_global = true;
 static bool is_struct_create = false;
 
@@ -140,7 +141,15 @@ static Var *new_lvar(Token *tok, Type *type)
     lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
     lvar->type = type;
-    lvar->offset = locals->offset + sizeOfType(type);
+    if (locals->next_offset > 0)
+    {
+        lvar->offset = locals->next_offset + sizeOfType(type);
+    }
+    else
+    {
+        lvar->offset = locals->offset + sizeOfType(type);
+    }
+
     locals = lvar; // localsを新しいローカル変数に更新
     return lvar;
 }
@@ -180,6 +189,7 @@ static void create_lvar_from_params(Var *params)
     lvar->name = params->name;
     lvar->len = params->len;
     lvar->type = params->type;
+    // 引数はトップのローカルスコープになるのでnext_offsetで条件分岐が必要ない
     lvar->offset = locals->offset + sizeOfType(lvar->type);
     lvar->next = locals;
 
@@ -192,6 +202,20 @@ static Var *find_lvar(Token *tok)
 {
     Var *vars = locals;
     for (Var *var = vars; var; var = var->next)
+    {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+        {
+            return var;
+        }
+    }
+    return NULL;
+}
+
+/* 既に定義されたローカル変数を検索 */
+static Var *find_scope_lvar(Token *tok)
+{
+    Var *vars = locals, *scope = vec_last(local_scope);
+    for (Var *var = vars; var != scope; var = var->next)
     {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
         {
@@ -256,6 +280,17 @@ static Type *find_gstruct_type(char *name)
     return NULL;
 }
 
+static void start_local_scope()
+{
+    vec_push(local_scope, locals);
+}
+
+static void end_local_scope()
+{
+    Var *var = vec_pop(local_scope);
+    var->next_offset = locals->next_offset > 0 ? locals->next_offset : locals->offset;
+    locals = var;
+}
 /*************************************/
 /******                         ******/
 /******        NEW_NODE         ******/
@@ -428,7 +463,7 @@ static Node *new_node_num(int val)
 static Node *declear_node_ident(Token *tok, Type *type)
 {
     Node *node = new_node(ND_VAR);
-    Var *var = is_global ? find_gvar(tok) : find_lvar(tok);
+    Var *var = is_global ? find_gvar(tok) : find_scope_lvar(tok);
     if (var)
     {
         error_at(tok->str, "declear_node_ident() failure: 既に宣言済みです");
@@ -470,6 +505,7 @@ static Node *get_node_ident(Token *tok)
 void program()
 {
     int i = 0;
+    local_scope = new_vec();
     while (!at_eof())
     {
         Type *type = type_specifier();
@@ -749,8 +785,10 @@ static Function *func_define(Type *type)
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec(); // 関数毎に構造体を初期化
     locals->offset = 0;
+    start_local_scope();
     create_lvar_from_params(fn->params);
     fn->body = compound_stmt();
+    end_local_scope();
     fn->locals = locals;
     return fn;
 }
@@ -761,6 +799,8 @@ static Function *func_define(Type *type)
 static Node *compound_stmt()
 {
     expect('{');
+    // ローカルのスコープを取る為に、現在のローカル変数を保持
+    start_local_scope();
     Node *node = new_node(ND_BLOCK);
     node->stmts = new_vec();
     while (!consume('}'))
@@ -778,6 +818,8 @@ static Node *compound_stmt()
         }
         vec_push(node->stmts, n);
     }
+    end_local_scope();
+
     return node;
 }
 
@@ -840,6 +882,7 @@ static Node *stmt()
     }
     else if (consume(TK_FOR))
     {
+        start_local_scope();
         node = new_node(ND_FOR);
         expect('(');
         if (!consume(';'))
@@ -858,6 +901,7 @@ static Node *stmt()
             expect(')');
         }
         node->body = stmt();
+        end_local_scope();
     }
     else if (consume_nostep('{'))
     {

@@ -188,6 +188,7 @@ void debug_var(Var *var)
     fprintf(stderr, "name -> %s\n", var->name);
     fprintf(stderr, "len -> %d\n", var->len);
     fprintf(stderr, "offset -> %d\n", var->offset);
+    fprintf(stderr, "next_offset -> %d\n", var->next_offset);
 
 }
 

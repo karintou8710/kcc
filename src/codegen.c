@@ -126,7 +126,14 @@ static void assign_lvar_offsets()
 {
     for (int i = 0; funcs[i]; i++)
     {
-        funcs[i]->stack_size = funcs[i]->locals->offset;
+        if (funcs[i]->locals->next_offset > 0)
+        {
+            funcs[i]->stack_size = funcs[i]->locals->next_offset;
+        }
+        else
+        {
+            funcs[i]->stack_size = funcs[i]->locals->offset;
+        }
     }
 }
 
@@ -265,18 +272,26 @@ static void gen(Node *node)
     case ND_RETURN:
         gen(node->lhs);
         pop_rdi();
-        if (current_fn->ret_type->kind == TYPE_CHAR) {
+        if (current_fn->ret_type->kind == TYPE_CHAR)
+        {
             printf("  movsx rax, dil\n");
-        } else if (current_fn->ret_type->kind != TYPE_VOID) {
-            if (current_fn->ret_type->size < 8) {
+        }
+        else if (current_fn->ret_type->kind != TYPE_VOID)
+        {
+            if (current_fn->ret_type->size < 8)
+            {
                 printf("  movsx rax, %s\n", proper_register(current_fn->ret_type, REG_RDI));
-            } else if (current_fn->ret_type->size == 8) {
+            }
+            else if (current_fn->ret_type->size == 8)
+            {
                 printf("  mov rax, rdi\n");
-            } else {
+            }
+            else
+            {
                 error("gen() failure: ND_RETURN can't return over 8 size.");
             }
         }
-        
+
         printf("  jmp .L.return.%s\n", current_fn->name);
         // returnは終了なので数合わせなし
         return;
