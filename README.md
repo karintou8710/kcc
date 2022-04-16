@@ -14,7 +14,7 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 ## TODO
 
 - 初期化式
-- else if, switch
+- switch
 - typedef 
 - enum
 

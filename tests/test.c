@@ -128,27 +128,27 @@ int assign7()
 }
 int assign8()
 {
-    int a,b,c,d,e;
-    a=1;
-    b=1;
-    c=1;
-    d=1;
-    e=1;
-    return a+b+c+d+e;
+    int a, b, c, d, e;
+    a = 1;
+    b = 1;
+    c = 1;
+    d = 1;
+    e = 1;
+    return a + b + c + d + e;
 }
 int assign9()
 {
-    int a=1,b,c=1,d,e=1;
-    b=2;
-    d=2;
-    return a+b+c+d+e;
+    int a = 1, b, c = 1, d, e = 1;
+    b = 2;
+    d = 2;
+    return a + b + c + d + e;
 }
 int assign10()
 {
-    int a=1,b,c=1;
-    int *d=&b, *e = &a;
-    b=1;
-    return a+b+c+*d+*e;
+    int a = 1, b, c = 1;
+    int *d = &b, *e = &a;
+    b = 1;
+    return a + b + c + *d + *e;
 }
 // if else
 int if_else1()
@@ -230,6 +230,26 @@ int if_else7()
         a = 30;
     }
     return a;
+}
+
+int if_else8()
+{
+    int res = 4;
+    if (res == 1)
+    {
+        return 1;
+    }
+    else if (res == 2)
+    {
+        return 2;
+    }
+    else if (res == 3)
+        return 3;
+    else if (res == 4)
+        return 4;
+    else
+        return 5;
+    return 6;
 }
 
 // while
@@ -518,14 +538,15 @@ int sizeof5()
 }
 int sizeof6()
 {
-    struct A {
-		int a;
-		int b;
-		int c;
-		int d[20];
-		struct A *e;
-	};
-	return sizeof(struct A);
+    struct A
+    {
+        int a;
+        int b;
+        int c;
+        int d[20];
+        struct A *e;
+    };
+    return sizeof(struct A);
 }
 int sizeof7()
 {
@@ -667,18 +688,22 @@ int preinc2()
 }
 
 // postinc
-int postinc1() {
-    int a; int b;
+int postinc1()
+{
+    int a;
+    int b;
     a = 0;
     b = 0;
     a = b++;
     return a;
 }
-int postinc2() {
+int postinc2()
+{
     int i;
     int sum;
     sum = 0;
-    for (i=0;i<10;i++) {
+    for (i = 0; i < 10; i++)
+    {
         sum += i;
     }
     return sum;
@@ -706,47 +731,56 @@ int predec2()
 }
 
 // postdec
-int postdec1() {
-    int a; int b;
+int postdec1()
+{
+    int a;
+    int b;
     a = 0;
     b = 0;
     a = b--;
     return a;
 }
-int postdec2() {
+int postdec2()
+{
     int i;
     int sum;
     sum = 0;
-    for (i=9;i>=0;i--) {
+    for (i = 9; i >= 0; i--)
+    {
         sum += i;
     }
     return sum;
 }
 
 // assign_initializer
-int assign_initializer1() {
+int assign_initializer1()
+{
     int sum = 0;
-    for (int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++)
+    {
         sum += i;
     }
     return sum;
 }
 
-int assign_initializer2() {
+int assign_initializer2()
+{
     int height = 10;
     int width = 20;
     int res = height * width / 2;
     return res;
 }
 
-int assign_initializer3() {
+int assign_initializer3()
+{
     char *s1 = "Hello";
     char *s2 = "Hello";
     int is_same = (strcmp(s1, s2) == 0);
     return is_same;
 }
 
-int param_void(void) {
+int param_void(void)
+{
     return 1;
 }
 
@@ -779,6 +813,7 @@ int main()
     ASSERT(1, if_else5(), "if_else5");
     ASSERT(3, if_else6(), "if_else6");
     ASSERT(30, if_else7(), "if_else7");
+    ASSERT(4, if_else8(), "if_else8");
 
     ASSERT(10, while1(), "while1");
     ASSERT(12, while2(), "while2");
