@@ -222,6 +222,14 @@ void add_type(Node *node) {
             return;
         }
 
+        if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR ||
+            lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_ARRAY ||
+            lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_PTR ||
+            lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_ARRAY) {
+            node->type = new_type(TYPE_INT);  // gccではlong
+            return;
+        }
+
         error("%d %d不正な型です(SUB)", lhs->type->kind, rhs->type->kind);
     }
 

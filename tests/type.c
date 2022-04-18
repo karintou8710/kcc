@@ -67,6 +67,24 @@ int *assign_type_cast4() {
     return b;
 }
 
+int pointer_sub1() {
+    int a = 1;
+    int *p1 = &a, *p2 = &a;
+    p2 += 3;
+    return p2 - p1;
+}
+
+int pointer_sub2() {
+    int a[100];
+    return a + (3) - a;
+}
+
+int pointer_sub3() {
+    int a[100];
+    int *b = a + 10;
+    return b + 1 - a;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -76,6 +94,9 @@ int main() {
     ASSERT(127, assign_type_cast2(), "assign_type_cast2");
     ASSERT(1, assign_type_cast3(), "assign_type_cast3");
     ASSERT(1, assign_type_cast4(), "assign_type_cast4");
+    ASSERT(3, pointer_sub1(), "pointer_sub1");
+    ASSERT(3, pointer_sub2(), "pointer_sub2");
+    ASSERT(11, pointer_sub3(), "pointer_sub3");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

@@ -329,6 +329,18 @@ static Node *new_sub(Node *lhs, Node *rhs) {
         return node;
     }
 
+    if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR ||
+        lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_ARRAY ||
+        lhs->type->kind == TYPE_ARRAY && rhs->type->kind == TYPE_PTR ||
+        lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_ARRAY) {
+        if (lhs->type->ptr_to->size != rhs->type->ptr_to->size) {
+            error("new_sub() failure: 異なるサイズの型を指すポインター同士の引き算はできません。");
+        }
+        add_type(node);
+        node = new_div(node, new_node_num(lhs->type->ptr_to->size));
+        return node;
+    }
+
     error("new_sub() failure: 実行できない型による演算です");
 }
 
