@@ -132,6 +132,25 @@ void add_type(Node *node) {
         return;
     }
 
+    if (node->kind == ND_TERNARY) {
+        if (is_integertype(node->then->type->kind) && is_integertype(node->els->type->kind)) {
+            node->type = new_type(large_numtype(node->then->type, node->els->type));
+            return;
+        }
+
+        // TODO: 構造体と配列
+        if (node->then->type->kind == TYPE_STRUCT && node->els->type->kind == TYPE_STRUCT) {
+            if (node->then->type != node->els->type) {
+                error("add_type() failure: ND_TERNARY, different struct type");
+            }
+            node->type = node->then->type;
+            return;
+        }
+
+        error("add_type() failure: ND_TERNARY error.");
+        return;
+    }
+
     if (node->kind == ND_NUM) {
         node->type = new_type(TYPE_INT);
         return;

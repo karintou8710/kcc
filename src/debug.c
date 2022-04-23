@@ -63,7 +63,9 @@ void print_node_kind(NodeKind kind) {
     else if (kind == ND_NULL)
         fprintf(stderr, "ND_NULL");  // null
     else if (kind == ND_SUGER)
-        fprintf(stderr, "ND_SUGER");  // null
+        fprintf(stderr, "ND_SUGER");  // suger
+    else if (kind == ND_TERNARY)
+        fprintf(stderr, "ND_TERNARY");  // 3項演算子
     else
         error("print_node_kind() failure");
 
@@ -165,6 +167,10 @@ void debug_node(Node *node, char *pos, int depth) {
         case ND_VAR:
             recursion_line_printf(depth, "name -> %s\n", node->var->name);
             recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
+            return;
+        case ND_TERNARY:
+            debug_node(node->then, "then", depth + 1);
+            debug_node(node->els, "els", depth + 1);
             return;
         default:
             debug_node(node->lhs, "lhs", depth + 1);

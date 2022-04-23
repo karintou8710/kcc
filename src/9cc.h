@@ -135,6 +135,7 @@ typedef enum {
     ND_SUGER,          // 糖衣構文
     ND_NULL,           // 何もしない
     ND_STRUCT_MEMBER,  // struct member
+    ND_TERNARY,        // 3項演算子
 } NodeKind;
 
 struct Node {

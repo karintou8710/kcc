@@ -153,6 +153,9 @@ static void gen_addr(Node *node) {
         printf("  add rax, %d\n", node->val);
         push();
         return;
+    } else if (node->kind == ND_TERNARY) {
+        gen(node);
+        return;
     }
 
     error("左辺値がポインターまたは変数ではありません");
@@ -269,6 +272,19 @@ static void gen(Node *node) {
                 printf(".Lifend%04d:\n", if_count);
                 push();  // 数合わせ
             }
+
+            return;
+        case ND_TERNARY:
+            label_if_count++;
+            gen(node->cond);
+            pop();
+            printf("  cmp rax, 0\n");
+            printf("  je  .Lifelse%04d\n", if_count);
+            gen(node->then);
+            printf("  jmp .Lifend%04d\n", if_count);
+            printf(".Lifelse%04d:\n", if_count);
+            gen(node->els);
+            printf(".Lifend%04d:\n", if_count);
 
             return;
         case ND_WHILE:

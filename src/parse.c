@@ -35,6 +35,7 @@ static Node *compound_stmt();
 static Node *stmt();
 static Node *expr();
 static Node *assign();
+static Node *conditional();
 static Node *logical_expression();
 static Node *equality();
 static Node *relational();
@@ -826,23 +827,41 @@ static Node *expr() {
 
 // TODO: ?:, <<=, >>=, &=, ^=, |=
 /*
- *  <assign> = <logical_expression> ("=" <assign>)?
- *           | <logical_expression> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <logical_expression>
+ *  <assign> = <conditional> ("=" <assign>)?
+ *           | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>
  */
 static Node *assign() {
-    Node *node = logical_expression();
+    Node *node = conditional();
     if (consume('=')) {
         node = new_assign(node, assign());
     } else if (consume(TK_ADD_EQ)) {
-        node = new_assign(node, new_add(node, logical_expression()));
+        node = new_assign(node, new_add(node, conditional()));
     } else if (consume(TK_SUB_EQ)) {
-        node = new_assign(node, new_sub(node, logical_expression()));
+        node = new_assign(node, new_sub(node, conditional()));
     } else if (consume(TK_MUL_EQ)) {
-        node = new_assign(node, new_mul(node, logical_expression()));
+        node = new_assign(node, new_mul(node, conditional()));
     } else if (consume(TK_DIV_EQ)) {
-        node = new_assign(node, new_div(node, logical_expression()));
+        node = new_assign(node, new_div(node, conditional()));
     } else if (consume(TK_MOD_EQ)) {
-        node = new_assign(node, new_mod(node, logical_expression()));
+        node = new_assign(node, new_mod(node, conditional()));
+    }
+    return node;
+}
+
+/*
+ * <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
+ */
+static Node *conditional() {
+    Node *node = logical_expression();
+    if (consume('?')) {
+        Node *n = new_node(ND_TERNARY);
+        n->cond = node;
+        n->then = assign();
+        add_type(n->then);
+        expect(':');
+        n->els = conditional();
+        add_type(n->els);
+        node = n;
     }
     return node;
 }

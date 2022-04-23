@@ -15,7 +15,7 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 
 - 初期化式
 - switch
-- typedef 
+- typedef
 - enum
 
 ## Build
@@ -59,8 +59,9 @@ $ make test
        | ("continue" | "break")
        | <compound_stmt>
 <expr> = <assign> | <declaration>
-<assign> = <logical_expression> ("=" <assign>)?
-         | <logical_expression> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <logical_expression>
+<assign> = <conditional> ("=" <assign>)?
+         | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>
+<conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
 <logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
 <equality> = <relational> ("==" <relational> | "!=" <relational>)*
 <relational> = <add> ("<" <add> | "<=" <add> | ">" <add> | ">=" <add>)*

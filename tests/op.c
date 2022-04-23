@@ -98,6 +98,21 @@ int logical_expr1() {
     return (0 && 1 == 0) || (123 > 2 && 13 || !0) && !123;
 }
 
+int termary1(int cond) {
+    return cond ? 10 : 2;
+}
+
+int termary2(int cond1) {
+    return termary1(cond1) - 2 ? 100 : cond1 ? 10
+                                             : logical_and1();
+}
+
+int termary3() {
+    int a = 1, b = 2, ans;
+    ans = (a == 1 ? (b == 2 ? 3 : 5) : 0);
+    return ans;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -117,6 +132,12 @@ int main() {
     ASSERT(2, logical_or5(), "logical_or5");
 
     ASSERT(0, logical_expr1(), "logical_expr1");
+
+    ASSERT(10, termary1(1), "termary1(1)");
+    ASSERT(2, termary1(0), "termary1(0)");
+    ASSERT(0, termary2(0), "termary2(0)");
+    ASSERT(100, termary2(1), "termary2(1)");
+    ASSERT(3, termary3(), "termary3");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;
