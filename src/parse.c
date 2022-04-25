@@ -711,10 +711,7 @@ static Node *compound_stmt() {
     node->stmts = new_vec();
     while (!consume('}')) {
         Node *n = stmt();
-        if (n->kind == ND_SUGER) {
-            vec_concat(node->stmts, n->stmts);
-            continue;
-        } else if (n->kind == ND_VAR) {
+        if (n->kind == ND_VAR) {
             // ローカル変数の宣言はコンパイルしない
             n = new_node(ND_NULL);
         }

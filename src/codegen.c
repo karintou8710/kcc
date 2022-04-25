@@ -353,6 +353,13 @@ static void gen(Node *node) {
             }
             push();  // 数合わせ
             return;
+        case ND_SUGER:
+            for (int i = 0; i < node->stmts->len; i++) {
+                gen(node->stmts->body[i]);
+                pop();
+            }
+            push();  // 数合わせ
+            return;
         case ND_CALL: {
             int nargs = node->args->len;
             for (int i = 0; i < nargs; i++) {
