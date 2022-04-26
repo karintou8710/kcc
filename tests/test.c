@@ -666,6 +666,23 @@ int param_void(void) {
     return 1;
 }
 
+int character_const1() {
+    int a = 'a';
+    int b = 'b';
+    return a + b;
+}
+
+char character_const2() {
+    char a[6];
+    a[0] = 'h';
+    a[1] = 'e';
+    a[2] = 'l';
+    a[3] = 'l';
+    a[4] = 'o';
+    a[5] = 0;
+    return a[0] + a[5];
+}
+
 int main() {
     ASSERT(6, local1(), "local1");
     ASSERT(2, local2(), "local2");
@@ -774,6 +791,9 @@ int main() {
     ASSERT(1, assign_initializer3(), "assign_initializer3");
 
     ASSERT(1, param_void(), "param_void");
+
+    ASSERT(195, character_const1(), "character_const1");
+    ASSERT(104, character_const2(), "character_const2");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;

@@ -1188,7 +1188,10 @@ static Node *primary() {
     }
 
     if (consume_nostep(TK_NUM)) {
-        return new_node_num(expect_number());
+        Token *t = token;
+        Node *node = new_node_num(expect_number());
+        node->type = t->type;
+        return node;
     }
 
     if (token->kind == TK_EOF) {

@@ -142,6 +142,7 @@ Token *tokenize(char *p) {
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            cur->type = new_type(TYPE_INT);
             continue;
         }
 
@@ -159,6 +160,18 @@ Token *tokenize(char *p) {
             cur->len = p - q - 1;
             cur->str_literal_index = string_literal->len;
             vec_push(string_literal, cur);
+            continue;
+        }
+
+        if (*p == '\'') {
+            p++;
+            cur = new_token(TK_NUM, cur, p, 1);
+            cur->val = *p;
+            p++;
+            if (*p != '\'') {
+                error("tokenize() failure: 「'」で閉じていません。");
+            }
+            p++;
             continue;
         }
 
