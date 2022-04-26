@@ -548,6 +548,11 @@ static void initialize2(Initializer *init) {
     if (init->children) {
         expect('{');
         for (int i = 0; i < init->len; i++) {
+            if (consume_nostep('}')) {
+                (init->children + i)->expr = new_node_num(0);
+                continue;
+            }
+
             if (i > 0) expect(',');
             initialize2(init->children + i);
         }
