@@ -190,6 +190,21 @@ void debug_var(Var *var) {
     fprintf(stderr, "next_offset -> %d\n", var->next_offset);
 }
 
+void debug_initializer(Initializer *init, int depth) {
+    if (init == NULL) {
+        return;
+    }
+
+    if (init->children) {
+        for (int i = 0; i < init->len; i++) {
+            debug_initializer(init->children + i, depth + 1);
+        }
+        return;
+    }
+
+    debug_type(init->type, depth);
+}
+
 void debug_type(Type *ty, int depth) {
     if (ty == NULL) {
         return;

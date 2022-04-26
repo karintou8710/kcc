@@ -22,9 +22,12 @@ static Var *new_gvar(Token *tok, Type *type);
 static void create_lvar_from_params(Var *params);
 static Var *find_lvar(Token *tok);
 static Var *find_gvar(Token *tok);
+static void init_initializer(Initializer *init, Type *ty);
+static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
 static Type *type_specifier();
+static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
@@ -249,6 +252,28 @@ static void end_local_scope() {
     var->next_offset = locals->next_offset > 0 ? locals->next_offset : locals->offset;
     locals = var;
 }
+
+static Initializer *new_initializer(Type *ty) {
+    Initializer *init = memory_alloc(sizeof(Initializer));
+    init_initializer(init, ty);
+    return init;
+}
+
+static void init_initializer(Initializer *init, Type *ty) {
+    init->type = ty;
+
+    if (ty->kind == TYPE_ARRAY) {
+        init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+        init->len = ty->array_size;
+        for (int i = 0; i < ty->array_size; i++) {
+            init_initializer(init->children + i, ty->ptr_to);
+        }
+        return;
+    }
+
+    return;
+}
+
 /*************************************/
 /******                         ******/
 /******        NEW_NODE         ******/
@@ -409,6 +434,39 @@ static Node *new_node_num(int val) {
     return node;
 }
 
+/* 初期化式からノードを作成
+ * int a[2][2] = {{1,2},{3,4}};
+ *        ↓↓↓
+ * a[0][0] = 1;
+ * a[0][1] = 2;
+ * a[1][0] = 3;
+ * a[1][1] = 4;
+ */
+static Node *new_node_init(Initializer *init, Node *node) {
+    Node *n = new_node(ND_SUGER);
+    n->stmts = new_node_init2(init, node);
+    return n;
+}
+
+static Vector *new_node_init2(Initializer *init, Node *node) {
+    Vector *suger = new_vec();
+
+    if (init->children) {
+        for (int i = 0; i < init->len; i++) {
+            Node *deref = new_node(ND_DEREF);
+            deref->lhs = new_add(node, new_node_num(i));
+            add_type(deref->lhs);
+            add_type(deref);
+            Vector *v = new_node_init2(init->children + i, deref);
+            vec_concat(suger, v);
+        }
+        return suger;
+    }
+
+    vec_push(suger, new_assign(node, init->expr));
+    return suger;
+}
+
 /* 変数を宣言 */
 static Node *declear_node_ident(Token *tok, Type *type) {
     Node *node = new_node(ND_VAR);
@@ -481,19 +539,23 @@ static Node *declaration_global(Type *type) {
 /*
  *  <initialize> = <assign>
  */
-static Node *initialize() {
-    Node *node = NULL;
-    // TODO 配列の初期化式
-    // if (consume('{')) {
-    //     node = initialize();
-    //     while (consume(',')) {
-    //         node = initialize();
-    //     }
-    //     expect('}');
-    //     return node;
-    // }
+static Node *initialize(Initializer *init, Node *node) {
+    initialize2(init);
+    return new_node_init(init, node);
+}
 
-    return assign();
+static void initialize2(Initializer *init) {
+    if (init->children) {
+        expect('{');
+        for (int i = 0; i < init->len; i++) {
+            if (i > 0) expect(',');
+            initialize2(init->children + i);
+        }
+        expect('}');
+        return;
+    }
+
+    init->expr = assign();
 }
 
 /*
@@ -519,12 +581,11 @@ static Node *declaration_var(Type *type) {
         node->var->type = type_suffix(node->var->type);
         // 新しい型のオフセットにする
         node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
-
-        return node;
     }
     // 変数
     if (consume('=')) {
-        return new_assign(node, initialize());
+        Initializer *init = new_initializer(node->var->type);
+        return initialize(init, node);
     }
 
     return node;

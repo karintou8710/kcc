@@ -173,9 +173,11 @@ struct Function {
 };
 
 struct Initializer {
-    int val;
-    Vector *el;
     Type *type;
+
+    Node *expr;
+    Initializer *children;
+    int len;
 };
 
 // parse.c
