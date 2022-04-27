@@ -172,6 +172,11 @@ void debug_node(Node *node, char *pos, int depth) {
             debug_node(node->then, "then", depth + 1);
             debug_node(node->els, "els", depth + 1);
             return;
+        case ND_SUGER:
+        case ND_BLOCK:
+            for (int i = 0; i < node->stmts->len; i++) {
+                debug_node(node->stmts->body[i], "stmt", depth + 1);
+            }
         default:
             debug_node(node->lhs, "lhs", depth + 1);
             debug_node(node->rhs, "rhs", depth + 1);
@@ -196,13 +201,17 @@ void debug_initializer(Initializer *init, int depth) {
     }
 
     if (init->children) {
+        debug("[init->children]");
         for (int i = 0; i < init->len; i++) {
             debug_initializer(init->children + i, depth + 1);
         }
         return;
     }
 
-    debug_type(init->type, depth);
+    if (init->expr) {
+        debug_node(init->expr, "init->expr", depth);
+        return;
+    }
 }
 
 void debug_type(Type *ty, int depth) {

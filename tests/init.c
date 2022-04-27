@@ -72,6 +72,28 @@ int init_array9() {
     return a[7][0] + a[0][1];
 }
 
+int init_array10() {
+    char a[10] = "abcdefg";
+    char b[] = "abcdefg";
+    return a[0] + a[7] + b[1] + b[7];
+}
+
+int init_array11() {
+    char a[][10] = {
+        "hello",
+        "world",
+        "test"};
+    return a[0][0] + a[1][1] + a[2][2];
+}
+
+int init_array12() {
+    char *a[5] = {
+        "hello",
+        "world",
+        "test"};
+    return a[0][0] + a[1][1] + a[2][2];
+}
+
 int main() {
     ASSERT(4, init_array1(), "init_array1");
     ASSERT(12, init_array2(), "init_array2");
@@ -82,6 +104,9 @@ int main() {
     ASSERT(4, init_array7(), "init_array7");
     ASSERT(6, init_array8(), "init_array8");
     ASSERT(5, init_array9(), "init_array9");
+    ASSERT(195, init_array10(), "init_array10");
+    ASSERT(330, init_array11(), "init_array11");
+    ASSERT(330, init_array12(), "init_array12");
 
     printf("ALL TEST OF init.c SUCCESS :)\n");
     return 0;

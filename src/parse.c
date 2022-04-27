@@ -531,48 +531,83 @@ static Node *initialize(Initializer *init, Node *node) {
     return new_node_init(init, node);
 }
 
-static void initialize2(Initializer *init) {
+static void initialize_array(Initializer *init) {
     Type *ty = init->type;
 
-    if (ty->kind == TYPE_ARRAY) {
-        if (ty->array_size == 0) {
-            // 最初の添え字が省略されている
-            int children_cap = 2;
-            init->children = memory_alloc(sizeof(Initializer) * children_cap);
-            expect('{');
-            int i = 0;
-            while (!consume('}')) {
-                if (i >= children_cap) {
-                    children_cap *= 2;
-                    init->children = realloc(init->children, sizeof(Initializer) * children_cap);
-                }
-
-                if (i > 0) expect(',');
-                (init->children + i)->type = ty->ptr_to;
-                initialize2(init->children + i);
-                i++;
+    if (ty->array_size == 0) {
+        // 最初の添え字が省略されている
+        int children_cap = 2;
+        init->children = memory_alloc(sizeof(Initializer) * children_cap);
+        expect('{');
+        int i = 0;
+        while (!consume('}')) {
+            if (i >= children_cap) {
+                children_cap *= 2;
+                init->children = realloc(init->children, sizeof(Initializer) * children_cap);
             }
-            init->len = ty->array_size = i;
-            ty->size = ty->array_size * ty->ptr_to->size;
-            return;
-        } else {
-            init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
-            init->len = ty->array_size;
 
-            expect('{');
-            for (int i = 0; i < init->len; i++) {
-                if (consume_nostep('}')) {
-                    (init->children + i)->expr = new_node_num(0);
-                    continue;
-                }
+            if (i > 0) expect(',');
+            (init->children + i)->type = ty->ptr_to;
+            initialize2(init->children + i);
+            i++;
+        }
+        // 省略された配列の長さとサイズを決定
+        init->len = ty->array_size = i;
+        ty->size = ty->array_size * ty->ptr_to->size;
+    } else {
+        init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+        init->len = ty->array_size;
 
-                if (i > 0) expect(',');
-                (init->children + i)->type = ty->ptr_to;
-                initialize2(init->children + i);
+        expect('{');
+        for (int i = 0; i < init->len; i++) {
+            if (consume_nostep('}')) {
+                (init->children + i)->expr = new_node_num(0);
+                continue;
             }
-            expect('}');
+
+            if (i > 0) expect(',');
+            (init->children + i)->type = ty->ptr_to;
+            initialize2(init->children + i);
+        }
+        expect('}');
+    }
+}
+
+static void initialize_string(Initializer *init) {
+    Type *ty = init->type;
+
+    if (ty->array_size == 0) {
+        // 省略された配列の長さとサイズを決定
+        ty->array_size = token->len + 1;
+        ty->size = ty->array_size * ty->ptr_to->size;
+    }
+    init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+    init->len = ty->array_size;
+    if (init->len < token->len) {
+        error("initialize_string() failure: 文字列が長すぎます");
+    }
+    for (int i = 0; i < init->len; i++) {
+        if (token->len <= i) {
+            (init->children + i)->expr = new_node_num(0);
+            continue;
+        }
+        (init->children + i)->type = ty->ptr_to;
+        (init->children + i)->expr = new_node_num(token->str[i]);
+    }
+    next_token();
+}
+
+static void initialize2(Initializer *init) {
+    if (init->type->kind == TYPE_ARRAY) {
+        // string
+        if (init->type->ptr_to->kind == TYPE_CHAR && consume_nostep(TK_STRING)) {
+            initialize_string(init);
             return;
         }
+
+        // array
+        initialize_array(init);
+        return;
     }
 
     init->expr = assign();

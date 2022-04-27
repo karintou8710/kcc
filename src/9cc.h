@@ -205,6 +205,7 @@ void debug_var(Var *var);
 void debug_type(Type *ty, int depth);
 void debug_node(Node *node, char *pos, int depth);
 void debug_token(Token *t);
+void debug_initializer(Initializer *init, int depth);
 void debug(char *fmt, ...);
 
 // vector.c
