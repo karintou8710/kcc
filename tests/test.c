@@ -683,6 +683,16 @@ char character_const2() {
     return a[0] + a[5];
 }
 
+int array_param1(int a[][2]) {
+    int sum = a[0][1] + a[0][0] + a[1][1] + a[1][0];
+    return sum;
+}
+
+int array_param2(int a[]) {
+    int sum = a[0] + a[1] + a[2];
+    return sum;
+}
+
 int main() {
     ASSERT(6, local1(), "local1");
     ASSERT(2, local2(), "local2");
@@ -794,6 +804,13 @@ int main() {
 
     ASSERT(195, character_const1(), "character_const1");
     ASSERT(104, character_const2(), "character_const2");
+
+    int a[2][2] = {
+        {1, 2},
+        {3, 4}};
+    int b[3] = {10, 20, 30};
+    ASSERT(10, array_param1(a), "array_param1");
+    ASSERT(60, array_param2(b), "array_param2");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;

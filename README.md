@@ -36,6 +36,7 @@ $ make test
 <program> = ( <declaration_global> | <func_define> )*
 <declaration_global> = <declaration> ";"
 <initialize> = <assign>
+             | "{" <initialize> ("," <initialize>)* "}"
 <pointer> = "*"*
 <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
 <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
@@ -45,7 +46,7 @@ $ make test
                  | "void"
                  | "struct" <ident>
                  | "struct" <ident> "{" <struct_declaration>* "}"
-<type_suffix> = "[" <num> "]" <type_suffix> | ε
+<type_suffix> = "[" <num>? "]" <type_suffix> | ε
 <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
 <func_define> = <type_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"

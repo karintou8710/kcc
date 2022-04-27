@@ -54,6 +54,24 @@ int init_array7() {
     return a[0][0][0] + a[0][0][1] + a[1][1][0];
 }
 
+int init_array8() {
+    int a[] = {1, 2, 3, 4, 5};
+    return a[0] + a[4];
+}
+
+int init_array9() {
+    int a[][10] = {
+        {1, 2},
+        {1, 2},
+        {1, 2},
+        {1, 2},
+        {1, 2},
+        {1, 2},
+        {1, 2},
+        {3, 4}};
+    return a[7][0] + a[0][1];
+}
+
 int main() {
     ASSERT(4, init_array1(), "init_array1");
     ASSERT(12, init_array2(), "init_array2");
@@ -62,6 +80,8 @@ int main() {
     ASSERT(13, init_array5(), "init_array5");
     ASSERT(112, init_array6(), "init_array6");
     ASSERT(4, init_array7(), "init_array7");
+    ASSERT(6, init_array8(), "init_array8");
+    ASSERT(5, init_array9(), "init_array9");
 
     printf("ALL TEST OF init.c SUCCESS :)\n");
     return 0;

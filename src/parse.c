@@ -22,7 +22,6 @@ static Var *new_gvar(Token *tok, Type *type);
 static void create_lvar_from_params(Var *params);
 static Var *find_lvar(Token *tok);
 static Var *find_gvar(Token *tok);
-static void init_initializer(Initializer *init, Type *ty);
 static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
@@ -46,7 +45,7 @@ static Node *add();
 static Node *mul();
 static Node *unary();
 static Node *postfix();
-static Type *type_suffix(Type *type);
+static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
 
 /* 指定された演算子が来る可能性がある */
@@ -255,23 +254,8 @@ static void end_local_scope() {
 
 static Initializer *new_initializer(Type *ty) {
     Initializer *init = memory_alloc(sizeof(Initializer));
-    init_initializer(init, ty);
-    return init;
-}
-
-static void init_initializer(Initializer *init, Type *ty) {
     init->type = ty;
-
-    if (ty->kind == TYPE_ARRAY) {
-        init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
-        init->len = ty->array_size;
-        for (int i = 0; i < ty->array_size; i++) {
-            init_initializer(init->children + i, ty->ptr_to);
-        }
-        return;
-    }
-
-    return;
+    return init;
 }
 
 /*************************************/
@@ -538,26 +522,57 @@ static Node *declaration_global(Type *type) {
 
 /*
  *  <initialize> = <assign>
+ *               | "{" <initialize> ("," <initialize>)* "}"
  */
 static Node *initialize(Initializer *init, Node *node) {
+    bool is_index_omitted = node->var->type->kind == TYPE_ARRAY && node->var->type->array_size == 0;
     initialize2(init);
+    if (is_index_omitted) node->var->offset += sizeOfType(node->var->type);
     return new_node_init(init, node);
 }
 
 static void initialize2(Initializer *init) {
-    if (init->children) {
-        expect('{');
-        for (int i = 0; i < init->len; i++) {
-            if (consume_nostep('}')) {
-                (init->children + i)->expr = new_node_num(0);
-                continue;
-            }
+    Type *ty = init->type;
 
-            if (i > 0) expect(',');
-            initialize2(init->children + i);
+    if (ty->kind == TYPE_ARRAY) {
+        if (ty->array_size == 0) {
+            // 最初の添え字が省略されている
+            int children_cap = 2;
+            init->children = memory_alloc(sizeof(Initializer) * children_cap);
+            expect('{');
+            int i = 0;
+            while (!consume('}')) {
+                if (i >= children_cap) {
+                    children_cap *= 2;
+                    init->children = realloc(init->children, sizeof(Initializer) * children_cap);
+                }
+
+                if (i > 0) expect(',');
+                (init->children + i)->type = ty->ptr_to;
+                initialize2(init->children + i);
+                i++;
+            }
+            init->len = ty->array_size = i;
+            ty->size = ty->array_size * ty->ptr_to->size;
+            return;
+        } else {
+            init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+            init->len = ty->array_size;
+
+            expect('{');
+            for (int i = 0; i < init->len; i++) {
+                if (consume_nostep('}')) {
+                    (init->children + i)->expr = new_node_num(0);
+                    continue;
+                }
+
+                if (i > 0) expect(',');
+                (init->children + i)->type = ty->ptr_to;
+                initialize2(init->children + i);
+            }
+            expect('}');
+            return;
         }
-        expect('}');
-        return;
     }
 
     init->expr = assign();
@@ -581,9 +596,10 @@ static Node *declaration_var(Type *type) {
     type = pointer(type);
     Node *node = declear_node_ident(token, type);
     next_token();
+
     if (consume_nostep('[')) {
         // 配列
-        node->var->type = type_suffix(node->var->type);
+        node->var->type = type_suffix(node->var->type, true);
         // 新しい型のオフセットにする
         node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
     }
@@ -591,6 +607,10 @@ static Node *declaration_var(Type *type) {
     if (consume('=')) {
         Initializer *init = new_initializer(node->var->type);
         return initialize(init, node);
+    }
+
+    if (node->var->type->kind == TYPE_ARRAY && sizeOfType(node->var->type) == 0) {
+        error("declaration_var() failure: 宣言で配列の添え字は省略できません");
     }
 
     return node;
@@ -622,7 +642,7 @@ Type *struct_declaration(Type *type) {
     t = pointer(t);
     Token *tok = token;
     next_token();
-    t = type_suffix(t);
+    t = type_suffix(t, false);
     new_struct_member(tok, t, type);
     expect(';');
     return type;
@@ -683,14 +703,20 @@ static Type *type_specifier() {
     return type;
 }
 
+// is_firstは配列の初期化時のみ使用
 /*
- *  <type_suffix> = "[" <num> "]" <type_suffix> | ε
+ *  <type_suffix> = "[" <num>? "]" <type_suffix> | ε
  */
-static Type *type_suffix(Type *type) {
+static Type *type_suffix(Type *type, bool is_first) {
     if (consume('[')) {
-        int array_size = expect_number();
-        expect(']');
-        type = new_array_type(type_suffix(type), array_size);
+        int array_size;
+        if (is_first && consume(']')) {
+            array_size = 0;
+        } else {
+            array_size = expect_number();
+            expect(']');
+        }
+        type = new_array_type(type_suffix(type, false), array_size);
     }
 
     return type;
@@ -711,7 +737,8 @@ static Var *declaration_param(Var *cur) {
     lvar->offset = cur->offset + sizeOfType(lvar->type);
     if (consume_nostep('[')) {
         // ポインタとして受け取る
-        lvar->type = type_suffix(lvar->type);
+        // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
+        lvar->type = type_suffix(lvar->type, true);
         // 新しい型のオフセットにする
         lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
     }
