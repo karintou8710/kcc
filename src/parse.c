@@ -47,6 +47,7 @@ static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
+static GInit_el *eval(Node *node);
 
 /* 指定された演算子が来る可能性がある */
 static bool consume(int op) {
@@ -144,6 +145,7 @@ static Var *new_gvar(Token *tok, Type *type) {
     gvar->len = tok->len;
     gvar->type = type;
     gvar->is_global = true;
+    gvar->ginit = new_vec();
     globals = gvar;  // globalsを新しいグローバル変数に更新
     return gvar;
 }
@@ -252,12 +254,153 @@ static void end_local_scope() {
     locals = var;
 }
 
-static Initializer *new_initializer(Type *ty) {
+static Initializer *new_initializer(Var *var) {
     Initializer *init = memory_alloc(sizeof(Initializer));
-    init->type = ty;
+    init->type = var->type;
+    init->var = var;
     return init;
 }
 
+static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int len) {
+    int max_digit = 50;
+    if (gl->str && gr->str) {
+        error("eval_concat() failure: オペランドが不適切です [%s]", op);
+    } else if (gl->str && !gr->str) {
+        if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
+            error("eval_concat() failure: オペランドが不適切です [%s]", op);
+        }
+        int len = gl->len + max_digit + len + 1;
+        char *buf = memory_alloc(sizeof(char) * len);
+        len = snprintf(buf, len, "%s %s %d", gl->str, op, gr->val);
+        g->str = buf;
+        g->len = len;
+    } else if (!gl->str && gr->str) {
+        if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
+            error("eval_concat() failure: オペランドが不適切です [%s]", op);
+        }
+        int len = max_digit + gr->len + len + 1;
+        char *buf = memory_alloc(sizeof(char) * len);
+        len = snprintf(buf, len, "%d %s %s", gl->val, op, gr->str);
+        g->str = buf;
+        g->len = len;
+    } else {
+        if (strcmp(op, "+") == 0) {
+            g->val = gl->val + gr->val;
+        } else if (strcmp(op, "-") == 0) {
+            g->val = gl->val - gr->val;
+        } else if (strcmp(op, "*") == 0) {
+            g->val = gl->val * gr->val;
+        } else if (strcmp(op, "/") == 0) {
+            g->val = gl->val / gr->val;
+        } else if (strcmp(op, "%") == 0) {
+            g->val = gl->val % gr->val;
+        } else if (strcmp(op, "==") == 0) {
+            g->val = gl->val == gr->val;
+        } else if (strcmp(op, "!=") == 0) {
+            g->val = gl->val != gr->val;
+        } else if (strcmp(op, "<") == 0) {
+            g->val = gl->val < gr->val;
+        } else if (strcmp(op, "<=") == 0) {
+            g->val = gl->val <= gr->val;
+        } else if (strcmp(op, "!") == 0) {
+            g->val = !gl->val;
+        } else if (strcmp(op, "&&") == 0) {
+            g->val = gl->val && gr->val;
+        } else if (strcmp(op, "||") == 0) {
+            g->val = gl->val || gr->val;
+        }
+    }
+}
+
+/* TODO: 四則演算以外にも対応 */
+static GInit_el *eval(Node *node) {
+    GInit_el *g = memory_alloc(sizeof(GInit_el));
+    add_type(node);
+
+    if (node->kind == ND_NUM) {
+        g->val = node->val;
+        return g;
+    } else if (node->kind == ND_ADD) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "+", 2);
+        return g;
+    } else if (node->kind == ND_SUB) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        g->val = gl->val - gr->val;
+        eval_concat(g, gl, gr, "-", 2);
+        return g;
+    } else if (node->kind == ND_MUL) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "*", 2);
+        return g;
+    } else if (node->kind == ND_DIV) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "/", 2);
+        return g;
+    } else if (node->kind == ND_MOD) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "%", 2);
+        return g;
+    } else if (node->kind == ND_EQ) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "==", 3);
+        return g;
+    } else if (node->kind == ND_NE) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "!=", 3);
+        return g;
+    } else if (node->kind == ND_LT) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "<", 2);
+        return g;
+    } else if (node->kind == ND_LE) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "<=", 3);
+        return g;
+    } else if (node->kind == ND_LOGICALNOT) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = memory_alloc(sizeof(GInit_el));
+        eval_concat(g, gl, gr, "!", 2);
+        return g;
+    } else if (node->kind == ND_LOGICAL_AND) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "&&", 3);
+        return g;
+    } else if (node->kind == ND_LOGICAL_OR) {
+        GInit_el *gl = eval(node->lhs);
+        GInit_el *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "||", 3);
+        return g;
+    } else if (node->kind == ND_STRING) {
+        int buf_size = 50;  // 仮の値を決める
+        char *buf = memory_alloc(sizeof(char) * buf_size);
+        buf_size = snprintf(buf, buf_size, ".LC%d", node->val);
+        g->str = buf;
+        g->len = buf_size;
+        return g;
+    } else if (node->kind == ND_ADDR) {
+        g->str = my_strndup(node->lhs->var->name, node->lhs->var->len);
+        g->len = node->lhs->var->len;
+        return g;
+    } else if (node->kind == ND_VAR && node->type->kind == TYPE_ARRAY) {
+        // 配列はポインター型として扱う
+        g->str = my_strndup(node->var->name, node->var->len);
+        g->len = node->var->len;
+        return g;
+    }
+
+    error("未対応のNodeタイプです");
+}
 /*************************************/
 /******                         ******/
 /******        NEW_NODE         ******/
@@ -447,7 +590,12 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
         return suger;
     }
 
-    vec_push(suger, new_assign(node, init->expr));
+    if (is_global) {
+        vec_push(init->var->ginit, eval(init->expr));
+    } else {
+        vec_push(suger, new_assign(node, init->expr));
+    }
+
     return suger;
 }
 
@@ -546,6 +694,7 @@ static void initialize_array(Initializer *init) {
                 init->children = realloc(init->children, sizeof(Initializer) * children_cap);
             }
 
+            (init->children + i)->var = init->var;
             if (i > 0) expect(',');
             (init->children + i)->type = ty->ptr_to;
             initialize2(init->children + i);
@@ -560,6 +709,7 @@ static void initialize_array(Initializer *init) {
 
         expect('{');
         for (int i = 0; i < init->len; i++) {
+            (init->children + i)->var = init->var;
             if (consume_nostep('}')) {
                 (init->children + i)->expr = new_node_num(0);
                 continue;
@@ -587,6 +737,7 @@ static void initialize_string(Initializer *init) {
         error("initialize_string() failure: 文字列が長すぎます");
     }
     for (int i = 0; i < init->len; i++) {
+        (init->children + i)->var = init->var;
         if (token->len <= i) {
             (init->children + i)->expr = new_node_num(0);
             continue;
@@ -640,7 +791,7 @@ static Node *declaration_var(Type *type) {
     }
     // 変数
     if (consume('=')) {
-        Initializer *init = new_initializer(node->var->type);
+        Initializer *init = new_initializer(node->var);
         return initialize(init, node);
     }
 

@@ -20,6 +20,7 @@ typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Function Function;
 typedef struct Initializer Initializer;
+typedef struct GInit_el GInit_el;
 
 /* ベクターの定義 */
 
@@ -101,6 +102,7 @@ struct Var {
     Type *type;       // 型情報
 
     bool is_global;
+    Vector *ginit;  // GInit_elのVector
 };
 
 /* ノードの定義 */
@@ -174,9 +176,17 @@ struct Function {
 
 struct Initializer {
     Type *type;
+    Var *var;  // 代入先の変数を格納
 
     Node *expr;
     Initializer *children;
+    int len;
+};
+
+// グローバル変数の初期化式
+struct GInit_el {
+    int val;
+    char *str;
     int len;
 };
 
@@ -233,6 +243,7 @@ int sizeOfType(Type *ty);
 bool is_integertype(TypeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
+int array_base_type_size(Type *ty);
 
 // グローバル変数
 Vector *string_literal;

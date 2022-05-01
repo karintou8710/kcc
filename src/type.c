@@ -24,6 +24,14 @@ static int tykind_to_size(TypeKind tykind) {
     error("存在しないまたは固定長ではない型です");
 }
 
+int array_base_type_size(Type *ty) {
+    if (ty->kind == TYPE_ARRAY) {
+        return array_base_type_size(ty->ptr_to);
+    }
+
+    return ty->size;
+}
+
 // sizeofの実装
 int sizeOfType(Type *ty) {
     return ty->size;

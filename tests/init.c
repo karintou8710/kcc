@@ -94,6 +94,27 @@ int init_array12() {
     return a[0][0] + a[1][1] + a[2][2];
 }
 
+int test1 = 10;
+int test2_1 = 1 + 2 - (3 * 4) / 5, test2_2 = 1;
+int *test3_1 = 1, test3_2 = 2;
+char test4 = 127;
+char test5 = 'a';
+char test6 = sizeof(test3_1);
+int test7[3] = {1, 2, 3};
+int test8[10] = {1};
+int test9[] = {1, 2, 3};
+int test10[][2] = {
+    {1, 2},
+    {3, 4},
+    {5, 6}};
+char test11[10] = "bac";
+char *test12 = "bac" + 1;
+int *test13 = test7 + 1;
+char *test14 = &test4;
+int test15 = (1 && 0) && !(0 && 0);
+int test16 = (1 < 2) && (1 <= 2);
+int test17 = (1 == 2) && (1 != 2);
+
 int main() {
     ASSERT(4, init_array1(), "init_array1");
     ASSERT(12, init_array2(), "init_array2");
@@ -107,6 +128,26 @@ int main() {
     ASSERT(195, init_array10(), "init_array10");
     ASSERT(330, init_array11(), "init_array11");
     ASSERT(330, init_array12(), "init_array12");
+
+    ASSERT(10, test1, "test1");
+    ASSERT(1, test2_1, "test2_1");
+    ASSERT(1, test2_2, "test2_2");
+    ASSERT(8, sizeof(test3_1), "sizeof(test3_1)");
+    ASSERT(4, sizeof(test3_2), "sizeof(test3_2)");
+    ASSERT(127, test4, "test4");
+    ASSERT(97, test5, "test5");
+    ASSERT(8, test6, "test6");
+    ASSERT(2, test7[1], "test7[1]");
+    ASSERT(0, test8[9], "test8[9]");
+    ASSERT(2, test9[1], "test9[1]");
+    ASSERT(7, test10[0][1] + test10[2][0], "test10[0][1] + test10[2][0]");
+    ASSERT(97, test11[1], "test11[1]");
+    ASSERT(97, test12[0], "test12[0]");
+    ASSERT(2, test13[0], "test13[0]");
+    ASSERT(127, *test14, "*test14");
+    ASSERT(0, test15, "test15");
+    ASSERT(1, test16, "test16");
+    ASSERT(0, test17, "test17");
 
     printf("ALL TEST OF init.c SUCCESS :)\n");
     return 0;

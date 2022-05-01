@@ -467,17 +467,44 @@ void codegen() {
     printf(".intel_syntax noprefix\n");
 
     printf(".data\n");
-    // グローバル変数の生成
-    for (Var *var = globals; var != NULL; var = var->next) {
-        printf("%s:\n", var->name);
-        printf("  .zero %d\n", var->type->size);
-    }
 
     // 文字列リテラルの生成
     for (int i = 0; i < string_literal->len; i++) {
         Token *tok = (Token *)string_literal->body[i];
         printf(".LC%d:\n", tok->str_literal_index);
         printf("  .string \"%s\"\n", tok->str);
+    }
+
+    // グローバル変数の生成
+    for (Var *var = globals; var != NULL; var = var->next) {
+        printf("%s:\n", var->name);
+        // 宣言のみ
+        if (var->ginit->len == 0) {
+            printf("  .zero %d\n", var->type->size);
+            continue;
+        }
+
+        // 初期化式あり
+        for (int i = 0; i < var->ginit->len; i++) {
+            GInit_el *g = var->ginit->body[i];
+
+            // ポインターかラベル
+            if (g->str) {
+                printf("  .quad %s\n", g->str);
+                continue;
+            }
+
+            int s = array_base_type_size(var->type);
+            if (s == 8) {
+                printf("  .quad %d\n", g->val);
+            } else if (s == 4) {
+                printf("  .long %d\n", g->val);
+            } else if (s == 2) {
+                printf("  .value %d\n", g->val);
+            } else if (s == 1) {
+                printf("  .byte %d\n", g->val);
+            }
+        }
     }
 
     printf(".text\n");
