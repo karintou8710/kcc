@@ -7,18 +7,16 @@
 
 /* 固定長の型のサイズを返す */
 static int tykind_to_size(TypeKind tykind) {
-    switch (tykind) {
-        case TYPE_VOID:
-            return 0;
-        case TYPE_CHAR:
-            return 1;
-        case TYPE_INT:
-            return 4;
-        case TYPE_PTR:
-            return 8;
-        case TYPE_STRUCT:
-            // parser側でsizeを決める
-            return 0;
+    if (tykind == TYPE_VOID) {
+        return 0;
+    } else if (tykind == TYPE_CHAR) {
+        return 1;
+    } else if (tykind == TYPE_INT) {
+        return 4;
+    } else if (tykind == TYPE_PTR) {
+        return 8;
+    } else if (tykind == TYPE_STRUCT) {
+        return 0;  // parser側でsizeを決める
     }
 
     error("存在しないまたは固定長ではない型です");

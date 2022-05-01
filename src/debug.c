@@ -159,28 +159,22 @@ void debug_node(Node *node, char *pos, int depth) {
     print_node_kind(node->kind);
     puts("");
 
-    switch (node->kind) {
-        case ND_NUM:
-            recursion_line_printf(depth, "");
-            fprintf(stderr, "num -> %d\n", node->val);
-            return;
-        case ND_VAR:
-            recursion_line_printf(depth, "name -> %s\n", node->var->name);
-            recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
-            return;
-        case ND_TERNARY:
-            debug_node(node->then, "then", depth + 1);
-            debug_node(node->els, "els", depth + 1);
-            return;
-        case ND_SUGER:
-        case ND_BLOCK:
-            for (int i = 0; i < node->stmts->len; i++) {
-                debug_node(node->stmts->body[i], "stmt", depth + 1);
-            }
-        default:
-            debug_node(node->lhs, "lhs", depth + 1);
-            debug_node(node->rhs, "rhs", depth + 1);
-            return;
+    if (node->kind == ND_NUM) {
+        recursion_line_printf(depth, "");
+        fprintf(stderr, "num -> %d\n", node->val);
+    } else if (node->kind == ND_VAR) {
+        recursion_line_printf(depth, "name -> %s\n", node->var->name);
+        recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
+    } else if (node->kind == ND_TERNARY) {
+        debug_node(node->then, "then", depth + 1);
+        debug_node(node->els, "els", depth + 1);
+    } else if (node->kind == ND_SUGER || node->kind == ND_BLOCK) {
+        for (int i = 0; i < node->stmts->len; i++) {
+            debug_node(node->stmts->body[i], "stmt", depth + 1);
+        }
+    } else {
+        debug_node(node->lhs, "lhs", depth + 1);
+        debug_node(node->rhs, "rhs", depth + 1);
     }
 }
 
@@ -222,19 +216,17 @@ void debug_type(Type *ty, int depth) {
     recursion_line_printf(depth, "");
     print_type_kind(ty->kind);
     puts("");
-    switch (ty->kind) {
-        case TYPE_STRUCT:
-            recursion_line_printf(depth, "name -> %s\n", ty->name);
-            recursion_line_printf(depth, "size -> %d\n", ty->size);
-            for (Var *member = ty->member; member; member = member->next) {
-                recursion_line_printf(depth, "member -> %s\n", member->name);
-            }
-            break;
-        default:
-            recursion_line_printf(depth, "size -> %d\n", ty->size);
-            recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
-            debug_type(ty->ptr_to, depth + 1);
-            break;
+
+    if (ty->kind == TYPE_STRUCT) {
+        recursion_line_printf(depth, "name -> %s\n", ty->name);
+        recursion_line_printf(depth, "size -> %d\n", ty->size);
+        for (Var *member = ty->member; member; member = member->next) {
+            recursion_line_printf(depth, "member -> %s\n", member->name);
+        }
+    } else {
+        recursion_line_printf(depth, "size -> %d\n", ty->size);
+        recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
+        debug_type(ty->ptr_to, depth + 1);
     }
 }
 
