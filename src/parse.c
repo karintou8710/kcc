@@ -214,12 +214,17 @@ static Var *find_gvar(Token *tok) {
 
 Function *find_func(char *name) {
     for (int i = 0; funcs[i]; i++) {
-        if (!memcmp(name, funcs[i]->name, strlen(name))) {
+        if (strcmp(funcs[i]->name, name) == 0) {
             return funcs[i];
         }
     }
 
     return NULL;
+}
+
+bool is_already_defined_global_obj(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    return find_gvar(tok) || find_func(name);
 }
 
 static Type *find_lstruct_type(char *name) {
@@ -602,12 +607,12 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
 /* 変数を宣言 */
 static Node *declear_node_ident(Token *tok, Type *type) {
     Node *node = new_node(ND_VAR);
-    Var *var = is_global ? find_gvar(tok) : find_scope_lvar(tok);
-    if (var) {
+    bool f = is_global ? is_already_defined_global_obj(tok) : find_scope_lvar(tok) != NULL;
+    if (f) {
         error_at(tok->str, "declear_node_ident() failure: 既に宣言済みです");
     }
 
-    var = is_global ? new_gvar(tok, type) : new_lvar(tok, type);
+    Var *var = is_global ? new_gvar(tok, type) : new_lvar(tok, type);
     node->var = var;
     return node;
 }
@@ -946,6 +951,9 @@ static Function *func_define(Type *type) {
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
+    if (is_already_defined_global_obj(tok)) {
+        error("func_define() failure: 既に%sは定義されています", fn->name);
+    }
     fn->ret_type = type;
     expect('(');
     while (!consume(')')) {
