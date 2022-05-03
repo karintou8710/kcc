@@ -10,6 +10,57 @@ int ASSERT(int expected, int actual, char *name) {
     exit(1);
 }
 
+/* テストで使用する関数の定義 */
+
+int ret() {
+    return 3;
+}
+
+void p() {
+    printf("Hello, World\n");
+}
+
+int int_scanf() {
+    int c;
+    scanf("%d", &c);
+    return c;
+}
+
+void new_line() {
+    puts("");
+}
+
+void int_print_cumma(int d) {
+    printf("%d,", d);
+}
+
+void int_print(int d) {
+    printf("%d\n", d);
+}
+
+int constant(int a) {
+    return a;
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int add6(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
+}
+
+void alloc4(int **p, int a, int b, int c, int d) {
+    *p = malloc(sizeof(int) * 5);
+    (*p)[0] = a;
+    (*p)[1] = b;
+    (*p)[2] = c;
+    (*p)[3] = d;
+    (*p)[4] = 0;
+}
+
+/* ここからテスト */
+
 // ローカル変数
 int local1() {
     int a;

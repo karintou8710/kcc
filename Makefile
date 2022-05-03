@@ -10,14 +10,11 @@ OBJS=$(SRCS:.c=.o)
 
 $(OBJS): $(SRCDIR)/9cc.h
 
-test: 9cc test_c
+test: 9cc
 		./tests/test-control.sh
 
-exec: 9cc test_c
+exec: 9cc
 		./exec.sh
-
-test_c:
-		gcc -xc -c -o tmp2.o tests/test-fn.c
 
 clean:
 		find . -name "9cc" -o -name "*.o" -o -name "*~" -o -name "tmp*" | xargs rm -f 

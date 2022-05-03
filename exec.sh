@@ -22,7 +22,7 @@ exec() {
         exit $FAILURE
     fi
     
-    cc -static -o tmp tmp.s tmp2.o
+    cc -static -o tmp tmp.s
     ./tmp
     status="$?"
 

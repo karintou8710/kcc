@@ -14,7 +14,7 @@ if [ ! -e "$COMPILER" ]; then
     exit $FAILURE
 fi
 
-for i in tests/test.c tests/global.c tests/loop.c tests/op.c tests/type.c tests/struct.c tests/scope.c tests/init.c
+for i in tests/*.c
 do
     debug "9cc start compileing $i"
     ./9cc $i > tmp.s
@@ -24,7 +24,7 @@ do
         exit $FAILURE
     fi
 
-    cc -static -o tmp tmp.s tmp2.o
+    cc -static -o tmp tmp.s
     ./tmp
 
     ERRCHK=$?
