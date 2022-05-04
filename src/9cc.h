@@ -21,6 +21,9 @@ typedef struct Node Node;
 typedef struct Function Function;
 typedef struct Initializer Initializer;
 typedef struct GInit_el GInit_el;
+typedef enum TypeKind TypeKind;
+typedef enum NodeKind NodeKind;
+typedef enum TokenKind TokenKind;
 
 /* ベクターの定義 */
 
@@ -31,14 +34,14 @@ struct Vector {
 };
 
 /* 型の定義 */
-typedef enum {
+enum TypeKind {
     TYPE_CHAR,
     TYPE_INT,
     TYPE_PTR,
     TYPE_ARRAY,
     TYPE_VOID,
     TYPE_STRUCT,
-} TypeKind;
+};
 
 struct Type {
     TypeKind kind;
@@ -52,7 +55,7 @@ struct Type {
 };
 
 /* トークンの定義 */
-typedef enum {
+enum TokenKind {
     TK_NUM = 256,    // number
     TK_IDENT,        // ident
     TK_EQ,           // ==
@@ -80,7 +83,7 @@ typedef enum {
     TK_LOGICAL_AND,  // &&
     TK_LOGICAL_OR,   // ||
     TK_ARROW,        // ->
-} TokenKind;
+};
 
 struct Token {
     TokenKind kind;         //
@@ -107,7 +110,7 @@ struct Var {
 };
 
 /* ノードの定義 */
-typedef enum {
+enum NodeKind {
     ND_ADD,            // +
     ND_SUB,            // -
     ND_MUL,            // *
@@ -139,7 +142,7 @@ typedef enum {
     ND_NULL,           // 何もしない
     ND_STRUCT_MEMBER,  // struct member
     ND_TERNARY,        // 3項演算子
-} NodeKind;
+};
 
 struct Node {
     NodeKind kind;
