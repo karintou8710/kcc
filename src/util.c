@@ -107,3 +107,16 @@ void *memory_alloc(size_t size) {
     }
     return p;
 }
+
+void copy_func(Function *to, Function *from) {
+    if (to == NULL || from == NULL) {
+        error("copy_func() failure: 引数にNULLが含まれています");
+    }
+    to->name = from->name;
+    to->body = from->body;
+    to->params = from->params;
+    to->locals = from->locals;
+    to->stack_size = from->stack_size;
+    to->ret_type = from->ret_type;
+    to->is_prototype = from->is_prototype;
+}

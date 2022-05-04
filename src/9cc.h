@@ -102,6 +102,7 @@ struct Var {
     Type *type;       // 型情報
 
     bool is_global;
+    bool is_only_type;
     Vector *ginit;  // GInit_elのVector
 };
 
@@ -172,6 +173,8 @@ struct Function {
     int stack_size;
 
     Type *ret_type;  // return_type
+
+    bool is_prototype;
 };
 
 struct Initializer {
@@ -206,6 +209,7 @@ void error(char *fmt, ...);
 char *my_strndup(const char *s, size_t n);
 void swap(void **p, void **q);
 void *memory_alloc(size_t size);
+void copy_func(Function *to, Function *from);
 
 // debug.c
 void print_node_kind(NodeKind kind);
@@ -244,6 +248,7 @@ bool is_integertype(TypeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
 int array_base_type_size(Type *ty);
+bool is_same_type(Type *ty1, Type *ty2);
 
 // グローバル変数
 Vector *string_literal;

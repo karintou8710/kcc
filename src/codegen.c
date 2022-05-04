@@ -28,6 +28,19 @@ typedef enum {
     REG_RDI,
 } RegKind;
 
+static void delete_prototype_func() {
+    int i = 0;
+    while (funcs[i]) {
+        if (funcs[i]->is_prototype) {
+            for (int j = i + 1; funcs[j - 1]; j++) {
+                funcs[j - 1] = funcs[j];
+            }
+            continue;
+        }
+        i++;
+    }
+}
+
 static char *get_argreg(int index, Type *ty) {
     if (ty->kind == TYPE_ARRAY)
         return argreg64[index];
@@ -432,6 +445,9 @@ static void gen(Node *node) {
 }
 
 void codegen() {
+    // プロトタイプ関数を削除
+    delete_prototype_func();
+
     // 各関数のoffsetを計算
     assign_lvar_offsets();
 

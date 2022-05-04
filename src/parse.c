@@ -227,6 +227,26 @@ bool is_already_defined_global_obj(Token *tok) {
     return find_gvar(tok) || find_func(name);
 }
 
+bool is_same_params(Var *params1, Var *params2) {
+    for (Var *v1 = params1, *v2 = params2;; v1 = v1->next, v2 = v2->next) {
+        if (v1 == NULL || v2 == NULL) {
+            // NULL == NULL -> params1とparams2は等しい
+            return v1 == v2;
+        }
+
+        if (!is_same_type(params1->type, params2->type)) {
+            return false;
+        }
+    }
+}
+
+bool has_lvar_in_all_params(Var *params) {
+    for (Var *v = params; v; v = v->next) {
+        if (v->is_only_type) return false;
+    }
+    return true;
+}
+
 static Type *find_lstruct_type(char *name) {
     for (int i = 0; i < struct_local_lists->len; i++) {
         Type *t = struct_local_lists->body[i];
@@ -649,7 +669,8 @@ void program() {
         Type *type = type_specifier();
         if (is_func(token)) {
             is_global = false;
-            funcs[i++] = func_define(type);
+            Function *fn = func_define(type);
+            if (fn != NULL) funcs[i++] = fn;
             is_global = true;
         } else {
             Node *node = declaration_global(type);
@@ -920,12 +941,17 @@ static Var *declaration_param(Var *cur) {
     Type *type = type_specifier();
     type = pointer(type);
     Token *tok = token;
-    expect(TK_IDENT);
     Var *lvar = memory_alloc(sizeof(Var));
-    lvar->name = tok->str;
-    lvar->len = tok->len;
     lvar->type = type;
     lvar->offset = cur->offset + sizeOfType(lvar->type);
+    if (consume(TK_IDENT)) {
+        lvar->name = tok->str;
+        lvar->len = tok->len;
+        lvar->is_only_type = false;
+    } else {
+        lvar->is_only_type = true;
+    }
+
     if (consume_nostep('[')) {
         // ポインタとして受け取る
         // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
@@ -951,7 +977,7 @@ static Function *func_define(Type *type) {
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
-    if (is_already_defined_global_obj(tok)) {
+    if (find_gvar(tok)) {
         error("func_define() failure: 既に%sは定義されています", fn->name);
     }
     fn->ret_type = type;
@@ -976,6 +1002,40 @@ static Function *func_define(Type *type) {
     }
 
     fn->params = head.next;  // 前から見ていく
+
+    Function *entry = find_func(fn->name);
+    if (consume(';')) {
+        // プロトタイプ宣言
+        fn->is_prototype = true;
+        if (entry == NULL) {
+            return fn;
+        }
+
+        if (!is_same_params(fn->params, entry->params) ||
+            !is_same_type(fn->ret_type, entry->ret_type)) {
+            error("func_define() failure: 異なる型でのプロトタイプ宣言です");
+        }
+
+        return NULL;
+    }
+
+    // 定義
+    if (entry) {
+        if (!entry->is_prototype) {
+            error("func_define() failure: 既に%sは定義されています", fn->name);
+        }
+
+        if (!is_same_params(fn->params, entry->params) ||
+            !is_same_type(fn->ret_type, entry->ret_type)) {
+            error("func_define() failure: 異なる型での宣言です");
+        }
+    }
+
+    // 定義では型だけの引数を許容しない
+    if (!has_lvar_in_all_params(fn->params)) {
+        error("has_lvar_in_all_params() failure: 引数の定義には変数名が必要です");
+    }
+
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
     locals->offset = 0;

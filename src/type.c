@@ -35,6 +35,18 @@ int sizeOfType(Type *ty) {
     return ty->size;
 }
 
+bool is_same_type(Type *ty1, Type *ty2) {
+    if (ty1 == NULL || ty2 == NULL) {
+        // NULL == NULLで等しい型
+        return ty1 == ty2;
+    }
+    if (ty1->kind != ty2->kind) {
+        return false;
+    }
+
+    return is_same_type(ty1->ptr_to, ty2->ptr_to);
+}
+
 /* 基本の型を生成 */
 Type *new_type(TypeKind tykind) {
     Type *ty = memory_alloc(sizeof(Type));
