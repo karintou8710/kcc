@@ -30,6 +30,12 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_LT");  // <
     else if (kind == ND_LE)
         fprintf(stderr, "ND_LE");  // <=
+    else if (kind == ND_AND)
+        fprintf(stderr, "ND_AND");  // &
+    else if (kind == ND_OR)
+        fprintf(stderr, "ND_OR");  // |
+    else if (kind == ND_XOR)
+        fprintf(stderr, "ND_XOR");  // ^
     else if (kind == ND_VAR)
         fprintf(stderr, "ND_VAR");  // local var
     else if (kind == ND_NUM)
@@ -58,20 +64,20 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_CONTINUE");  // continue
     else if (kind == ND_BREAK)
         fprintf(stderr, "ND_BREAK");  // break
-    else if (kind == ND_STRUCT_MEMBER)
-        fprintf(stderr, "ND_STRUCT_MEMBER");  // struct member
-    else if (kind == ND_NULL)
-        fprintf(stderr, "ND_NULL");  // null
+    else if (kind == ND_LOGICALNOT)
+        fprintf(stderr, "ND_LOGICALNOT");  // !
+    else if (kind == ND_LOGICAL_AND)
+        fprintf(stderr, "ND_LOGICAL_AND");  // &&
+    else if (kind == ND_LOGICAL_OR)
+        fprintf(stderr, "ND_LOGICAL_OR");  // ||
     else if (kind == ND_SUGER)
         fprintf(stderr, "ND_SUGER");  // suger
+    else if (kind == ND_NULL)
+        fprintf(stderr, "ND_NULL");  // null
+    else if (kind == ND_STRUCT_MEMBER)
+        fprintf(stderr, "ND_STRUCT_MEMBER");  // struct member
     else if (kind == ND_TERNARY)
         fprintf(stderr, "ND_TERNARY");  // 3項演算子
-    else if (kind == ND_AND)
-        fprintf(stderr, "ND_AND");  // &
-    else if (kind == ND_OR)
-        fprintf(stderr, "ND_OR");  // |
-    else if (kind == ND_XOR)
-        fprintf(stderr, "ND_XOR");  // ^
     else
         error("print_node_kind() failure");
 
@@ -128,6 +134,12 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_CONTINUE");
     else if (kind == TK_BREAK)
         fprintf(stderr, "TK_BREAK");
+    else if (kind == TK_LOGICAL_AND)
+        fprintf(stderr, "TK_LOGICAL_AND");
+    else if (kind == TK_LOGICAL_OR)
+        fprintf(stderr, "TK_LOGICAL_OR");
+    else if (kind == TK_ARROW)
+        fprintf(stderr, "TK_ARROW");
     else
         fprintf(stderr, "TK_[%c]", kind);
 
