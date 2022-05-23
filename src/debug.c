@@ -66,6 +66,12 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_SUGER");  // suger
     else if (kind == ND_TERNARY)
         fprintf(stderr, "ND_TERNARY");  // 3項演算子
+    else if (kind == ND_AND)
+        fprintf(stderr, "ND_AND");  // &
+    else if (kind == ND_OR)
+        fprintf(stderr, "ND_OR");  // |
+    else if (kind == ND_XOR)
+        fprintf(stderr, "ND_XOR");  // ^
     else
         error("print_node_kind() failure");
 

@@ -63,7 +63,10 @@ $ make test
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>
 <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
-<logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
+<logical_expression> = <inclusive_or> ("&&" <inclusive_or> | "||" <inclusive_or>)*
+<inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*
+<exclusive_or> = <and> ( "^" <and> )*
+<and> = <equality> ( "&" <equality> )*
 <equality> = <relational> ("==" <relational> | "!=" <relational>)*
 <relational> = <add> ("<" <add> | "<=" <add> | ">" <add> | ">=" <add>)*
 <add> = <mul> ("+" <mul> | "-" <mul>)*

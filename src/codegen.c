@@ -439,6 +439,12 @@ static void gen(Node *node) {
         printf("  setne dil\n");
         printf("  movzb rdi, dil\n");
         printf("  or rax, rdi\n");
+    } else if (node->kind == ND_AND) {
+        printf("  and rax, rdi\n");
+    } else if (node->kind == ND_OR) {
+        printf("  or rax, rdi\n");
+    } else if (node->kind == ND_XOR) {
+        printf("  xor rax, rdi\n");
     }
 
     push();

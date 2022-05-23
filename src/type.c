@@ -305,6 +305,16 @@ void add_type(Node *node) {
         return;
     }
 
+    if (node->kind == ND_AND || node->kind == ND_OR || node->kind == ND_XOR) {
+        Node *lhs = node->lhs, *rhs = node->rhs;
+        if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
+            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            return;
+        }
+
+        error("%d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
+    }
+
     if (is_relationalnode(node->kind)) {
         node->type = new_type(TYPE_INT);
         return;

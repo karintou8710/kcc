@@ -39,6 +39,9 @@ static Node *expr();
 static Node *assign();
 static Node *conditional();
 static Node *logical_expression();
+static Node *inclusive_or();
+static Node *exclusive_or();
+static Node * and ();
 static Node *equality();
 static Node *relational();
 static Node *add();
@@ -441,6 +444,8 @@ static Node *new_node(NodeKind kind) {
 
 // 演算子ノード作成
 static Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
     Node *node = memory_alloc(sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
@@ -1214,13 +1219,58 @@ static Node *conditional() {
  *  <logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
  */
 static Node *logical_expression() {
-    Node *node = equality();
+    Node *node = inclusive_or();
 
     for (;;) {
         if (consume(TK_LOGICAL_AND)) {
-            node = new_binop(ND_LOGICAL_AND, node, equality());
+            node = new_binop(ND_LOGICAL_AND, node, inclusive_or());
         } else if (consume(TK_LOGICAL_OR)) {
-            node = new_binop(ND_LOGICAL_OR, node, equality());
+            node = new_binop(ND_LOGICAL_OR, node, inclusive_or());
+        } else {
+            return node;
+        }
+    }
+}
+
+/*
+ * <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*
+ */
+static Node *inclusive_or() {
+    Node *node = exclusive_or();
+
+    for (;;) {
+        if (consume('|')) {
+            node = new_binop(ND_OR, node, exclusive_or());
+        } else {
+            return node;
+        }
+    }
+}
+
+/*
+ * <exclusive_or> = <and> ( "^" <and> )*
+ */
+static Node *exclusive_or() {
+    Node *node = and();
+
+    for (;;) {
+        if (consume('^')) {
+            node = new_binop(ND_XOR, node, and());
+        } else {
+            return node;
+        }
+    }
+}
+
+/*
+ * <and> = <equality> ( "&" <equality> )*
+ */
+static Node * and () {
+    Node *node = equality();
+
+    for (;;) {
+        if (consume('&')) {
+            node = new_binop(ND_AND, node, equality());
         } else {
             return node;
         }

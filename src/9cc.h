@@ -121,6 +121,9 @@ enum NodeKind {
     ND_NE,             // !=
     ND_LT,             // <
     ND_LE,             // <=
+    ND_AND,            // &
+    ND_OR,             // |
+    ND_XOR,            // ^
     ND_VAR,            // local var
     ND_NUM,            // num
     ND_RETURN,         // return

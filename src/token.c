@@ -131,7 +131,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (strchr("+-*/%=;()<>{},&[]!.?:", *p)) {
+        if (strchr("+-*/%=;()<>{},&[]!.?:|^", *p)) {
             cur = new_token(*p, cur, p, 1);
             p++;
             continue;

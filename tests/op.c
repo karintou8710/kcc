@@ -113,6 +113,26 @@ int termary3() {
     return ans;
 }
 
+int and_or_xor1() {
+    return 1 | 2 & 1;
+}
+
+int and_or_xor2() {
+    return 1 | 2 & 1 | 1 | 2 | 12 & 1;
+}
+
+int and_or_xor3() {
+    return 1 ^ 3 ^ 2;
+}
+
+int and_or_xor4() {
+    return 1 & 3 ^ 10 | 2;
+}
+
+int and_or_xor5() {
+    return 1 & 5 ^ !(10 | 2 + 1) * 2 / 3 ^ 2 && 1 || 7;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -138,6 +158,12 @@ int main() {
     ASSERT(0, termary2(0), "termary2(0)");
     ASSERT(100, termary2(1), "termary2(1)");
     ASSERT(3, termary3(), "termary3");
+
+    ASSERT(1, and_or_xor1(), "and_or_xor1");
+    ASSERT(3, and_or_xor2(), "and_or_xor2");
+    ASSERT(0, and_or_xor3(), "and_or_xor3");
+    ASSERT(11, and_or_xor4(), "and_or_xor4");
+    ASSERT(1, and_or_xor5(), "and_or_xor5");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;
