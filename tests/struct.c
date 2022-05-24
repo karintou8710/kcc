@@ -155,6 +155,17 @@ int struct8() {
     return p[1][1].num[0][1][0];
 }
 
+int struct9() {
+    struct A {
+        int num;
+    } a, *b, c;
+    b = malloc(sizeof(struct A));
+    a.num = 1;
+    b->num = 2;
+    c.num = 3;
+    return a.num + b->num + c.num;
+}
+
 int struct_arrow1() {
     struct A {
         int num;
@@ -219,6 +230,7 @@ int main() {
     ASSERT(8, struct6(), "struct6");
     ASSERT(20, struct7(), "struct7");
     ASSERT(3, struct8(), "struct8");
+    ASSERT(6, struct9(), "struct9");
 
     ASSERT(1, struct_arrow1(), "struct_arrow1");
     ASSERT(15, struct_arrow2(), "struct_arrow2");

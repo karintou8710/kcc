@@ -133,6 +133,19 @@ int globalstruct6() {
     return gloc.num + gloc.pa[1].num + gloc.pb.a;
 }
 
+struct D {
+    int a;
+    int b;
+    int c;
+} * *b1, *b2, b3;
+int globalstruct7() {
+    b3.a = 1;
+    b2 = &b3;
+    b1 = &b2;
+    (**b1).a = 2;
+    return b3.a;
+}
+
 int main() {
     ASSERT(3, globaltest1(), "globaltest1");
     ASSERT(2, globaltest2(), "globaltest2");
@@ -144,6 +157,7 @@ int main() {
     ASSERT(2, globalstruct4(), "globalstruct4");
     ASSERT(19, globalstruct5(), "globalstruct5");
     ASSERT(50, globalstruct6(), "globalstruct6");
+    ASSERT(2, globalstruct7(), "globalstruct7");
 
     printf("ALL TEST OF global.c SUCCESS :)\n");
 

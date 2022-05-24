@@ -688,7 +688,7 @@ void program() {
  *  <declaration_global> = <declaration> ";"
  */
 static Node *declaration_global(Type *type) {
-    if (type->kind == TYPE_STRUCT && is_struct_create) {
+    if (type->kind == TYPE_STRUCT && is_struct_create && consume_nostep(';')) {
         // 構造体の作成
         is_struct_create = false;
         expect(';');
@@ -1161,7 +1161,7 @@ static Node *stmt() {
 static Node *expr() {
     if (consume_nostep(TK_TYPE)) {
         Type *type = type_specifier();
-        if (type->kind == TYPE_STRUCT && is_struct_create) {
+        if (type->kind == TYPE_STRUCT && is_struct_create && consume_nostep(';')) {
             // 構造体の作成
             is_struct_create = false;
             return new_node(ND_NULL);
