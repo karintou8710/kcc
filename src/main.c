@@ -6,6 +6,7 @@ void init() {
     globals = NULL;        // グローバル変数の初期化
     struct_global_lists = new_vec();
     struct_local_lists = new_vec();
+    funcs = new_vec();
 }
 
 // 指定されたファイルの内容を返す

@@ -29,15 +29,11 @@ typedef enum {
 } RegKind;
 
 static void delete_prototype_func() {
-    int i = 0;
-    while (funcs[i]) {
-        if (funcs[i]->is_prototype) {
-            for (int j = i + 1; funcs[j - 1]; j++) {
-                funcs[j - 1] = funcs[j];
-            }
-            continue;
+    for (int i = 0; i < funcs->len; i++) {
+        Function *fn = funcs->body[i];
+        if (fn->is_prototype) {
+            vec_delete(funcs, i);
         }
-        i++;
     }
 }
 
@@ -112,11 +108,12 @@ static void pop_rdi() {
 }
 
 static void assign_lvar_offsets() {
-    for (int i = 0; funcs[i]; i++) {
-        if (funcs[i]->locals->next_offset > 0) {
-            funcs[i]->stack_size = funcs[i]->locals->next_offset;
+    for (int i = 0; i < funcs->len; i++) {
+        Function *fn = funcs->body[i];
+        if (fn->locals->next_offset > 0) {
+            fn->stack_size = fn->locals->next_offset;
         } else {
-            funcs[i]->stack_size = funcs[i]->locals->offset;
+            fn->stack_size = fn->locals->offset;
         }
     }
 }
@@ -503,8 +500,8 @@ void codegen() {
 
     printf(".text\n");
     // 先頭の式から順にコード生成
-    for (int i = 0; funcs[i]; i++) {
-        current_fn = funcs[i];
+    for (int i = 0; i < funcs->len; i++) {
+        current_fn = funcs->body[i];
         printf(".globl %s\n", current_fn->name);
         printf("%s:\n", current_fn->name);
 

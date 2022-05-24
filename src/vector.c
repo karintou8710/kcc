@@ -30,6 +30,14 @@ void *vec_last(Vector *v) {
     return v->body[v->len - 1];
 }
 
+void *vec_delete(Vector *v, int index) {
+    assert(0 <= index && index < v->len);
+    for (int i = index; i < v->len - 1; i++) {
+        v->body[i] = v->body[i + 1];
+    }
+    vec_pop(v);
+}
+
 bool vec_contains(Vector *v, void *elem) {
     for (int i = 0; i < v->len; i++)
         if (v->body[i] == elem)

@@ -216,9 +216,10 @@ static Var *find_gvar(Token *tok) {
 }
 
 Function *find_func(char *name) {
-    for (int i = 0; funcs[i]; i++) {
-        if (strcmp(funcs[i]->name, name) == 0) {
-            return funcs[i];
+    for (int i = 0; i < funcs->len; i++) {
+        Function *fn = funcs->body[i];
+        if (strcmp(fn->name, name) == 0) {
+            return fn;
         }
     }
 
@@ -675,13 +676,12 @@ void program() {
         if (is_func(token)) {
             is_global = false;
             Function *fn = func_define(type);
-            if (fn != NULL) funcs[i++] = fn;
+            if (fn != NULL) vec_push(funcs, fn);
             is_global = true;
         } else {
             Node *node = declaration_global(type);
         }
     }
-    funcs[i] = NULL;
 }
 
 /*

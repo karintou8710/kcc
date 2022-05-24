@@ -237,6 +237,7 @@ void *vec_last(Vector *v);
 bool vec_contains(Vector *v, void *elem);
 bool vec_union1(Vector *v, void *elem);
 void vec_concat(Vector *to, Vector *from);
+void *vec_delete(Vector *v, int index);
 
 // codegen.c
 void codegen();
@@ -262,8 +263,8 @@ Var *globals;
 Token *token;      // tokenは単方向の連結リスト
 char *user_input;  // 入力プログラム
 char *file_name;
-Function *funcs[1000];  // TODO: Vectorに対応する
-int label_if_count;     // ifのラベル
-int label_loop_count;   // forとwhileのラベル
+Vector *funcs;         // Function型のVector
+int label_if_count;    // ifのラベル
+int label_loop_count;  // forとwhileのラベル
 Vector *struct_global_lists;
 Vector *struct_local_lists;  // 既出の構造体
