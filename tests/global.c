@@ -146,6 +146,26 @@ int globalstruct7() {
     return b3.a;
 }
 
+enum enumA {
+    A = 10,
+    B,
+    C = -1,
+};
+
+int global_enum1(int index) {
+    enum enumA {
+        A = 1,
+        B,
+        C
+    };
+    if (index == 0)
+        return A;
+    else if (index == 1)
+        return B;
+    else if (index == 2)
+        return C;
+}
+
 int main() {
     ASSERT(3, globaltest1(), "globaltest1");
     ASSERT(2, globaltest2(), "globaltest2");
@@ -158,6 +178,14 @@ int main() {
     ASSERT(19, globalstruct5(), "globalstruct5");
     ASSERT(50, globalstruct6(), "globalstruct6");
     ASSERT(2, globalstruct7(), "globalstruct7");
+
+    ASSERT(10, A, "enumA A");
+    ASSERT(11, B, "enumA B");
+    ASSERT(-1, C, "enumA C");
+
+    ASSERT(1, global_enum1(0), "global_enum1(0)");
+    ASSERT(2, global_enum1(1), "global_enum1(1)");
+    ASSERT(3, global_enum1(2), "global_enum1(2)");
 
     printf("ALL TEST OF global.c SUCCESS :)\n");
 

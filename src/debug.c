@@ -156,11 +156,13 @@ void print_type_kind(TypeKind kind) {
         fprintf(stderr, "TYPE_PTR");
     else if (kind == TYPE_ARRAY)
         fprintf(stderr, "TYPE_ARRAY");
-    else if (kind == TYPE_VOID) {
+    else if (kind == TYPE_VOID)
         fprintf(stderr, "TYPE_VOID");
-    } else if (kind == TYPE_STRUCT) {
+    else if (kind == TYPE_STRUCT)
         fprintf(stderr, "TYPE_STRUCT");
-    } else
+    else if (kind == TYPE_ENUM)
+        fprintf(stderr, "TYPE_ENUM");
+    else
         error("print_type_kind() failure: unexpected type %d", kind);
 
     fprintf(stderr, "\n");

@@ -6,3 +6,4 @@ a.out
 test_exec.c
 out
 peda*
+.gdb*

@@ -41,6 +41,7 @@ enum TypeKind {
     TYPE_ARRAY,
     TYPE_VOID,
     TYPE_STRUCT,
+    TYPE_ENUM,
 };
 
 struct Type {
@@ -49,7 +50,7 @@ struct Type {
     int size;
     int array_size;
 
-    // struct
+    // struct, enum
     char *name;
     Var *member;
 };
@@ -95,7 +96,7 @@ struct Token {
     int len;                //
 };
 
-/* 変数の定義 */
+/* 変数・定数の定義 */
 struct Var {
     Var *next;        // 次の変数かNULL
     char *name;       // 変数の名前
@@ -103,6 +104,7 @@ struct Var {
     int offset;       // RBPからのオフセット
     int next_offset;  // ローカルスコープでのオフセットを管理
     Type *type;       // 型情報
+    int val;          // 定数の場合は値を持つ
 
     bool is_global;
     bool is_only_type;
@@ -268,3 +270,5 @@ int label_if_count;    // ifのラベル
 int label_loop_count;  // forとwhileのラベル
 Vector *struct_global_lists;
 Vector *struct_local_lists;  // 既出の構造体
+Vector *enum_global_lists;
+Vector *enum_local_lists;  // 既出の列挙型

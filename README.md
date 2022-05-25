@@ -46,6 +46,11 @@ $ make test
                  | "void"
                  | "struct" <ident>
                  | "struct" <ident> "{" <struct_declaration>* "}"
+                 | "enum" <ident>
+                 | "enum" <ident>? "{" <enumerator_list> "}"
+<enumerator_list> = <enumerator> (",", <enumerator>)* ","?
+<enumerator> = <ident>
+             | <ident> "=" <num>
 <type_suffix> = "[" <num>? "]" <type_suffix> | ε
 <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
 <func_define> = <type_specifier> <pointer> <ident>

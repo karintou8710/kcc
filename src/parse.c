@@ -8,7 +8,7 @@ static Var *locals;
 static Function *cur_parse_func;
 static Vector *local_scope;
 static bool is_global = true;
-static bool is_struct_create = false;
+static bool is_struct_enum_create = false;
 
 /* nodeの生成 */
 static Node *new_add(Node *lhs, Node *rhs);
@@ -26,6 +26,8 @@ static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
 static Type *type_specifier();
+static Var *enumerator(Type *type, int *enum_const_num);
+static void enumerator_list(Type *type);
 static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
@@ -164,6 +166,15 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
     struct_type->size += member_type->size;
 }
 
+static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
+    Var *var = memory_alloc(sizeof(Var));
+    var->name = my_strndup(tok->str, tok->len);
+    var->len = tok->len;
+    var->val = enum_const_num;
+    var->type = type;
+    return var;
+}
+
 // TODO: 引数に適切な型をつけるようにする
 /* 引数からローカル変数を作成する(前から見ていく) */
 static void create_lvar_from_params(Var *params) {
@@ -254,6 +265,7 @@ bool has_lvar_in_all_params(Var *params) {
 static Type *find_lstruct_type(char *name) {
     for (int i = 0; i < struct_local_lists->len; i++) {
         Type *t = struct_local_lists->body[i];
+        if (t->name == NULL) continue;
         if (strcmp(t->name, name) == 0) {
             return t;
         }
@@ -265,12 +277,98 @@ static Type *find_lstruct_type(char *name) {
 static Type *find_gstruct_type(char *name) {
     for (int i = 0; i < struct_global_lists->len; i++) {
         Type *t = struct_global_lists->body[i];
+        if (t->name == NULL) continue;
         if (strcmp(t->name, name) == 0) {
             return t;
         }
     }
 
     return NULL;
+}
+
+// enum型を探索
+static Type *find_lenum_type(char *name) {
+    for (int i = 0; i < enum_local_lists->len; i++) {
+        Type *t = enum_local_lists->body[i];
+        if (t->name == NULL) continue;
+        if (strcmp(t->name, name) == 0) {
+            return t;
+        }
+    }
+
+    return NULL;
+}
+
+static Type *find_genum_type(char *name) {
+    for (int i = 0; i < enum_global_lists->len; i++) {
+        Type *t = enum_global_lists->body[i];
+        if (t->name == NULL) continue;
+        if (strcmp(t->name, name) == 0) {
+            return t;
+        }
+    }
+
+    return NULL;
+}
+
+static Type *find_enum_type(char *name) {
+    // ローカルで探索
+    Type *t = find_lenum_type(name);
+    if (t) return t;
+
+    // グローバルで探索
+    t = find_genum_type(name);
+    return t;
+}
+
+// enum型のメンバーを探索
+static Var *find_lenum_member(char *name) {
+    for (int i = 0; i < enum_local_lists->len; i++) {
+        Type *t = enum_local_lists->body[i];
+        for (Var *v = t->member; v; v = v->next) {
+            if (strcmp(v->name, name) == 0) {
+                return v;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static Var *find_genum_member(char *name) {
+    for (int i = 0; i < enum_global_lists->len; i++) {
+        Type *t = enum_global_lists->body[i];
+        for (Var *v = t->member; v; v = v->next) {
+            if (strcmp(v->name, name) == 0) {
+                return v;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static Var *find_enum_member(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    // ローカルで探索
+    Var *v = find_lenum_member(name);
+    if (v) return v;
+
+    // グローバルで探索
+    v = find_genum_member(name);
+    return v;
+}
+
+static void is_defined_enum_type(char *name) {
+    if (is_global) {
+        if (find_genum_type(name) != NULL) {
+            error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
+        }
+    } else {
+        if (find_lenum_type(name) != NULL) {
+            error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
+        }
+    }
 }
 
 static void start_local_scope() {
@@ -688,9 +786,11 @@ void program() {
  *  <declaration_global> = <declaration> ";"
  */
 static Node *declaration_global(Type *type) {
-    if (type->kind == TYPE_STRUCT && is_struct_create && consume_nostep(';')) {
+    if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+        is_struct_enum_create &&
+        consume_nostep(';')) {
         // 構造体の作成
-        is_struct_create = false;
+        is_struct_enum_create = false;
         expect(';');
         return new_node(ND_NULL);
     }
@@ -877,7 +977,7 @@ static Type *type_specifier() {
     Type *type = token->type;
     next_token();
     if (type->kind == TYPE_STRUCT && consume('{')) {
-        is_struct_create = true;
+        is_struct_enum_create = true;
         if (is_global) {
             if (find_gstruct_type(type->name) != NULL) {
                 error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
@@ -906,6 +1006,15 @@ static Type *type_specifier() {
         return type;
     }
 
+    if (type->kind == TYPE_ENUM && consume('{')) {
+        is_struct_enum_create = true;
+        // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
+        is_defined_enum_type(type->name);
+        enumerator_list(type);
+        vec_push(is_global ? enum_global_lists : enum_local_lists, type);
+        return type;
+    }
+
     if (type->kind == TYPE_STRUCT) {
         Type *stype = find_lstruct_type(type->name);
         if (stype == NULL) {
@@ -917,7 +1026,53 @@ static Type *type_specifier() {
         type = stype;
     }
 
+    if (type->kind == TYPE_ENUM) {
+        Type *etype = find_enum_type(type->name);
+        if (etype == NULL) {
+            error("type_specifier() failure: %s列挙型は宣言されていません。", type->name);
+        }
+        type = etype;
+    }
+
     return type;
+}
+
+/*
+ * <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
+ */
+static void enumerator_list(Type *type) {
+    int enum_const_num = 0;
+    Var *var = enumerator(type, &enum_const_num);
+    consume(',');
+
+    while (!consume('}')) {
+        Var *tmp_var = enumerator(type, &enum_const_num);
+        tmp_var->next = var;
+        var = tmp_var;
+        consume(',');
+    }
+    type->member = var;
+}
+
+/*
+ * <enumerator> = <ident>
+ *              | <ident> "=" <num>
+ */
+static Var *enumerator(Type *type, int *enum_const_num) {
+    Token *t = token;
+    expect(TK_IDENT);
+    Var *var = new_enum_member(t, type, *enum_const_num);
+    (*enum_const_num)++;
+
+    if (consume('=')) {
+        GInit_el *el = eval(expr());
+        if (el->str) {
+            error("enumerator() failure: 数値型の定数ではありません");
+        }
+        var->val = el->val;
+        (*enum_const_num) = el->val + 1;
+    }
+    return var;
 }
 
 // is_firstは配列の初期化時のみ使用
@@ -1043,6 +1198,7 @@ static Function *func_define(Type *type) {
 
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
+    enum_local_lists = new_vec();
     locals->offset = 0;
     start_local_scope();
     create_lvar_from_params(fn->params);
@@ -1161,9 +1317,11 @@ static Node *stmt() {
 static Node *expr() {
     if (consume_nostep(TK_TYPE)) {
         Type *type = type_specifier();
-        if (type->kind == TYPE_STRUCT && is_struct_create && consume_nostep(';')) {
-            // 構造体の作成
-            is_struct_create = false;
+        if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+            is_struct_enum_create &&
+            consume_nostep(';')) {
+            // 構造体か列挙型の作成
+            is_struct_enum_create = false;
             return new_node(ND_NULL);
         }
 
@@ -1507,6 +1665,13 @@ static Node *primary() {
         Token *tok = token;
         next_token();
         Node *node;
+
+        // enum
+        Var *v = find_enum_member(tok);
+        if (v) {
+            return new_node_num(v->val);
+        }
+
         if (consume_nostep('(')) {
             node = funcall(tok);
         } else {

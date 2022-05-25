@@ -17,6 +17,8 @@ static int tykind_to_size(TypeKind tykind) {
         return 8;
     } else if (tykind == TYPE_STRUCT) {
         return 0;  // parser側でsizeを決める
+    } else if (tykind == TYPE_ENUM) {
+        return 4;  // INT型と同じサイズ
     }
 
     error("存在しないまたは固定長ではない型です");
@@ -78,7 +80,8 @@ Type *new_array_type(Type *ptr_to, int array_size) {
 bool is_integertype(TypeKind kind) {
     return (
         kind == TYPE_CHAR ||
-        kind == TYPE_INT);
+        kind == TYPE_INT ||
+        kind == TYPE_ENUM);
 }
 
 bool is_scalartype(TypeKind kind) {

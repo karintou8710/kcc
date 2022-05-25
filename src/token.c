@@ -261,6 +261,21 @@ Token *tokenize(char *p) {
             }
         }
 
+        if (strncmp(p, "enum", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_TYPE, cur, p, 4);
+            cur->type = new_type(TYPE_ENUM);
+            p += 4;
+
+            while (isspace(*p)) p++;
+
+            if (is_alpha(*p)) {
+                char *q = p;
+                str_advanve(&p);
+                cur->type->name = my_strndup(q, p - q);
+            }
+            continue;
+        }
+
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;
