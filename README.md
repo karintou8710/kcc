@@ -85,6 +85,7 @@ $ make test
         | ("++" | "--") <postfix>
         | <postfix> ("++" | "--")
         | "!" <unary>
+        | "~" <unary>
 <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
 <funcall> = "(" (<expr> ("," <expr>)*)? ")"
 <primary> = "(" <expr> ")" | <num> | <string> | <ident> <funcall>?

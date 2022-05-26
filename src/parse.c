@@ -1584,6 +1584,7 @@ static Node *mul() {
  *          | ("++" | "--") <postfix>
  *          | <postfix> ("++" | "--")
  *          | "!" <unary>
+ *          | "~" <unary>
  */
 static Node *unary() {
     if (consume('+')) {
@@ -1603,6 +1604,11 @@ static Node *unary() {
         return node;
     } else if (consume('!')) {
         Node *node = new_node(ND_LOGICALNOT);
+        node->lhs = unary();
+        add_type(node->lhs);
+        return node;
+    } else if (consume('~')) {
+        Node *node = new_node(ND_NOT);
         node->lhs = unary();
         add_type(node->lhs);
         return node;

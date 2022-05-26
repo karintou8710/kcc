@@ -133,6 +133,7 @@ enum NodeKind {
     ND_AND,            // &
     ND_OR,             // |
     ND_XOR,            // ^
+    ND_NOT,            // ~
     ND_VAR,            // local var
     ND_NUM,            // num
     ND_RETURN,         // return

@@ -144,6 +144,11 @@ void add_type(Node *node) {
         return;
     }
 
+    if (node->kind == ND_NOT) {
+        node->type = node->lhs->type;
+        return;
+    }
+
     if (node->kind == ND_DEREF) {
         Type *ty = node->lhs->type;
         if (!ty->ptr_to) {

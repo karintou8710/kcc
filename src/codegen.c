@@ -382,6 +382,12 @@ static void gen(Node *node) {
         printf("  movzb rax, al\n");
         push();
         return;
+    } else if (node->kind == ND_NOT) {
+        gen(node->lhs);
+        pop();
+        printf("  not rax\n");
+        push();
+        return;
     }
 
     // 主に演算のATSで読みこまれる

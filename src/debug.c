@@ -78,6 +78,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_STRUCT_MEMBER");  // struct member
     else if (kind == ND_TERNARY)
         fprintf(stderr, "ND_TERNARY");  // 3項演算子
+    else if (kind == ND_NOT)
+        fprintf(stderr, "ND_NOT");  // ~
     else
         error("print_node_kind() failure");
 

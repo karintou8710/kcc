@@ -133,6 +133,16 @@ int and_or_xor5() {
     return 1 & 5 ^ !(10 | 2 + 1) * 2 / 3 ^ 2 && 1 || 7;
 }
 
+char not1() {
+    char a = 1;
+    return ~a;
+}
+
+int not2() {
+    char a = 9;
+    return ~~~~~~a + 1;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -164,6 +174,9 @@ int main() {
     ASSERT(0, and_or_xor3(), "and_or_xor3");
     ASSERT(11, and_or_xor4(), "and_or_xor4");
     ASSERT(1, and_or_xor5(), "and_or_xor5");
+
+    ASSERT(-2, not1(), "not1");
+    ASSERT(10, not2(), "not2");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;
