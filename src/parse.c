@@ -48,6 +48,7 @@ static Node *exclusive_or();
 static Node * and ();
 static Node *equality();
 static Node *relational();
+static Node *shift();
 static Node *add();
 static Node *mul();
 static Node *unary();
@@ -1517,27 +1518,42 @@ static Node *equality() {
 }
 
 /*
- *  <relational> = <add> ("<" <add> | "<=" <add> | ">" <add> | ">=" <add>)*
+ *  <relational> = <shift> ("<" <shift> | "<=" <shift> | ">" <shift> | ">=" <shift>)*
  */
 static Node *relational() {
-    Node *node = add();
+    Node *node = shift();
 
     for (;;) {
         if (consume('<')) {
-            node = new_binop(ND_LT, node, add());
+            node = new_binop(ND_LT, node, shift());
         } else if (consume(TK_LE)) {
-            node = new_binop(ND_LE, node, add());
+            node = new_binop(ND_LE, node, shift());
         } else if (consume('>')) {
-            node = new_binop(ND_LT, add(), node);
+            node = new_binop(ND_LT, shift(), node);
         } else if (consume(TK_GE)) {
-            node = new_binop(ND_LE, add(), node);
+            node = new_binop(ND_LE, shift(), node);
         } else {
             return node;
         }
     }
 }
 
-// TODO: &, |, ^
+/*
+ *  <shift> = <add> (">>" <add> | "<<" <add>)*
+ */
+static Node *shift() {
+    Node *node = add();
+
+    for (;;) {
+        if (consume(TK_RSHIFT)) {
+            node = new_binop(ND_RSHIFT, node, add());
+        } else if (consume(TK_LSHIFT)) {
+            node = new_binop(ND_LSHIFT, node, add());
+        } else {
+            return node;
+        }
+    }
+}
 /*
  *  <add> = <mul> ("+" <mul> | "-" <mul>)*
  */

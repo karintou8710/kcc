@@ -69,6 +69,8 @@ enum TokenKind {
     TK_NE,           // !=
     TK_LE,           // <= 260
     TK_GE,           // >=
+    TK_RSHIFT,       // >>
+    TK_LSHIFT,       // <<
     TK_ADD_EQ,       // +=
     TK_SUB_EQ,       // -=
     TK_MUL_EQ,       // *=
@@ -130,6 +132,8 @@ enum NodeKind {
     ND_NE,             // !=
     ND_LT,             // <
     ND_LE,             // <=
+    ND_LSHIFT,         // <<
+    ND_RSHIFT,         // >>
     ND_AND,            // &
     ND_OR,             // |
     ND_XOR,            // ^

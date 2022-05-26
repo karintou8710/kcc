@@ -80,6 +80,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_TERNARY");  // 3項演算子
     else if (kind == ND_NOT)
         fprintf(stderr, "ND_NOT");  // ~
+    else if (kind == ND_LSHIFT)
+        fprintf(stderr, "ND_LSHIFT");  // ~
     else
         error("print_node_kind() failure");
 
@@ -144,6 +146,10 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_ARROW");
     else if (kind == TK_TYPEDEF)
         fprintf(stderr, "TK_TYPEDEF");
+    else if (kind == TK_LSHIFT)
+        fprintf(stderr, "TK_LSHIFT");
+    else if (kind == TK_RSHIFT)
+        fprintf(stderr, "TK_RSHIFT");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

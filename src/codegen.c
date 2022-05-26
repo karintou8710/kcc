@@ -448,6 +448,12 @@ static void gen(Node *node) {
         printf("  or rax, rdi\n");
     } else if (node->kind == ND_XOR) {
         printf("  xor rax, rdi\n");
+    } else if (node->kind == ND_LSHIFT) {
+        printf("  mov rcx, rdi\n");
+        printf("  sal rax, cl\n");
+    } else if (node->kind == ND_RSHIFT) {
+        printf("  mov rcx, rdi\n");
+        printf("  sar rax, cl\n");
     }
 
     push();

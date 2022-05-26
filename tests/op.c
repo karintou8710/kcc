@@ -143,6 +143,16 @@ int not2() {
     return ~~~~~~a + 1;
 }
 
+int shift1() {
+    int a = 1 << 2;
+    return a << a;
+}
+
+int shift2() {
+    int a = 1 << 2 >> 2;
+    return a;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -177,6 +187,9 @@ int main() {
 
     ASSERT(-2, not1(), "not1");
     ASSERT(10, not2(), "not2");
+
+    ASSERT(64, shift1(), "shift1");
+    ASSERT(1, shift2(), "shift2");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;
