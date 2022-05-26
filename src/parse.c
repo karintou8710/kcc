@@ -8,7 +8,9 @@ static Var *locals;
 static Function *cur_parse_func;
 static Vector *local_scope;
 static bool is_global = true;
-static bool is_struct_enum_create = false;
+static bool is_typedef = false;
+
+static Type *find_typedef_alias(char *name);
 
 /* nodeの生成 */
 static Node *new_add(Node *lhs, Node *rhs);
@@ -68,6 +70,21 @@ static bool consume_nostep(int op) {
         return false;
     }
     return true;
+}
+
+// typedefに対応
+static bool consume_is_type_nostep(Token *tok) {
+    if (tok->kind == TK_TYPE) {
+        return true;
+    }
+
+    if (tok->kind == TK_IDENT) {
+        char *name = my_strndup(tok->str, tok->len);
+        return (bool)find_typedef_alias(name);
+    }
+
+    // 基礎型でもtypedefでもない
+    return false;
 }
 
 /* 指定された演算子が必ず来る */
@@ -173,6 +190,13 @@ static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
     var->val = enum_const_num;
     var->type = type;
     return var;
+}
+
+static Typedef_alias *new_typedef_alias(char *name, Type *type) {
+    Typedef_alias *ta = memory_alloc(sizeof(Typedef_alias));
+    ta->name = name;
+    ta->type = type;
+    return ta;
 }
 
 // TODO: 引数に適切な型をつけるようにする
@@ -369,6 +393,17 @@ static void is_defined_enum_type(char *name) {
             error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
     }
+}
+
+static Type *find_typedef_alias(char *name) {
+    for (int i = 0; i < typedef_alias->len; i++) {
+        Typedef_alias *ta = typedef_alias->body[i];
+        if (strcmp(ta->name, name) == 0) {
+            return ta->type;
+        }
+    }
+
+    return NULL;
 }
 
 static void start_local_scope() {
@@ -787,11 +822,8 @@ void program() {
  */
 static Node *declaration_global(Type *type) {
     if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
-        is_struct_enum_create &&
-        consume_nostep(';')) {
-        // 構造体の作成
-        is_struct_enum_create = false;
-        expect(';');
+        consume(';')) {
+        // 構造体・列強型の作成 or 宣言
         return new_node(ND_NULL);
     }
     Node *node = declaration(type);
@@ -922,6 +954,9 @@ static Node *declaration_var(Type *type) {
     }
     // 変数
     if (consume('=')) {
+        if (is_typedef) {
+            error("declaration_var() failure: typedef中で初期化はできません");
+        }
         Initializer *init = new_initializer(node->var);
         return initialize(init, node);
     }
@@ -939,6 +974,11 @@ static Node *declaration_var(Type *type) {
 static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume_nostep(';')) {
+        if (node->kind == ND_VAR && is_typedef) {
+            Typedef_alias *ta = new_typedef_alias(node->var->name, node->var->type);
+            vec_push(typedef_alias, ta);
+        }
+        is_typedef = false;
         return node;
     }
 
@@ -948,6 +988,17 @@ static Node *declaration(Type *type) {
     while (consume(',')) {
         vec_push(n->stmts, declaration_var(type));
     }
+
+    for (int i = 0; i < n->stmts->len; i++) {
+        Node *tmp_node = n->stmts->body[i];
+        // typedefなら型名を記録する
+        if (tmp_node->kind == ND_VAR && is_typedef) {
+            Typedef_alias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
+            vec_push(typedef_alias, ta);
+        }
+    }
+
+    is_typedef = false;
     return n;
 }
 
@@ -966,18 +1017,34 @@ Type *struct_declaration(Type *type) {
 }
 
 /*
- *  <type_specifier> = "int"
- *                   | "char"
- *                   | "void"
- *                   | "struct" <ident>
- *                   | "struct" <ident> "{" <struct_declaration>* "}"
+ *  <storage_class>  = "typedef"
+ *  <type_specifier> = <storage_class>? "int"
+ *                   | <storage_class>? "char"
+ *                   | <storage_class>? "void"
+ *                   | <storage_class>? "struct" <ident>
+ *                   | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
  */
 static Type *type_specifier() {
-    expect_nostep(TK_TYPE);
-    Type *type = token->type;
-    next_token();
+    if (consume(TK_TYPEDEF)) is_typedef = true;
+
+    Token *tok = token;
+    Type *type;
+
+    if (consume(TK_IDENT)) {
+        // typedef
+        char *name = my_strndup(tok->str, tok->len);
+        type = find_typedef_alias(name);
+        if (type == NULL) {
+            error("find_typedef_alia() failure: %sは定義されていません", name);
+        }
+    } else if (consume(TK_TYPE)) {
+        // 基礎型
+        type = tok->type;
+    } else {
+        error("type_specifier() failure: 適切な型ではありません");
+    }
+
     if (type->kind == TYPE_STRUCT && consume('{')) {
-        is_struct_enum_create = true;
         if (is_global) {
             if (find_gstruct_type(type->name) != NULL) {
                 error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
@@ -1007,7 +1074,6 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_ENUM && consume('{')) {
-        is_struct_enum_create = true;
         // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
         is_defined_enum_type(type->name);
         enumerator_list(type);
@@ -1315,13 +1381,11 @@ static Node *stmt() {
  *  <expr> = <assign> | <declaration>
  */
 static Node *expr() {
-    if (consume_nostep(TK_TYPE)) {
+    if (consume_is_type_nostep(token)) {
         Type *type = type_specifier();
         if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
-            is_struct_enum_create &&
             consume_nostep(';')) {
-            // 構造体か列挙型の作成
-            is_struct_enum_create = false;
+            // 構造体か列挙型の作成 or 宣言
             return new_node(ND_NULL);
         }
 
@@ -1544,7 +1608,7 @@ static Node *unary() {
         return node;
     } else if (consume(TK_SIZEOF)) {
         Token *tok = get_nafter_token(1);
-        if (tok->kind == TK_TYPE) {
+        if (consume_is_type_nostep(tok)) {
             expect('(');
             Type *t = type_specifier();
             t = pointer(t);

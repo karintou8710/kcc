@@ -140,6 +140,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_LOGICAL_OR");
     else if (kind == TK_ARROW)
         fprintf(stderr, "TK_ARROW");
+    else if (kind == TK_TYPEDEF)
+        fprintf(stderr, "TK_TYPEDEF");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

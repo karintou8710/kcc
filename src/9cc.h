@@ -21,9 +21,11 @@ typedef struct Node Node;
 typedef struct Function Function;
 typedef struct Initializer Initializer;
 typedef struct GInit_el GInit_el;
+typedef struct Typedef_alias Typedef_alias;
 typedef enum TypeKind TypeKind;
 typedef enum NodeKind NodeKind;
 typedef enum TokenKind TokenKind;
+typedef enum StorageClass StorageClass;
 
 /* ベクターの定義 */
 
@@ -31,6 +33,10 @@ struct Vector {
     void **body;
     int len;
     int capacity;
+};
+
+enum StorageClass {
+    STORAGE_TYPEDEF = 1,
 };
 
 /* 型の定義 */
@@ -84,6 +90,7 @@ enum TokenKind {
     TK_LOGICAL_AND,  // &&
     TK_LOGICAL_OR,   // ||
     TK_ARROW,        // ->
+    TK_TYPEDEF,      // typedef
 };
 
 struct Token {
@@ -201,6 +208,11 @@ struct GInit_el {
     int len;
 };
 
+struct Typedef_alias {
+    char *name;
+    Type *type;
+};
+
 // parse.c
 void program();
 Function *find_func(char *name);
@@ -271,3 +283,4 @@ Vector *struct_global_lists;
 Vector *struct_local_lists;  // 既出の構造体
 Vector *enum_global_lists;
 Vector *enum_local_lists;  // 既出の列挙型
+Vector *typedef_alias;     // Type_alias

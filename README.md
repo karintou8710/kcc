@@ -11,12 +11,11 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - 構造体の基礎
 - ブロックスコープ
 - 配列の初期化式
+- typedef, enum
 
 ## TODO
 
 - switch
-- typedef
-- enum
 
 ## Build
 
@@ -41,13 +40,14 @@ $ make test
 <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
 <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
 <struct_declaration> = <type_specifier> <pointer> <ident> ";"
-<type_specifier> = "int"
-                 | "char"
-                 | "void"
-                 | "struct" <ident>
-                 | "struct" <ident> "{" <struct_declaration>* "}"
-                 | "enum" <ident>
-                 | "enum" <ident>? "{" <enumerator_list> "}"
+<storage_class>  = "typedef"
+<type_specifier> = <storage_class>? "int"
+                 | <storage_class>? "char"
+                 | <storage_class>? "void"
+                 | <storage_class>? "struct" <ident>
+                 | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
+                 | <storage_class>? "enum" <ident>
+                 | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <num>

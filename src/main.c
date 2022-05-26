@@ -9,6 +9,7 @@ void init() {
     enum_global_lists = new_vec();
     enum_local_lists = new_vec();
     funcs = new_vec();
+    typedef_alias = new_vec();
 }
 
 // 指定されたファイルの内容を返す

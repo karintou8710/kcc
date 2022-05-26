@@ -276,6 +276,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "typedef", 7) == 0 && !is_alnum(p[7])) {
+            cur = new_token(TK_TYPEDEF, cur, p, 7);
+            p += 7;
+            continue;
+        }
+
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;
