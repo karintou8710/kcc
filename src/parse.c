@@ -1104,6 +1104,13 @@ static Type *type_specifier() {
     return type;
 }
 
+Type *type_name() {
+    Type *type = type_specifier();
+    type = pointer(type);
+    type = type_suffix(type, true);
+    return type;
+}
+
 /*
  * <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
  */
@@ -1596,7 +1603,7 @@ static Node *mul() {
  *          | "*" <unary>
  *          | "&" <postfix>
  *          | "sizeof" <unary>
- *          | "sizeof" "(" <type_specifier> <pointer> ")"
+ *          | "sizeof" "(" <type_name> ")"
  *          | ("++" | "--") <postfix>
  *          | <postfix> ("++" | "--")
  *          | "!" <unary>
@@ -1632,8 +1639,7 @@ static Node *unary() {
         Token *tok = get_nafter_token(1);
         if (consume_is_type_nostep(tok)) {
             expect('(');
-            Type *t = type_specifier();
-            t = pointer(t);
+            Type *t = type_name();
             Node *node = new_node_num(sizeOfType(t));
             expect(')');
             return node;

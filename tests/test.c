@@ -521,6 +521,13 @@ int sizeof7() {
     int a5 = sizeof(void *);
     return a1 + a2 + a3 + a4 + a5;
 }
+int sizeof8() {
+    return sizeof(int *[2][5]);
+}
+
+int sizeof9() {
+    return sizeof(int[1][10][1][1]);
+}
 
 // 配列
 int array1() {
@@ -821,6 +828,8 @@ int main() {
     ASSERT(20, sizeof5(), "sizeof5");
     ASSERT(100, sizeof6(), "sizeof6");
     ASSERT(21, sizeof7(), "sizeof7");
+    ASSERT(80, sizeof8(), "sizeof8");
+    ASSERT(40, sizeof9(), "sizeof9");
 
     ASSERT(3, array1(), "array1");
     ASSERT(6, array2(), "array2");

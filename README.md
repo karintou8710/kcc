@@ -48,6 +48,7 @@ $ make test
                  | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
                  | <storage_class>? "enum" <ident>
                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
+<type_name> = <type_specifier> <pointer> <type_suffix>
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <num>
@@ -82,7 +83,7 @@ $ make test
         | "*" <unary>
         | "&" <postfix>
         | "sizeof" <unary>
-        | "sizeof" "(" <type_specifier> <pointer> ")"
+        | "sizeof" "(" <type_name> ")"
         | ("++" | "--") <postfix>
         | <postfix> ("++" | "--")
         | "!" <unary>
