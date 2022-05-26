@@ -16,10 +16,6 @@ void vec_push(Vector *v, void *elem) {
     v->body[v->len++] = elem;
 }
 
-void vec_pushi(Vector *v, int val) {
-    vec_push(v, &val);
-}
-
 void *vec_pop(Vector *v) {
     assert(v->len);
     return v->body[--v->len];
