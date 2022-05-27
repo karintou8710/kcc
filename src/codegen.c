@@ -95,8 +95,9 @@ static void push_rdi() {
     printf("  push rdi\n");
 }
 
-static void push_num(int num) {
-    printf("  push %d\n", num);
+static void push_num(long num) {
+    printf("  mov rax, %ld\n", num);
+    printf("  push rax\n");
 }
 
 static void pop() {
@@ -149,7 +150,7 @@ static void gen_addr(Node *node) {
     } else if (node->kind == ND_STRUCT_MEMBER) {
         gen_addr(node->lhs);
         pop();
-        printf("  add rax, %d\n", node->val);
+        printf("  add rax, %ld\n", node->val);
         push();
         return;
     } else if (node->kind == ND_TERNARY) {
@@ -194,7 +195,7 @@ static void gen(Node *node) {
         push_num(node->val);
         return;
     } else if (node->kind == ND_STRING) {
-        printf("  lea rax, [rip+.LC%d]\n", node->val);
+        printf("  lea rax, [rip+.LC%ld]\n", node->val);
         push();
         return;
     } else if (node->kind == ND_STRUCT_MEMBER) {
@@ -512,13 +513,13 @@ void codegen() {
 
             int s = array_base_type_size(var->type);
             if (s == 8) {
-                printf("  .quad %d\n", g->val);
+                printf("  .quad %ld\n", g->val);
             } else if (s == 4) {
-                printf("  .long %d\n", g->val);
+                printf("  .long %ld\n", g->val);
             } else if (s == 2) {
-                printf("  .value %d\n", g->val);
+                printf("  .value %ld\n", g->val);
             } else if (s == 1) {
-                printf("  .byte %d\n", g->val);
+                printf("  .byte %ld\n", g->val);
             }
         }
     }

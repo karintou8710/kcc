@@ -44,6 +44,8 @@ $ make test
 <type_specifier> = <storage_class>? "int"
                  | <storage_class>? "char"
                  | <storage_class>? "void"
+                 | <storage_class>? "short"
+                 | <storage_class>? "long" "long"? "int"?
                  | <storage_class>? "struct" <ident>
                  | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
                  | <storage_class>? "enum" <ident>

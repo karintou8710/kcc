@@ -162,8 +162,12 @@ void print_type_kind(TypeKind kind) {
     fprintf(stderr, "tokenkind -> ");
     if (kind == TYPE_CHAR)
         fprintf(stderr, "TYPE_CHAR");
+    else if (kind == TYPE_SHORT)
+        fprintf(stderr, "TYPE_SHORT");
     else if (kind == TYPE_INT)
         fprintf(stderr, "TYPE_INT");
+    else if (kind == TYPE_LONG)
+        fprintf(stderr, "TYPE_LONG");
     else if (kind == TYPE_PTR)
         fprintf(stderr, "TYPE_PTR");
     else if (kind == TYPE_ARRAY)
@@ -193,7 +197,7 @@ void debug_node(Node *node, char *pos, int depth) {
 
     if (node->kind == ND_NUM) {
         recursion_line_printf(depth, "");
-        fprintf(stderr, "num -> %d\n", node->val);
+        fprintf(stderr, "num -> %ld\n", node->val);
     } else if (node->kind == ND_VAR) {
         recursion_line_printf(depth, "name -> %s\n", node->var->name);
         recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
@@ -269,7 +273,7 @@ void debug_token(Token *t) {
 
     print_token_kind(t->kind);
     debug_type(t->type, 0);
-    fprintf(stderr, "val -> %d\n", t->val);
+    fprintf(stderr, "val -> %ld\n", t->val);
     fprintf(stderr, "str -> %s\n", t->str);
     fprintf(stderr, "str_literal_index -> %d\n", t->str_literal_index);
     fprintf(stderr, "len; -> %d\n", t->len);

@@ -42,7 +42,9 @@ enum StorageClass {
 /* 型の定義 */
 enum TypeKind {
     TYPE_CHAR,
+    TYPE_SHORT,
     TYPE_INT,
+    TYPE_LONG,
     TYPE_PTR,
     TYPE_ARRAY,
     TYPE_VOID,
@@ -99,7 +101,7 @@ struct Token {
     TokenKind kind;         //
     Type *type;             //
     Token *next;            //
-    int val;                //
+    long val;               //
     char *str;              //
     int str_literal_index;  //
     int len;                //
@@ -113,7 +115,7 @@ struct Var {
     int offset;       // RBPからのオフセット
     int next_offset;  // ローカルスコープでのオフセットを管理
     Type *type;       // 型情報
-    int val;          // 定数の場合は値を持つ
+    long val;         // 定数の場合は値を持つ
 
     bool is_global;
     bool is_only_type;
@@ -166,7 +168,7 @@ struct Node {
     NodeKind kind;
     Node *lhs;          // 左辺
     Node *rhs;          // 右辺
-    int val;            // ND_NUM ND_STRINGの時に使う
+    long val;           // ND_NUM ND_STRINGの時に使う
     Var *var;           // kindがND_VARの場合のみ使う
     char *fn_name;      //
     char *str_literal;  // ND_STRINGのときに使う
@@ -209,7 +211,7 @@ struct Initializer {
 
 // グローバル変数の初期化式
 struct GInit_el {
-    int val;
+    long val;
     char *str;
     int len;
 };

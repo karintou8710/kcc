@@ -85,6 +85,34 @@ int pointer_sub3() {
     return b + 1 - a;
 }
 
+long long1() {
+    long a = 10;
+    a += 1000000000000000;
+    return a;
+}
+
+long long2() {
+    long a = 100000000000127;
+    return (long)(char)a;
+}
+
+long long long3() {
+    long long int a = 100000000000000;
+    long long b = 100000000000000;
+    long int c = 100000000000000;
+    return a + b + c;
+}
+
+short short1() {
+    short a = (1 << 14) + (1 << 20);
+    return a;
+}
+
+short short2() {
+    short a = (1 << 14) + 127;
+    return (short)(char)a;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -102,6 +130,13 @@ int main() {
     ASSERT(4, (char)((1 << 30) + (1 << 2)), "cast2");
     ASSERT(0, (int)(char)(char *)(256), "cast3");
     ASSERT(100, (char)(256 + 10 * 10), "cast4");
+
+    ASSERT(1000000000000010, long1(), "long1");
+    ASSERT(127, long2(), "long2");
+    ASSERT(300000000000000, long3(), "long3");
+
+    ASSERT(1 << 14, short1(), "short1");
+    ASSERT(127, short2(), "short2");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

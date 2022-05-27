@@ -11,9 +11,11 @@ static int tykind_to_size(TypeKind tykind) {
         return 0;
     } else if (tykind == TYPE_CHAR) {
         return 1;
+    } else if (tykind == TYPE_SHORT) {
+        return 2;
     } else if (tykind == TYPE_INT) {
         return 4;
-    } else if (tykind == TYPE_PTR) {
+    } else if (tykind == TYPE_PTR || tykind == TYPE_LONG) {
         return 8;
     } else if (tykind == TYPE_STRUCT) {
         return 0;  // parser側でsizeを決める
@@ -80,7 +82,9 @@ Type *new_array_type(Type *ptr_to, int array_size) {
 bool is_integertype(TypeKind kind) {
     return (
         kind == TYPE_CHAR ||
+        kind == TYPE_SHORT ||
         kind == TYPE_INT ||
+        kind == TYPE_LONG ||
         kind == TYPE_ENUM);
 }
 

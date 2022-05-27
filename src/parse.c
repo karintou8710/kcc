@@ -18,7 +18,7 @@ static Node *new_sub(Node *lhs, Node *rhs);
 static Node *new_mul(Node *lhs, Node *rhs);
 static Node *new_div(Node *lhs, Node *rhs);
 static Node *new_mod(Node *lhs, Node *rhs);
-static Node *new_node_num(int val);
+static Node *new_node_num(long val);
 static Var *new_lvar(Token *tok, Type *type);
 static Var *new_gvar(Token *tok, Type *type);
 static void create_lvar_from_params(Var *params);
@@ -114,11 +114,11 @@ static void expect_nostep(int op) {
     }
 }
 
-static int expect_number() {
+static long expect_number() {
     if (token->kind != TK_NUM) {
         error_at(token->str, "expect_number() failure: 数値ではありません");
     }
-    int val = token->val;
+    long val = token->val;
     next_token();
     return val;
 }
@@ -446,7 +446,7 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
         }
         int len = gl->len + max_digit + len + 1;
         char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%s %s %d", gl->str, op, gr->val);
+        len = snprintf(buf, len, "%s %s %ld", gl->str, op, gr->val);
         g->str = buf;
         g->len = len;
     } else if (!gl->str && gr->str) {
@@ -455,7 +455,7 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
         }
         int len = max_digit + gr->len + len + 1;
         char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%d %s %s", gl->val, op, gr->str);
+        len = snprintf(buf, len, "%ld %s %s", gl->val, op, gr->str);
         g->str = buf;
         g->len = len;
     } else {
@@ -559,7 +559,7 @@ static GInit_el *eval(Node *node) {
     } else if (node->kind == ND_STRING) {
         int buf_size = 50;  // 仮の値を決める
         char *buf = memory_alloc(sizeof(char) * buf_size);
-        buf_size = snprintf(buf, buf_size, ".LC%d", node->val);
+        buf_size = snprintf(buf, buf_size, ".LC%ld", node->val);
         g->str = buf;
         g->len = buf_size;
         return g;
@@ -732,7 +732,7 @@ static Node *new_assign(Node *lhs, Node *rhs) {
 }
 
 /* 数値ノードを作成 */
-static Node *new_node_num(int val) {
+static Node *new_node_num(long val) {
     Node *node = new_node(ND_NUM);
     node->val = val;
     return node;

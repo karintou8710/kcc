@@ -840,6 +840,11 @@ int main() {
     ASSERT(40, sizeof9(), "sizeof9");
     ASSERT(8, sizeof((int *)0), "sizeof10");
     ASSERT(1, sizeof((char)0), "sizeof11");
+    ASSERT(8, sizeof(long), "sizeof12");
+    ASSERT(2, sizeof(short), "sizeof13");
+    ASSERT(8, sizeof(long int), "sizeof14");
+    ASSERT(8, sizeof(long long), "sizeof15");
+    ASSERT(8, sizeof(long long int), "sizeof16");
 
     ASSERT(3, array1(), "array1");
     ASSERT(6, array2(), "array2");
