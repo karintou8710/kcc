@@ -33,6 +33,7 @@ static void delete_prototype_func() {
         Function *fn = funcs->body[i];
         if (fn->is_prototype) {
             vec_delete(funcs, i);
+            i--;
         }
     }
 }
