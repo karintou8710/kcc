@@ -328,7 +328,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
+        error("%d %d不正な型です", lhs->type->kind, rhs->type->kind);
     }
 
     if (is_relationalnode(node->kind)) {

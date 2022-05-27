@@ -110,14 +110,26 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_SUB_EQ");
     else if (kind == TK_MUL_EQ)
         fprintf(stderr, "TK_MUL_EQ");
-    else if (kind == TK_INC)
-        fprintf(stderr, "TK_INC");
-    else if (kind == TK_DEC)
-        fprintf(stderr, "TK_DEC");
     else if (kind == TK_DIV_EQ)
         fprintf(stderr, "TK_DIV_EQ");
     else if (kind == TK_MOD_EQ)
         fprintf(stderr, "TK_MOD_EQ");
+    else if (kind == TK_MOD_EQ)
+        fprintf(stderr, "TK_AND_EQ");
+    else if (kind == TK_AND_EQ)
+        fprintf(stderr, "TK_OR_EQ");
+    else if (kind == TK_OR_EQ)
+        fprintf(stderr, "TK_XOR_EQ");
+    else if (kind == TK_XOR_EQ)
+        fprintf(stderr, "TK_LSHIFT_EQ");
+    else if (kind == TK_LSHIFT_EQ)
+        fprintf(stderr, "TK_LSHIFT_EQ");
+    else if (kind == TK_RSHIFT_EQ)
+        fprintf(stderr, "TK_RSHIFT_EQ");
+    else if (kind == TK_INC)
+        fprintf(stderr, "TK_INC");
+    else if (kind == TK_DEC)
+        fprintf(stderr, "TK_DEC");
     else if (kind == TK_RETURN)
         fprintf(stderr, "TK_RETURN");
     else if (kind == TK_IF)

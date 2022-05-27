@@ -69,7 +69,7 @@ $ make test
        | <compound_stmt>
 <expr> = <assign> | <declaration>
 <assign> = <conditional> ("=" <assign>)?
-         | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>
+         | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>
 <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
 <logical_expression> = <inclusive_or> ("&&" <inclusive_or> | "||" <inclusive_or>)*
 <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*

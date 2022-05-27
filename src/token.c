@@ -47,6 +47,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (startsWith(p, "<<=")) {
+            cur = new_token(TK_LSHIFT_EQ, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
+        if (startsWith(p, ">>=")) {
+            cur = new_token(TK_RSHIFT_EQ, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
         if (startsWith(p, "==")) {
             cur = new_token(TK_EQ, cur, p, 2);
             p += 2;
@@ -109,6 +121,24 @@ Token *tokenize(char *p) {
 
         if (startsWith(p, "%=")) {
             cur = new_token(TK_MOD_EQ, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (startsWith(p, "&=")) {
+            cur = new_token(TK_AND_EQ, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (startsWith(p, "|=")) {
+            cur = new_token(TK_OR_EQ, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (startsWith(p, "^=")) {
+            cur = new_token(TK_XOR_EQ, cur, p, 2);
             p += 2;
             continue;
         }

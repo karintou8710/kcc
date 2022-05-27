@@ -153,6 +153,36 @@ int shift2() {
     return a;
 }
 
+int equal1() {
+    int a = 1;
+    a &= 3;
+    return a;
+}
+
+int equal2() {
+    int a = 1;
+    a |= 3;
+    return a;
+}
+
+int equal3() {
+    int a = 1;
+    a ^= 3;
+    return a;
+}
+
+int equal4() {
+    int a = 1;
+    a <<= 3;
+    return a;
+}
+
+int equal5() {
+    int a = 10;
+    a >>= 2;
+    return a;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -190,6 +220,12 @@ int main() {
 
     ASSERT(64, shift1(), "shift1");
     ASSERT(1, shift2(), "shift2");
+
+    ASSERT(1, equal1(), "equal1");
+    ASSERT(3, equal2(), "equal2");
+    ASSERT(2, equal3(), "equal3");
+    ASSERT(8, equal4(), "equal4");
+    ASSERT(2, equal5(), "equal5");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;

@@ -1444,6 +1444,16 @@ static Node *assign() {
         node = new_assign(node, new_div(node, conditional()));
     } else if (consume(TK_MOD_EQ)) {
         node = new_assign(node, new_mod(node, conditional()));
+    } else if (consume(TK_AND_EQ)) {
+        node = new_assign(node, new_binop(ND_AND, node, conditional()));
+    } else if (consume(TK_OR_EQ)) {
+        node = new_assign(node, new_binop(ND_OR, node, conditional()));
+    } else if (consume(TK_XOR_EQ)) {
+        node = new_assign(node, new_binop(ND_XOR, node, conditional()));
+    } else if (consume(TK_LSHIFT_EQ)) {
+        node = new_assign(node, new_binop(ND_LSHIFT, node, conditional()));
+    } else if (consume(TK_RSHIFT_EQ)) {
+        node = new_assign(node, new_binop(ND_RSHIFT, node, conditional()));
     }
     return node;
 }
