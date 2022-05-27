@@ -51,6 +51,7 @@ static Node *relational();
 static Node *shift();
 static Node *add();
 static Node *mul();
+static Node *cast();
 static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
@@ -1036,7 +1037,7 @@ static Type *type_specifier() {
         char *name = my_strndup(tok->str, tok->len);
         type = find_typedef_alias(name);
         if (type == NULL) {
-            error("find_typedef_alia() failure: %sは定義されていません", name);
+            error("find_typedef_alias() failure: %sは定義されていません", name);
         }
     } else if (consume(TK_TYPE)) {
         // 基礎型
@@ -1579,22 +1580,49 @@ static Node *add() {
 }
 
 /*
- *  <mul> = <unary> ("*" <unary> | "/" <unary> | "%" <unary> )*
+ *  <mul> = <cast> ("*" <cast> | "/" <cast> | "%" <cast> )*
  */
 static Node *mul() {
-    Node *node = unary();
+    Node *node = cast();
 
     for (;;) {
         if (consume('*')) {
-            node = new_mul(node, unary());
+            node = new_mul(node, cast());
         } else if (consume('/')) {
-            node = new_div(node, unary());
+            node = new_div(node, cast());
         } else if (consume('%')) {
-            node = new_mod(node, unary());
+            node = new_mod(node, cast());
         } else {
             return node;
         }
     }
+}
+
+/*
+ * <cast> = "(" <type_name> ")" <cast>
+ *        | <unary>
+ */
+static Node *cast() {
+    Token *t1 = get_nafter_token(1);
+    if (consume_nostep('(') && consume_is_type_nostep(t1)) {
+        expect('(');
+        Type *type = type_name();
+        expect(')');
+        Node *node = cast();
+        add_type(node);
+        if (can_type_cast(node->type, type->kind)) {
+            Node *n = new_node(ND_CAST);
+            n->lhs = node;
+            n->type = type;
+            node = n;
+        } else {
+            error("can_type_cast() failure: 型のキャストに失敗しました");
+        }
+
+        return node;
+    }
+
+    return unary();
 }
 
 /*

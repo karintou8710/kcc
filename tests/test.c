@@ -182,6 +182,13 @@ int assign10() {
     b = 1;
     return a + b + c + *d + *e;
 }
+int assign11() {
+    int a = 1, b, c = 1;
+    int *d, e = 5;
+    b = 1;
+    int res = (e = *(d = &a) + 1);
+    return res + e;
+}
 // if else
 int if_else1() {
     if (1)
@@ -771,6 +778,7 @@ int main() {
     ASSERT(5, assign8(), "assign8");
     ASSERT(7, assign9(), "assign9");
     ASSERT(5, assign10(), "assign10");
+    ASSERT(4, assign11(), "assign11");
 
     ASSERT(4, if_else1(), "if_else1");
     ASSERT(6, if_else2(), "if_else2");
@@ -830,6 +838,8 @@ int main() {
     ASSERT(21, sizeof7(), "sizeof7");
     ASSERT(80, sizeof8(), "sizeof8");
     ASSERT(40, sizeof9(), "sizeof9");
+    ASSERT(8, sizeof((int *)0), "sizeof10");
+    ASSERT(1, sizeof((char)0), "sizeof11");
 
     ASSERT(3, array1(), "array1");
     ASSERT(6, array2(), "array2");

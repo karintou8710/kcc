@@ -77,7 +77,9 @@ $ make test
 <relational> = <shift> ("<" <shift> | "<=" <shift> | ">" <shift> | ">=" <shift>)*
 <shift> = <add> (">>" <add> | "<<" <add>)*
 <add> = <mul> ("+" <mul> | "-" <mul>)*
-<mul> = <unary> ("*" <unary> | "/" <unary> | "%" <unary> )*
+<mul> = <cast> ("*" <cast> | "/" <cast> | "%" <cast> )*
+<cast> = "(" <type_name> ")" <cast>
+       | <unary>
 <unary> = "+"? <postfix>
         | "-"? <postfix>
         | "*" <unary>

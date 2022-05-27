@@ -69,6 +69,7 @@ int main() {
     ASSERT(4 * 10, sizeof(INT6), "sizeof(INT6)");
     ASSERT(4 * 20, sizeof(INT7), "sizeof(INT7)");
     ASSERT(1, sizeof(CHAR2), "sizeof(CHAR2)");
+    ASSERT(8, sizeof((INT1)0), "sizeof((INT1)0)");
 
     ASSERT(30, typedef1(), "typedef1");
     ASSERT(10, **typedef2(), "typedef2");

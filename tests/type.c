@@ -98,6 +98,11 @@ int main() {
     ASSERT(3, pointer_sub2(), "pointer_sub2");
     ASSERT(11, pointer_sub3(), "pointer_sub3");
 
+    ASSERT(0, (char)(256), "cast1");
+    ASSERT(4, (char)((1 << 30) + (1 << 2)), "cast2");
+    ASSERT(0, (int)(char)(char *)(256), "cast3");
+    ASSERT(100, (char)(256 + 10 * 10), "cast4");
+
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;
 }

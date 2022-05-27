@@ -388,6 +388,19 @@ static void gen(Node *node) {
         printf("  not rax\n");
         push();
         return;
+    } else if (node->kind == ND_CAST) {
+        gen(node->lhs);
+        pop();
+        if (node->type->size == 8) {
+            // キャストの必要なし
+        } else if (node->type->size == 4) {
+            // 4byteだと命令が異なる
+            printf("  movsxd rax, eax\n");
+        } else {
+            printf("  movsx rax, %s\n", proper_register(node->type, REG_RAX));
+        }
+        push();
+        return;
     }
 
     // 主に演算のATSで読みこまれる

@@ -211,7 +211,7 @@ void add_type(Node *node) {
         }
 
         if (can_type_cast(node->rhs->type, node->lhs->type->kind)) {
-            node->type = new_type(node->lhs->type->kind);
+            node->type = node->lhs->type;
             return;
         }
 

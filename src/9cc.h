@@ -159,6 +159,7 @@ enum NodeKind {
     ND_NULL,           // 何もしない
     ND_STRUCT_MEMBER,  // struct member
     ND_TERNARY,        // 3項演算子
+    ND_CAST,           // キャスト
 };
 
 struct Node {

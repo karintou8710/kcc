@@ -82,6 +82,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_NOT");  // ~
     else if (kind == ND_LSHIFT)
         fprintf(stderr, "ND_LSHIFT");  // ~
+    else if (kind == ND_CAST)
+        fprintf(stderr, "ND_CAST");  // cast
     else
         error("print_node_kind() failure");
 
