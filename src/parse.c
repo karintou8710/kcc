@@ -288,6 +288,17 @@ bool has_lvar_in_all_params(Var *params) {
     return true;
 }
 
+Var *find_params(char *name, Var *params) {
+    Var *vars = params;
+    for (Var *var = vars; var; var = var->next) {
+        if (!var->name) continue;
+        if (strcmp(name, var->name) == 0) {
+            return var;
+        }
+    }
+    return NULL;
+}
+
 static Type *find_lstruct_type(char *name) {
     for (int i = 0; i < struct_local_lists->len; i++) {
         Type *t = struct_local_lists->body[i];
@@ -1180,7 +1191,7 @@ static Var *declaration_param(Var *cur) {
     lvar->type = type;
     lvar->offset = cur->offset + sizeOfType(lvar->type);
     if (consume(TK_IDENT)) {
-        lvar->name = tok->str;
+        lvar->name = my_strndup(tok->str, tok->len);
         lvar->len = tok->len;
         lvar->is_only_type = false;
     } else {
@@ -1233,6 +1244,15 @@ static Function *func_define(Type *type) {
             p->type = new_ptr_type(t->ptr_to);
             p->offset += sizeOfType(p->type) - sizeOfType(t);
         }
+
+        // 変数名の重複チェック
+        if (p->name) {
+            char *name = my_strndup(p->name, p->len);
+            if (find_params(name, head.next)) {
+                error("find_params() error: 既に%sは定義されています", name);
+            }
+        }
+
         cur = cur->next = p;
     }
 
