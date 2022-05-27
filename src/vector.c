@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 Vector *new_vec() {
     Vector *v = memory_alloc(sizeof(Vector));

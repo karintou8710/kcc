@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 void recursion_line_printf(int depth, char *fmt, ...) {
     va_list ap;

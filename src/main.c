@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 void init() {
     label_if_count = 0;    // ifのラベルにつけるユニークな値

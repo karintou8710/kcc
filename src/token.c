@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 Token *new_token(int kind, Token *cur, char *str, int len) {
     Token *tok = memory_alloc(sizeof(Token));

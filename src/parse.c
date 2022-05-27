@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 /*
  * ローカル変数を単方向の連結リストで持つ

@@ -2,7 +2,7 @@
 *.o
 tmp*
 a.out
-9cc
+kcc
 test_exec.c
 out
 peda*

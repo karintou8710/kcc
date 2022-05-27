@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMPILER="9cc"
+COMPILER="kcc"
 SUCCESS=0
 FAILURE=1
 
@@ -10,17 +10,17 @@ debug() {
 }
 
 if [ ! -e "$COMPILER" ]; then
-    debug "./9cc does not exist"
+    debug "./kcc does not exist"
     exit $FAILURE
 fi
 
 for i in tests/*.c
 do
-    debug "9cc start compileing $i"
-    ./9cc $i > tmp.s
+    debug "kcc start compileing $i"
+    ./kcc $i > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "9cc failed to compile"
+        debug "kcc failed to compile"
         exit $FAILURE
     fi
 

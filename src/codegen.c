@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 /*
  * ASTからスタックマシンを使ってアセンブリを生成する

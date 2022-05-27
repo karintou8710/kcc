@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "kcc.h"
 
 void error(char *fmt, ...) {
     va_list ap;
