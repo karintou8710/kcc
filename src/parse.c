@@ -396,15 +396,21 @@ static Var *find_enum_member(Token *tok) {
     return v;
 }
 
-static void is_defined_enum_type(char *name) {
+static Type *is_defined_enum_type(char *name) {
     if (is_global) {
-        if (find_genum_type(name) != NULL) {
+        Type *t = find_genum_type(name);
+        if (t != NULL && !t->is_forward) {
             error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
+        // 前方宣言
+        return t;
     } else {
-        if (find_lenum_type(name) != NULL) {
+        Type *t = find_lenum_type(name);
+        if (t != NULL && !t->is_forward) {
             error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
+        // 前方宣言
+        return t;
     }
 }
 
@@ -1059,16 +1065,25 @@ static Type *type_specifier() {
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
         if (is_global) {
-            if (find_gstruct_type(type->name) != NULL) {
+            Type *t = find_gstruct_type(type->name);
+            if (t != NULL && !t->is_forward) {
                 error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
             }
+            if (t) type = t;
         } else {
-            if (find_lstruct_type(type->name) != NULL) {
+            Type *t = find_lstruct_type(type->name);
+            if (t != NULL && !t->is_forward) {
                 error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
             }
+            if (t) type = t;
         }
 
-        vec_push(is_global ? struct_global_lists : struct_local_lists, type);
+        if (!type->is_forward) {
+            vec_push(is_global ? struct_global_lists : struct_local_lists, type);
+        } else {
+            type->is_forward = false;
+        }
+
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}')) {
@@ -1088,9 +1103,19 @@ static Type *type_specifier() {
 
     if (type->kind == TYPE_ENUM && consume('{')) {
         // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
-        is_defined_enum_type(type->name);
+        Type *t = is_defined_enum_type(type->name);
+        if (t != NULL) {
+            // 既に前方宣言がされている
+            type = t;
+        }
         enumerator_list(type);
-        vec_push(is_global ? enum_global_lists : enum_local_lists, type);
+
+        if (!type->is_forward) {
+            vec_push(is_global ? enum_global_lists : enum_local_lists, type);
+        } else {
+            type->is_forward = false;
+        }
+
         return type;
     }
 
@@ -1099,7 +1124,9 @@ static Type *type_specifier() {
         if (stype == NULL) {
             stype = find_gstruct_type(type->name);
             if (stype == NULL) {
-                error("type_specifier() failure: %s構造体は宣言されていません。", type->name);
+                type->is_forward = true;
+                stype = type;
+                vec_push(is_global ? struct_global_lists : struct_local_lists, stype);
             }
         }
         type = stype;
@@ -1108,7 +1135,9 @@ static Type *type_specifier() {
     if (type->kind == TYPE_ENUM) {
         Type *etype = find_enum_type(type->name);
         if (etype == NULL) {
-            error("type_specifier() failure: %s列挙型は宣言されていません。", type->name);
+            type->is_forward = true;
+            etype = type;
+            vec_push(is_global ? struct_global_lists : struct_local_lists, etype);
         }
         type = etype;
     }

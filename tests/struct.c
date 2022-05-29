@@ -221,6 +221,26 @@ int struct_arrow3() {
     return p1->next->next->next->next->num;
 }
 
+int struct_forward1() {
+    struct A *a;
+    struct A {
+        int a;
+        char b;
+    };
+    return sizeof(struct A);
+}
+
+typedef struct FORWARD FORWARD;
+FORWARD *forward;
+struct FORWARD {
+    int member;
+};
+int struct_forward2() {
+    forward = malloc(sizeof(FORWARD));
+    forward->member = 10;
+    return forward->member;
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -235,6 +255,9 @@ int main() {
     ASSERT(1, struct_arrow1(), "struct_arrow1");
     ASSERT(15, struct_arrow2(), "struct_arrow2");
     ASSERT(1, struct_arrow3(), "struct_arrow3");
+
+    ASSERT(5, struct_forward1(), "struct_forward1");
+    ASSERT(10, struct_forward2(), "struct_forward2");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;

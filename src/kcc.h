@@ -61,6 +61,7 @@ struct Type {
     // struct, enum
     char *name;
     Var *member;
+    bool is_forward;
 };
 
 /* トークンの定義 */
@@ -244,7 +245,7 @@ Token *get_nafter_token(int n);
 bool startsWith(char *p, char *q);
 void error_at(char *loc, char *msg);
 void error(char *fmt, ...);
-char *my_strndup(const char *s, size_t n);
+char *my_strndup(char *s, size_t n);
 void swap(void **p, void **q);
 void *memory_alloc(size_t size);
 void copy_func(Function *to, Function *from);

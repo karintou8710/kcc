@@ -80,7 +80,7 @@ Token *get_nafter_token(int n) {
 }
 
 // n文字複製する
-char *my_strndup(const char *s, size_t n) {
+char *my_strndup(char *s, size_t n) {
     char *p;
     size_t n1;
 
