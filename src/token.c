@@ -13,7 +13,6 @@ Token *tokenize(char *p) {
     Token head;
     head.next = NULL;
     Token *cur = &head;
-    string_literal = new_vec();
 
     while (*p) {
         if (isspace(*p)) {
@@ -23,8 +22,30 @@ Token *tokenize(char *p) {
 
         // includeはスキップする
         if (strncmp(p, "#include", 8) == 0) {
+            cur = new_token(TK_INCLUDE, cur, p, 8);
             p += 8;
-            while (*p != '\n') p++;
+
+            while (isspace(*p)) p++;
+
+            if (*p == '<') {
+                // TODO: 標準ライブラリのインクルード
+                cur->is_standard = true;
+                while (*p != '\n') p++;
+            } else if (*p == '"') {
+                p++;
+
+                char *q = p;
+                while (*p && *p != '"') p++;
+                if (*p != '"') {
+                    error("tokenize() failure: 「\"」で閉じていません。");
+                }
+                cur->str = my_strndup(q, p - q);
+                cur->len = p - q + 1;
+
+                p++;
+            } else {
+                error("tokenize() failure: #includeに失敗しました");
+            }
             continue;
         }
 

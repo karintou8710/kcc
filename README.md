@@ -12,10 +12,12 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - ブロックスコープ
 - 配列の初期化式
 - typedef, enum
+- #include "header"
 
 ## TODO
 
 - switch
+- 可変長引数
 
 ## Build
 

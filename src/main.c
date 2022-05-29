@@ -10,6 +10,7 @@ void init() {
     enum_local_lists = new_vec();
     funcs = new_vec();
     typedef_alias = new_vec();
+    string_literal = new_vec();
 }
 
 // 指定されたファイルの内容を返す
@@ -49,6 +50,7 @@ int main(int argc, char **argv) {
     user_input = read_file(file_name);
 
     token = tokenize(user_input);
+    token = preprocess(token);
     program();
     codegen();
 

@@ -101,6 +101,7 @@ enum TokenKind {
     TK_ARROW,        // ->
     TK_TYPEDEF,      // typedef
     TK_VARIADIC,     // ...
+    TK_INCLUDE,      // include
 };
 
 struct Token {
@@ -111,6 +112,8 @@ struct Token {
     char *str;              //
     int str_literal_index;  //
     int len;                //
+
+    bool is_standard;  // 標準ヘッダーファイルのインクルード
 };
 
 /* 変数・定数の定義 */
@@ -284,6 +287,12 @@ TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
 int array_base_type_size(Type *ty);
 bool is_same_type(Type *ty1, Type *ty2);
+
+// preprocess.c
+Token *preprocess(Token *tok);
+
+// main.c
+char *read_file(char *path);
 
 // グローバル変数
 Vector *string_literal;
