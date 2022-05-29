@@ -28,8 +28,11 @@ int test3(int *a, int b[2][2]) {
     return *a + b[0][1];
 }
 
+void test4(void);
+
 int printf(char *fmt, ...);
 int sprintf(char *buf, char *fmt, ...);
+void swap(void **p, void **q);
 
 int main() {
     ASSERT(0, test1(), "test1");

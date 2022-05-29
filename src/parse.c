@@ -1229,12 +1229,15 @@ static Function *func_define(Type *type) {
     }
     fn->ret_type = type;
     expect('(');
-    while (!consume(')')) {
-        if (token->kind == TK_TYPE && token->type->kind == TYPE_VOID) {
-            expect(TK_TYPE);
-            continue;
-        }
 
+    // (void)の場合
+    if (token->kind == TK_TYPE &&
+        token->type->kind == TYPE_VOID &&
+        get_nafter_token(1)->kind == ')') {
+        expect(TK_TYPE);
+    }
+
+    while (!consume(')')) {
         if (cur != &head) {
             expect(',');
         }
