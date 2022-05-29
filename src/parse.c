@@ -1220,6 +1220,7 @@ static Function *func_define(Type *type) {
     Token *tok = token;
     Var head = {};
     Var *cur = &head;  // 引数の単方向連結リスト
+    bool is_variadic = false;
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
@@ -1237,6 +1238,17 @@ static Function *func_define(Type *type) {
         if (cur != &head) {
             expect(',');
         }
+
+        if (consume(TK_VARIADIC)) {
+            if (cur == &head) {
+                error("func_define() failure: ...は第一引数に設定できません");
+            }
+
+            is_variadic = true;
+            expect(')');
+            break;
+        }
+
         Var *p = declaration_param(cur);
         // 配列型は暗黙にポインターとして扱う
         if (p->type->kind == TYPE_ARRAY) {
@@ -1257,6 +1269,7 @@ static Function *func_define(Type *type) {
     }
 
     fn->params = head.next;  // 前から見ていく
+    fn->is_variadic = is_variadic;
 
     Function *entry = find_func(fn->name);
     if (consume(';')) {

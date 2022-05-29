@@ -47,6 +47,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (startsWith(p, "...")) {
+            cur = new_token(TK_VARIADIC, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
         if (startsWith(p, "<<=")) {
             cur = new_token(TK_LSHIFT_EQ, cur, p, 3);
             p += 3;

@@ -28,6 +28,9 @@ int test3(int *a, int b[2][2]) {
     return *a + b[0][1];
 }
 
+int printf(char *fmt, ...);
+int sprintf(char *buf, char *fmt, ...);
+
 int main() {
     ASSERT(0, test1(), "test1");
     ASSERT(1, test2(1), "test2");

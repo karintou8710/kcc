@@ -57,7 +57,7 @@ $ make test
 <type_suffix> = "[" <num>? "]" <type_suffix> | ε
 <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
 <func_define> = <type_specifier> <pointer> <ident>
-                "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
+                "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
                 <compound_stmt>
 <compound_stmt> = { <stmt>* }
 <stmt> = <expr>? ";"

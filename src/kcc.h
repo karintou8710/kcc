@@ -100,6 +100,7 @@ enum TokenKind {
     TK_LOGICAL_OR,   // ||
     TK_ARROW,        // ->
     TK_TYPEDEF,      // typedef
+    TK_VARIADIC,     // ...
 };
 
 struct Token {
@@ -203,6 +204,7 @@ struct Function {
     Type *ret_type;  // return_type
 
     bool is_prototype;
+    bool is_variadic;
 };
 
 struct Initializer {
