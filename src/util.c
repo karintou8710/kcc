@@ -1,5 +1,10 @@
 #include "kcc.h"
 
+void assert(int n) {
+    if (n == 0)
+        error("assert error");
+}
+
 void error(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);

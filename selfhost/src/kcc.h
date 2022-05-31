@@ -247,6 +247,7 @@ void program();
 Function *find_func(char *name);
 
 // util.c
+void assert(int n);
 int is_alpha(char c);
 int is_alnum(char c);
 void str_advanve(char **p);
