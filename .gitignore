@@ -3,8 +3,11 @@
 tmp*
 a.out
 kcc
+kcc2
+kcc3
 test_exec.c
 test_exec.h
 out
 peda*
 .gdb*
+selfhost/src/*.c
