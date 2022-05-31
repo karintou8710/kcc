@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 static char escape_letters[][2] = {
+    {'0', 0},
     {'a', 7},
     {'b', 8},
     {'e', 27},
