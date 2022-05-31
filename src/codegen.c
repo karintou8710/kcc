@@ -23,7 +23,7 @@ static Function *current_fn;
 // continue, breakに使う
 int now_loop_count = 0;
 
-typedef enum {
+typedef enum RegKind {
     REG_RAX,
     REG_RDI,
 } RegKind;

@@ -1,5 +1,19 @@
 #include "kcc.h"
 
+static char escape_letters[][2] = {
+    {'a', 7},
+    {'b', 8},
+    {'e', 27},
+    {'f', 12},
+    {'n', 10},
+    {'r', 13},
+    {'t', 9},
+    {'v', 12},
+    {'\\', 92},
+    {'\'', 39},
+    {'"', 34},
+    {'?', 63}};
+
 Token *new_token(int kind, Token *cur, char *str, int len) {
     Token *tok = memory_alloc(sizeof(Token));
     tok->kind = kind;
@@ -7,6 +21,15 @@ Token *new_token(int kind, Token *cur, char *str, int len) {
     tok->len = len;
     cur->next = tok;
     return tok;
+}
+
+char escape_single_letter(char *p) {
+    for (int i = 0; i < sizeof(escape_letters) / sizeof(char[2]); i++) {
+        if (escape_letters[i][0] == *p) {
+            return escape_letters[i][1];
+        }
+    }
+    error("single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
 }
 
 Token *tokenize(char *p) {
@@ -221,12 +244,18 @@ Token *tokenize(char *p) {
             char *q = p;
             int len = 0;
             while (*p && *p != '"') {
+                // エスケープ文字を飛ばす
+                if (*p == '\\') {
+                    p += 2;
+                    len += 2;
+                    continue;
+                }
                 len++;
                 p++;
             }
             p++;
             cur->str = my_strndup(q, len);
-            cur->len = p - q - 1;
+            cur->len = strlen(cur->str);
             cur->str_literal_index = string_literal->len;
             vec_push(string_literal, cur);
             continue;
@@ -234,9 +263,16 @@ Token *tokenize(char *p) {
 
         if (*p == '\'') {
             p++;
-            cur = new_token(TK_NUM, cur, p, 1);
-            cur->val = *p;
-            p++;
+            if (*p == '\\') {
+                cur = new_token(TK_NUM, cur, p, 2);
+                p++;
+                cur->val = escape_single_letter(p);
+                p++;
+            } else {
+                cur = new_token(TK_NUM, cur, p, 1);
+                cur->val = *p;
+                p++;
+            }
             if (*p != '\'') {
                 error("tokenize() failure: 「'」で閉じていません。");
             }

@@ -253,8 +253,10 @@ static Var *find_gvar(Token *tok) {
 }
 
 Function *find_func(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < funcs->len; i++) {
         Function *fn = funcs->body[i];
+        if (!fn->name) continue;
         if (strcmp(fn->name, name) == 0) {
             return fn;
         }
@@ -289,6 +291,7 @@ bool has_lvar_in_all_params(Var *params) {
 }
 
 Var *find_params(char *name, Var *params) {
+    if (name == NULL) return NULL;
     Var *vars = params;
     for (Var *var = vars; var; var = var->next) {
         if (!var->name) continue;
@@ -300,6 +303,7 @@ Var *find_params(char *name, Var *params) {
 }
 
 static Type *find_lstruct_type(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < struct_local_lists->len; i++) {
         Type *t = struct_local_lists->body[i];
         if (t->name == NULL) continue;
@@ -312,6 +316,7 @@ static Type *find_lstruct_type(char *name) {
 }
 
 static Type *find_gstruct_type(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < struct_global_lists->len; i++) {
         Type *t = struct_global_lists->body[i];
         if (t->name == NULL) continue;
@@ -325,6 +330,7 @@ static Type *find_gstruct_type(char *name) {
 
 // enum型を探索
 static Type *find_lenum_type(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
         Type *t = enum_local_lists->body[i];
         if (t->name == NULL) continue;
@@ -337,6 +343,7 @@ static Type *find_lenum_type(char *name) {
 }
 
 static Type *find_genum_type(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
         Type *t = enum_global_lists->body[i];
         if (t->name == NULL) continue;
@@ -360,9 +367,11 @@ static Type *find_enum_type(char *name) {
 
 // enum型のメンバーを探索
 static Var *find_lenum_member(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
         Type *t = enum_local_lists->body[i];
         for (Var *v = t->member; v; v = v->next) {
+            if (!v->name) continue;
             if (strcmp(v->name, name) == 0) {
                 return v;
             }
@@ -373,9 +382,11 @@ static Var *find_lenum_member(char *name) {
 }
 
 static Var *find_genum_member(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
         Type *t = enum_global_lists->body[i];
         for (Var *v = t->member; v; v = v->next) {
+            if (!v->name) continue;
             if (strcmp(v->name, name) == 0) {
                 return v;
             }
@@ -415,8 +426,10 @@ static Type *is_defined_enum_type(char *name) {
 }
 
 static Type *find_typedef_alias(char *name) {
+    if (name == NULL) return NULL;
     for (int i = 0; i < typedef_alias->len; i++) {
         Typedef_alias *ta = typedef_alias->body[i];
+        if (!ta->name) continue;
         if (strcmp(ta->name, name) == 0) {
             return ta->type;
         }
