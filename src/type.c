@@ -336,6 +336,12 @@ void add_type(Node *node) {
         return;
     }
 
-    debug_node(node, "root", 0);
+    if (node->kind == ND_SUGER || node->kind == ND_STMT_EXPR) {
+        Node *n = vec_last(node->stmts);
+        add_type(n);
+        node->type = n->type;
+        return;
+    }
+
     error("add_type() failure: 対応していないノードタイプです。");
 }

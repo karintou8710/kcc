@@ -57,7 +57,7 @@ $ make test
 <type_name> = <type_specifier> <pointer> <type_suffix>
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
-             | <ident> "=" <num>
+             | <ident> "=" <conditional>
 <type_suffix> = "[" <num>? "]" <type_suffix> | ε
 <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
 <func_define> = <type_specifier> <pointer> <ident>
@@ -71,7 +71,7 @@ $ make test
        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
        | ("continue" | "break")
        | <compound_stmt>
-<expr> = <assign> | <declaration>
+<expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>
 <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
@@ -97,6 +97,6 @@ $ make test
         | "!" <unary>
         | "~" <unary>
 <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
-<funcall> = "(" (<expr> ("," <expr>)*)? ")"
-<primary> = "(" <expr> ")" | <num> | <string> | <ident> <funcall>?
+<funcall> = "(" (<assign> ("," <assign>)*)? ")"
+<primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?
 ```

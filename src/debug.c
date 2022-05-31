@@ -84,6 +84,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_LSHIFT");  // ~
     else if (kind == ND_CAST)
         fprintf(stderr, "ND_CAST");  // cast
+    else if (kind == ND_STMT_EXPR)
+        fprintf(stderr, "ND_STMT_EXPR");  // stmt in expr
     else
         error("print_node_kind() failure");
 
@@ -208,6 +210,7 @@ void debug_node(Node *node, char *pos, int depth) {
     recursion_line_printf(depth, "");
     print_node_kind(node->kind);
     puts("");
+    debug_type(node->type, depth);
 
     if (node->kind == ND_NUM) {
         recursion_line_printf(depth, "");
@@ -218,7 +221,7 @@ void debug_node(Node *node, char *pos, int depth) {
     } else if (node->kind == ND_TERNARY) {
         debug_node(node->then, "then", depth + 1);
         debug_node(node->els, "els", depth + 1);
-    } else if (node->kind == ND_SUGER || node->kind == ND_BLOCK) {
+    } else if (node->kind == ND_SUGER || node->kind == ND_BLOCK || node->kind == ND_STMT_EXPR) {
         for (int i = 0; i < node->stmts->len; i++) {
             debug_node(node->stmts->body[i], "stmt", depth + 1);
         }

@@ -183,6 +183,26 @@ int equal5() {
     return a;
 }
 
+int cumma1() {
+    int a, b, c;
+    a = 1, b = 2, c = 3;
+    return a + b + c;
+}
+
+int cumma2() {
+    int a, b, c = 3;
+    int d = (a = 1, b = 2, c) * 2;
+    return d;
+}
+
+int cumma3() {
+    struct A {
+        int a;
+    } a, b, c;
+    a.a = 10, b.a = 20, c.a = 30;
+    return (a, b, c).a;
+}
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -226,6 +246,15 @@ int main() {
     ASSERT(2, equal3(), "equal3");
     ASSERT(8, equal4(), "equal4");
     ASSERT(2, equal5(), "equal5");
+
+    ASSERT(6, cumma1(), "cumma1");
+    ASSERT(6, cumma2(), "cumma2");
+    ASSERT(30, cumma3(), "cumma3");
+    ASSERT(6, (1, 3, 6), "(1,3,6)");
+
+    ASSERT(0, ({ 0; }), "({0;})");
+    ASSERT(10, ({int a;a = 10;a; }), "({int a;a = 10;a; })");
+    ASSERT(5, ({ 3; }) * ({ 2; }) - ({ 1; }), "({3;}) * ({2;}) - ({1})");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;

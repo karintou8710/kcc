@@ -591,6 +591,12 @@ static GInit_el *eval(Node *node) {
         g->str = my_strndup(node->var->name, node->var->len);
         g->len = node->var->len;
         return g;
+    } else if (node->kind == ND_SUGER || node->kind == ND_STMT_EXPR) {
+        for (int i = 0; i < node->stmts->len; i++) {
+            Node *n = node->stmts->body[i];
+            g = eval(n);
+        }
+        return g;
     }
 
     error("未対応のNodeタイプです");
@@ -1184,7 +1190,7 @@ static void enumerator_list(Type *type) {
 
 /*
  * <enumerator> = <ident>
- *              | <ident> "=" <num>
+ *              | <ident> "=" <conditional>
  */
 static Var *enumerator(Type *type, int *enum_const_num) {
     Token *t = token;
@@ -1193,7 +1199,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     (*enum_const_num)++;
 
     if (consume('=')) {
-        GInit_el *el = eval(expr());
+        GInit_el *el = eval(conditional());
         if (el->str) {
             error("enumerator() failure: 数値型の定数ではありません");
         }
@@ -1465,7 +1471,7 @@ static Node *stmt() {
 }
 
 /*
- *  <expr> = <assign> | <declaration>
+ *  <expr> = <assign> ("," <assign>)* | <declaration>
  */
 static Node *expr() {
     if (consume_is_type_nostep(token)) {
@@ -1480,7 +1486,15 @@ static Node *expr() {
         return node;
     }
 
-    return assign();
+    Node *node = new_node(ND_SUGER), *n = assign();
+    node->stmts = new_vec();
+    vec_push(node->stmts, n);
+    while (consume(',')) {
+        n = assign();
+        vec_push(node->stmts, n);
+    }
+
+    return node;
 }
 
 // TODO: ?:, <<=, >>=, &=, ^=, |=
@@ -1843,7 +1857,7 @@ static Node *postfix() {
 }
 
 /*
- *  <funcall> = "(" (<expr> ("," <expr>)*)? ")"
+ *  <funcall> = "(" (<assign> ("," <assign>)*)? ")"
  */
 static Node *funcall(Token *tok) {
     expect('(');
@@ -1854,19 +1868,27 @@ static Node *funcall(Token *tok) {
         if (node->args->len != 0) {
             expect(',');
         }
-        vec_push(node->args, expr());
+        vec_push(node->args, assign());
     }
     return node;
 }
 
 /*
- *  <primary> = "(" <expr> ")" | <num> | <string> | <ident> <funcall>?
+ *  <primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?
  */
 static Node *primary() {
     if (consume('(')) {
-        Node *node = expr();
-        expect(')');
-        return node;
+        if (consume_nostep('{')) {
+            Node *node = compound_stmt();
+            // BLOCKをSTMT_EXPRに書き換える
+            node->kind = ND_STMT_EXPR;
+            expect(')');
+            return node;
+        } else {
+            Node *node = expr();
+            expect(')');
+            return node;
+        }
     }
 
     if (consume_nostep(TK_IDENT)) {

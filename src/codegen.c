@@ -66,7 +66,7 @@ static int size_to_regindex(int size) {
         return 3;  // 8bit
     }
 
-    error("size_to_regindex() failure: サポートしてないレジスターのサイズです");
+    error("size_to_regindex() failure: [size=%d]サポートしてないレジスターのサイズです", size);
 }
 
 static char *proper_register(Type *ty, RegKind kind) {
@@ -157,13 +157,16 @@ static void gen_addr(Node *node) {
     } else if (node->kind == ND_TERNARY) {
         gen(node);
         return;
+    } else if (node->kind == ND_SUGER || node->kind == ND_STMT_EXPR) {
+        gen(node);
+        return;
     }
 
     error("左辺値がポインターまたは変数ではありません");
 }
 
 static void load(Type *ty) {
-    if (ty->kind == TYPE_ARRAY) {
+    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT) {
         // アドレスのまま読みこむようにする
         return;
     }
@@ -202,7 +205,6 @@ static void gen(Node *node) {
     } else if (node->kind == ND_STRUCT_MEMBER) {
         gen_addr(node);
         pop();
-        add_type(node);
         load(node->type);
         push();
         return;
@@ -343,7 +345,7 @@ static void gen(Node *node) {
         push();  // 数合わせ
         printf("  jmp .Lloopinc%04d\n", now_loop_count - 1);
         return;
-    } else if (node->kind == ND_BLOCK) {
+    } else if (node->kind == ND_BLOCK || node->kind == ND_STMT_EXPR) {
         for (int i = 0; i < node->stmts->len; i++) {
             gen(node->stmts->body[i]);
             pop();

@@ -172,6 +172,7 @@ enum NodeKind {
     ND_STRUCT_MEMBER,  // struct member
     ND_TERNARY,        // 3項演算子
     ND_CAST,           // キャスト
+    ND_STMT_EXPR,      // stmt in expr
 };
 
 struct Node {
