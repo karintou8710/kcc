@@ -168,6 +168,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_RSHIFT");
     else if (kind == TK_VARIADIC)
         fprintf(stderr, "TK_VARIADIC");
+    else if (kind == TK_EXTERN)
+        fprintf(stderr, "TK_EXTERN");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

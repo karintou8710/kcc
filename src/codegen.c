@@ -497,6 +497,8 @@ void codegen() {
 
     // グローバル変数の生成
     for (Var *var = globals; var != NULL; var = var->next) {
+        if (var->is_extern) continue;
+
         printf("%s:\n", var->name);
         // 宣言のみ
         if (var->ginit->len == 0) {

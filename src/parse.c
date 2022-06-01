@@ -8,7 +8,7 @@ static Var *locals;
 static Function *cur_parse_func;
 static Vector *local_scope;
 static bool is_global = true;
-static bool is_typedef = false;
+static StorageClass current_storage = UNKNOWN;
 
 static Type *find_typedef_alias(char *name);
 
@@ -992,9 +992,12 @@ static Node *declaration_var(Type *type) {
     }
     // 変数
     if (consume('=')) {
-        if (is_typedef) {
+        if (current_storage == STORAGE_TYPEDEF) {
             error("declaration_var() failure: typedef中で初期化はできません");
+        } else if (current_storage == STORAGE_EXTERN) {
+            error("declaration_var() failure: extern中で初期化はできません");
         }
+
         Initializer *init = new_initializer(node->var);
         return initialize(init, node);
     }
@@ -1012,11 +1015,14 @@ static Node *declaration_var(Type *type) {
 static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume_nostep(';')) {
-        if (node->kind == ND_VAR && is_typedef) {
+        if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
             Typedef_alias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
+            current_storage = UNKNOWN;
+        } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
+            node->var->is_extern = true;
+            current_storage = UNKNOWN;
         }
-        is_typedef = false;
         return node;
     }
 
@@ -1030,13 +1036,15 @@ static Node *declaration(Type *type) {
     for (int i = 0; i < n->stmts->len; i++) {
         Node *tmp_node = n->stmts->body[i];
         // typedefなら型名を記録する
-        if (tmp_node->kind == ND_VAR && is_typedef) {
+        if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
             Typedef_alias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
             vec_push(typedef_alias, ta);
+        } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
+            tmp_node->var->is_extern = true;
         }
     }
+    current_storage = UNKNOWN;
 
-    is_typedef = false;
     return n;
 }
 
@@ -1055,7 +1063,7 @@ Type *struct_declaration(Type *type) {
 }
 
 /*
- *  <storage_class>  = "typedef"
+ *  <storage_class>  = "typedef" | "extern"
  *  <type_specifier> = <storage_class>? "int"
  *                   | <storage_class>? "char"
  *                   | <storage_class>? "void"
@@ -1063,7 +1071,11 @@ Type *struct_declaration(Type *type) {
  *                   | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
  */
 static Type *type_specifier() {
-    if (consume(TK_TYPEDEF)) is_typedef = true;
+    if (consume(TK_TYPEDEF))
+        current_storage = STORAGE_TYPEDEF;
+    else if (consume(TK_EXTERN)) {
+        current_storage = STORAGE_EXTERN;
+    }
 
     Token *tok = token;
     Type *type;

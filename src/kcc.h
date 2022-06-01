@@ -35,7 +35,9 @@ struct Vector {
 };
 
 enum StorageClass {
-    STORAGE_TYPEDEF = 1,
+    UNKNOWN,
+    STORAGE_TYPEDEF,
+    STORAGE_EXTERN,
 };
 
 /* 型の定義 */
@@ -102,6 +104,7 @@ enum TokenKind {
     TK_TYPEDEF,      // typedef
     TK_VARIADIC,     // ...
     TK_INCLUDE,      // include
+    TK_EXTERN,       // extern
 };
 
 struct Token {
@@ -128,6 +131,7 @@ struct Var {
 
     bool is_global;
     bool is_only_type;
+    bool is_extern;
     Vector *ginit;  // GInit_elのVector
 };
 

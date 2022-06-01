@@ -44,7 +44,7 @@ $ make test
 <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
 <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
 <struct_declaration> = <type_specifier> <pointer> <ident> ";"
-<storage_class>  = "typedef"
+<storage_class>  = "typedef" | "entern"
 <type_specifier> = <storage_class>? "int"
                  | <storage_class>? "char"
                  | <storage_class>? "void"

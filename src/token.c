@@ -412,6 +412,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "extern", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_EXTERN, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;

@@ -203,6 +203,10 @@ int cumma3() {
     return (a, b, c).a;
 }
 
+// extern test
+typedef struct FILE FILE;
+extern FILE *stderr, stdout;
+
 int main() {
     ASSERT(0, logical_not1(), "logical_not1");
     ASSERT(1, logical_not2(), "logical_not2");
@@ -255,6 +259,9 @@ int main() {
     ASSERT(0, ({ 0; }), "({0;})");
     ASSERT(10, ({int a;a = 10;a; }), "({int a;a = 10;a; })");
     ASSERT(5, ({ 3; }) * ({ 2; }) - ({ 1; }), "({3;}) * ({2;}) - ({1})");
+
+    ASSERT(1, stderr != 0, "stderr != NULL");
+    ASSERT(1, stdout != 0, "stdout != NULL");
 
     printf("ALL TEST OF op.c SUCCESS :)\n");
     return 0;
