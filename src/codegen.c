@@ -231,7 +231,16 @@ static void gen(Node *node) {
         pop_rdi();
         pop();
         add_type(node->lhs);
-        printf("  mov [rax], %s\n", proper_register(node->lhs->type, REG_RDI));
+        if (node->type->kind == TYPE_STRUCT) {
+            // メモリコピー
+            for (int i = 0; i < node->type->size; i++) {
+                printf("  mov r8, [rdi+%d]\n", i);
+                printf("  mov [rax+%d], r8\n", i);
+            }
+        } else {
+            printf("  mov [rax], %s\n", proper_register(node->lhs->type, REG_RDI));
+        }
+
         push_rdi();
         return;
     } else if (node->kind == ND_RETURN) {

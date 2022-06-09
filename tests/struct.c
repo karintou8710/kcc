@@ -241,6 +241,65 @@ int struct_forward2() {
     return forward->member;
 }
 
+int struct_assign1() {
+    struct A {
+        int m1;
+        int m2;
+    } a, b;
+    a.m1 = 10;
+    a.m2 = 30;
+    b = a;
+    a.m1 = 40;
+    return (b.m1 == 10) && (b.m2 == 30) && (a.m1 == 40);
+}
+
+int struct_assign2() {
+    struct A {
+        int m1;
+        int m2;
+    } a, *b, *c = malloc(sizeof(struct A));
+
+    a.m1 = 10;
+    a.m2 = 30;
+
+    b = &a;
+    *c = *b;
+    return (c->m1 == 10 && c->m2 == 30);
+}
+
+int struct_assign3() {
+    struct A {
+        char m1[10];
+        int m2;
+    } a, b;
+    for (int i = 0; i < 10; i++) a.m1[i] = i;
+    a.m2 = 10;
+    b = a;
+    return b.m1[5] + b.m2;
+}
+
+int struct_assign4() {
+    struct A {
+        char m1[10];
+        int m2;
+    } a;
+    struct B {
+        struct A m1;
+        char m2[10];
+        int m3;
+    } b, c;
+    // a
+    for (int i = 0; i < 10; i++) a.m1[i] = i;
+    a.m2 = 10;
+    // b
+    b.m1 = a;
+    for (int i = 0; i < 10; i++) b.m2[i] = 2 * i;
+    b.m3 = 20;
+    // c
+    c = b;
+    return c.m1.m1[5] + c.m2[5];
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -258,6 +317,11 @@ int main() {
 
     ASSERT(5, struct_forward1(), "struct_forward1");
     ASSERT(10, struct_forward2(), "struct_forward2");
+
+    ASSERT(1, struct_assign1(), "struct_assign1");
+    ASSERT(1, struct_assign2(), "struct_assign2");
+    ASSERT(15, struct_assign3(), "struct_assign3");
+    ASSERT(15, struct_assign4(), "struct_assign4");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;

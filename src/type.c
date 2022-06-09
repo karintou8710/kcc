@@ -225,6 +225,15 @@ void add_type(Node *node) {
             return;
         }
 
+        if (node->rhs->type->kind == TYPE_STRUCT && node->lhs->type->kind == TYPE_STRUCT) {
+            if (node->rhs->type != node->lhs->type) {
+                error("add_type() failure: 異なる型の構造体に代入はできません");
+            }
+
+            node->type = node->rhs->type;
+            return;
+        }
+
         fprintf(stderr, "[node->lhs->type]\n");
         debug_type(node->lhs->type, 0);
         fprintf(stderr, "[node->rhs->type]\n");

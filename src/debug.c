@@ -4,7 +4,9 @@ void recursion_line_printf(int depth, char *fmt, ...) {
     va_list ap;
     int space_width = 4;
     va_start(ap, fmt);
-    fprintf(stderr, "%*s", depth * space_width, "");
+    for (int i = 0; i < depth; i++) {
+        fprintf(stderr, "|%*s", space_width - 1, "");
+    }
     vfprintf(stderr, fmt, ap);
 }
 
