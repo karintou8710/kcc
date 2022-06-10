@@ -1740,41 +1740,37 @@ static Node *cast() {
 }
 
 /*
- *  <unary> = "+"? <postfix>
- *          | "-"? <postfix>
- *          | "*" <unary>
- *          | "&" <postfix>
+ *  <unary> = <postfix>
  *          | "sizeof" <unary>
  *          | "sizeof" "(" <type_name> ")"
  *          | ("++" | "--") <postfix>
- *          | <postfix> ("++" | "--")
- *          | "!" <unary>
- *          | "~" <unary>
+ *          | <unary> ("++" | "--")
+ ?          | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
  */
 static Node *unary() {
     if (consume('+')) {
-        return postfix();
+        return cast();
     } else if (consume('-')) {
-        return new_sub(new_node_num(0), postfix());
+        return new_sub(new_node_num(0), cast());
     } else if (consume('*')) {
         Node *node = new_node(ND_DEREF);
-        node->lhs = unary();
+        node->lhs = cast();
         add_type(node->lhs);
         add_type(node);
         return node;
     } else if (consume('&')) {
         Node *node = new_node(ND_ADDR);
-        node->lhs = postfix();
+        node->lhs = cast();
         add_type(node->lhs);
         return node;
     } else if (consume('!')) {
         Node *node = new_node(ND_LOGICALNOT);
-        node->lhs = unary();
+        node->lhs = cast();
         add_type(node->lhs);
         return node;
     } else if (consume('~')) {
         Node *node = new_node(ND_NOT);
-        node->lhs = unary();
+        node->lhs = cast();
         add_type(node->lhs);
         return node;
     } else if (consume(TK_SIZEOF)) {
@@ -1789,10 +1785,10 @@ static Node *unary() {
             return new_node_num(sizeOfNode(unary()));
         }
     } else if (consume(TK_INC)) {
-        Node *node = postfix();
+        Node *node = unary();
         return new_assign(node, new_add(node, new_node_num(1)));
     } else if (consume(TK_DEC)) {
-        Node *node = postfix();
+        Node *node = unary();
         return new_assign(node, new_sub(node, new_node_num(1)));
     }
 

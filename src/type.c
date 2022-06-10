@@ -122,11 +122,15 @@ bool can_type_cast(Type *ty, TypeKind to) {
         return true;
     }
 
-    if (!is_scalartype(from) || !is_scalartype(to)) {
-        return false;
+    if (is_scalartype(from) && is_scalartype(to)) {
+        return true;
     }
 
-    return true;
+    if (from == TYPE_ARRAY && is_scalartype(to)) {
+        return true;
+    }
+
+    return false;
 }
 
 /*

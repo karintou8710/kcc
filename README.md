@@ -86,16 +86,12 @@ $ make test
 <mul> = <cast> ("*" <cast> | "/" <cast> | "%" <cast> )*
 <cast> = "(" <type_name> ")" <cast>
        | <unary>
-<unary> = "+"? <postfix>
-        | "-"? <postfix>
-        | "*" <unary>
-        | "&" <postfix>
+<unary> = <postfix>
         | "sizeof" <unary>
         | "sizeof" "(" <type_name> ")"
         | ("++" | "--") <postfix>
-        | <postfix> ("++" | "--")
-        | "!" <unary>
-        | "~" <unary>
+        | <unary> ("++" | "--")
+        | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
 <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
 <funcall> = "(" (<assign> ("," <assign>)*)? ")"
 <primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?

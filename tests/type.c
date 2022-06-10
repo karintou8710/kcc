@@ -113,6 +113,25 @@ short short2() {
     return (short)(char)a;
 }
 
+int cast5() {
+    int a[10];
+    int *b = (int *)a;
+    *b = 10;
+    return a[0];
+}
+
+int cast6() {
+    int a[2];
+    struct A {
+        int m1;
+        int m2;
+    };
+    a[0] = 100;
+    a[1] = 200;
+    struct A c = *(struct A *)a;
+    return (c.m1 == 100) && (c.m2 == 200);
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -130,6 +149,8 @@ int main() {
     ASSERT(4, (char)((1 << 30) + (1 << 2)), "cast2");
     ASSERT(0, (int)(char)(char *)(256), "cast3");
     ASSERT(100, (char)(256 + 10 * 10), "cast4");
+    ASSERT(10, cast5(), "cast5");
+    ASSERT(1, cast6(), "cast6");
 
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");

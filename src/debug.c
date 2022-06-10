@@ -295,7 +295,7 @@ void debug_token(Token *t) {
     print_token_kind(t->kind);
     debug_type(t->type, 0);
     fprintf(stderr, "val -> %ld\n", t->val);
-    fprintf(stderr, "str -> %s\n", t->str);
+    fprintf(stderr, "str -> %.10s\n", t->str);
     fprintf(stderr, "str_literal_index -> %d\n", t->str_literal_index);
     fprintf(stderr, "len; -> %d\n", t->len);
 }
