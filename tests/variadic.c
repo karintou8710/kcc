@@ -29,7 +29,17 @@ char *variadic1(char *fmt, ...) {
     return buf;
 }
 
+char *variadic2(char *fmt, ...) {
+    char buf[100];
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+    return buf;
+}
+
 int main() {
     ASSERT(0, strcmp(variadic1("%d %d %s", 10, 20, "hello"), "10 20 hello"), "variadic1()");
     ASSERT(0, strcmp(variadic1("%d/%d/%s", 10000, -200, ""), "10000/-200/"), "variadic1()");
+    ASSERT(0, strcmp(variadic2("%d %d %s", 10, 20, "hello"), "10 20 hello"), "variadic2()");
+    ASSERT(0, strcmp(variadic2("%d/%d/%s", 10000, -200, ""), "10000/-200/"), "variadic2()");
 }

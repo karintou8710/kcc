@@ -369,6 +369,16 @@ static void gen(Node *node) {
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_CALL) {
+        if (strcmp(node->fn_name, "va_start") == 0) {
+            /*
+             * va_startをマクロとして実装できないので、内部で va_start(ap, fmt)を
+             * *ap = *(struct __builtin_va_list *)__va_area__
+             * に置換する。
+             */
+            gen(node->lhs);
+            return;
+        }
+
         int nargs = node->args->len;
         for (int i = 0; i < nargs; i++) {
             gen(node->args->body[i]);

@@ -1885,7 +1885,52 @@ static Node *funcall(Token *tok) {
         if (node->args->len != 0) {
             expect(',');
         }
-        vec_push(node->args, assign());
+        Node *n = assign();
+        add_type(n);
+        vec_push(node->args, n);
+    }
+
+    if (strcmp(node->fn_name, "va_start") == 0) {
+        /*
+         * va_startをマクロとして実装できないので、内部で va_start(ap, fmt)を
+         * *ap = *(struct __builtin_va_list *)__va_area__
+         * に置換する。
+         */
+
+        // 仮引数のサイズ
+        if (node->args->len != 2) {
+            error("funcall() failure: va_start args len != 2");
+        }
+
+        // __builtin_va_list構造体が定義されているか
+        Type *t = find_gstruct_type("__builtin_va_list");
+        if (t == NULL) {
+            error("find_gstruct_type() failure: __builtin_va_listが未定義です");
+        }
+        // struct __builtin_va_list *
+        t = new_ptr_type(t);
+
+        // lhs -> *ap
+        Node *lhs = new_node(ND_DEREF);
+        lhs->lhs = node->args->body[0];
+        add_type(lhs->lhs);
+        add_type(lhs);
+
+        // rhs -> *(struct __builtin_va_list *)__va_area__
+        Token *tok = memory_alloc(sizeof(Token));
+        tok->str = "__va_area__";
+        tok->len = strlen(tok->str);
+
+        Node *rhs_ident = get_node_ident(tok);
+        if (rhs_ident == NULL) {
+            error("get_node_ident() failure: __va_area__が未定義です");
+        }
+
+        Node *rhs = new_node(ND_DEREF);
+        rhs->lhs = new_node(ND_CAST);
+        rhs->lhs->lhs = rhs_ident;
+        rhs->lhs->type = t;
+        node = new_assign(lhs, rhs);
     }
     return node;
 }
