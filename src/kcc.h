@@ -207,6 +207,7 @@ struct Function {
     Node *body;
     Var *params;
     Var *locals;
+    Var *va_area;
     int stack_size;
 
     Type *ret_type;  // return_type

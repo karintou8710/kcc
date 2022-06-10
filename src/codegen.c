@@ -560,6 +560,36 @@ void codegen() {
             printf("  mov [rax], %s\n", get_argreg(j++, ty));
         }
 
+        if (current_fn->va_area) {
+            int gp = 0;
+            for (Var *var = current_fn->params; var; var = var->next) {
+                gp++;
+            }
+            int off = current_fn->va_area->offset;
+
+            // __builtin_va_list
+            printf("  mov DWORD PTR [rbp-%d], %d\n", off - 0, gp * 8);  // gp
+            printf("  mov DWORD PTR [rbp-%d], 0\n", off - 4);           // fp
+            printf("  mov [rbp-%d], rbp\n", off - 16);                  // reg_save_area
+            printf("  sub QWORD PTR [rbp-%d], %d\n", off - 16, off - 24);
+
+            // __va_save_area__
+            printf("  mov [rbp-%d], rdi\n", off - 24);
+            printf("  mov [rbp-%d], rsi\n", off - 32);
+            printf("  mov [rbp-%d], rdx\n", off - 40);
+            printf("  mov [rbp-%d], rcx\n", off - 48);
+            printf("  mov [rbp-%d], r8\n", off - 56);
+            printf("  mov [rbp-%d], r9\n", off - 64);
+            printf("  movsd [rbp-%d], xmm0\n", off - 72);
+            printf("  movsd [rbp-%d], xmm1\n", off - 80);
+            printf("  movsd [rbp-%d], xmm2\n", off - 88);
+            printf("  movsd [rbp-%d], xmm3\n", off - 96);
+            printf("  movsd [rbp-%d], xmm4\n", off - 104);
+            printf("  movsd [rbp-%d], xmm5\n", off - 112);
+            printf("  movsd [rbp-%d], xmm6\n", off - 120);
+            printf("  movsd [rbp-%d], xmm7\n", off - 128);
+        }
+
         gen(current_fn->body);
         // 式の評価結果としてスタックに一つの値が残っている
         pop();

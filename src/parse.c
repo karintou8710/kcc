@@ -1373,6 +1373,15 @@ static Function *func_define(Type *type) {
     locals->offset = 0;
     start_local_scope();
     create_lvar_from_params(fn->params);
+
+    // 可変長引数
+    if (fn->is_variadic) {
+        Token *t = memory_alloc(sizeof(Token));
+        t->str = "__va_area__";
+        t->len = strlen(t->str);
+        fn->va_area = new_lvar(t, new_array_type(new_type(TYPE_CHAR), 136));
+    }
+
     fn->body = compound_stmt();
     end_local_scope();
     fn->locals = locals;
