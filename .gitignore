@@ -10,3 +10,4 @@ out
 peda*
 .gdb*
 selfhost/src/*.c
+*.log
