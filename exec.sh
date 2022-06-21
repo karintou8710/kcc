@@ -14,7 +14,8 @@ exec() {
         debug "./kcc does not exist"
         exit $FAILURE
     fi
-
+    
+    touch test_exec.c
     ./kcc test_exec.c > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then

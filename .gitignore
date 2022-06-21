@@ -9,5 +9,6 @@ test_exec.*
 out
 peda*
 .gdb*
-selfhost/src/*.c
+selfhost/gen2
+selfhost/gen3
 *.log
