@@ -73,6 +73,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // プリプロセッサーが出力するメタ情報を削除
+        if (startsWith(p, "#") && (user_input == p || *(p - 1) == '\n')) {
+            while (*p != '\n') p++;
+            continue;
+        }
+
         if (strncmp(p, "static", 6) == 0) {
             p += 6;
             continue;
