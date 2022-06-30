@@ -2,7 +2,7 @@
 *.o
 tmp*
 a.out
-kcc
+kcc1
 kcc2
 kcc3
 test_exec.*
