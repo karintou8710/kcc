@@ -180,7 +180,11 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
     member->name = my_strndup(tok->str, tok->len);
     member->len = tok->len;
     member->type = member_type;
-    member->offset = struct_type->member->offset + sizeOfType(member_type);
+    // offsetはalignmentを考慮するので後で決める
+    if (struct_type->member->type) {
+        member->offset = struct_type->member->offset + sizeOfType(struct_type->member->type);
+    }
+
     struct_type->member = member;
     struct_type->size += member_type->size;
 }
@@ -1842,7 +1846,7 @@ static Node *postfix() {
                     Node *n = new_node(ND_STRUCT_MEMBER);
                     // 変数をコピー
                     n->lhs = node;
-                    n->val = member->offset - member->type->size;
+                    n->val = member->offset;
                     n->type = member->type;
                     node = n;
                     break;
