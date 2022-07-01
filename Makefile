@@ -19,7 +19,7 @@ EXEC_SCRIPT=exec.sh
 DIFF_SCRIPT=selfhost/diff.sh
 
 # for franken compile
-EXCLUDE_FILES=src/codegen.c src/parse.c src/token.c src/type.c src/util.c src/main.c
+EXCLUDE_FILES=src/parse.c src/token.c src/type.c
 
 # for selfhost
 DUMMY_LIB_DIR=selfhost/dummy_headers

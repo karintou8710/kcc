@@ -516,16 +516,17 @@ void codegen() {
 
     // グローバル変数の生成
     for (Var *var = globals; var != NULL; var = var->next) {
-        if (var->is_extern) continue;
+        printf("  .globl %s\n", var->name);
 
-        printf("%s:\n", var->name);
         // 宣言のみ
         if (var->ginit->len == 0) {
-            printf("  .zero %d\n", var->type->size);
+            printf("  .comm %s, %d\n", var->name, sizeOfType(var->type));
             continue;
         }
 
         // 初期化式あり
+        printf("%s:\n", var->name);
+
         for (int i = 0; i < var->ginit->len; i++) {
             GInit_el *g = var->ginit->body[i];
 
