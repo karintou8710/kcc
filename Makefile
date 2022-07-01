@@ -19,7 +19,7 @@ EXEC_SCRIPT=exec.sh
 DIFF_SCRIPT=selfhost/diff.sh
 
 # for franken compile
-EXCLUDE_FILES=src/codegen.c src/parse.c src/token.c src/type.c src/util.c src/main.c src/preprocess.c
+EXCLUDE_FILES=src/codegen.c src/parse.c src/token.c src/type.c src/util.c src/main.c
 
 # for selfhost
 DUMMY_LIB_DIR=selfhost/dummy_headers
@@ -37,7 +37,7 @@ $(GEN2): $(GEN2_OBJS)
 selfhost/gen2/%.o: src/%.c $(HEADERS) $(GEN1)
 	@mkdir -p $(@D)
 
-# franken or normal
+# self or gcc
 	@if [ -z $(filter $<,$(EXCLUDE_FILES)) ]; then\
 		cpp -I $(DUMMY_LIB_DIR) $< > $(@:%.o=%.i);\
 		./$(GEN1) $(@:%.o=%.i) > $(@:%.o=%.s);\
@@ -54,7 +54,7 @@ $(GEN3): $(GEN3_OBJS)
 selfhost/gen3/%.o: src/%.c $(HEADERS) $(GEN2)
 	@mkdir -p $(@D)
 	
-# franken or normal
+# self or gcc
 	@if [ -z $(filter $<,$(EXCLUDE_FILES)) ]; then\
 		cpp -I $(DUMMY_LIB_DIR) $< > $(@:%.o=%.i);\
 		./$(GEN2) $(@:%.o=%.i) > $(@:%.o=%.s);\
@@ -79,9 +79,15 @@ diff: $(GEN3)
 
 testall: test1 test2 test3
 
-### exec ###
-exec: $(GEN1)
-	sh $(EXEC_SCRIPT)
+### run simple file ###
+run1: $(GEN1)
+	sh $(EXEC_SCRIPT) $(GEN1)
+
+run2: $(GEN2)
+	sh $(EXEC_SCRIPT) $(GEN2)
+
+run3: $(GEN3)
+	sh $(EXEC_SCRIPT) $(GEN3)
 
 ### utils ###
 clean:

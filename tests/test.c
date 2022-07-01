@@ -834,7 +834,7 @@ int main() {
     ASSERT(12, sizeof3(), "sizeof3");
     ASSERT(4, sizeof4(), "sizeof4");
     ASSERT(20, sizeof5(), "sizeof5");
-    ASSERT(100, sizeof6(), "sizeof6");
+    ASSERT(104, sizeof6(), "sizeof6");
     ASSERT(21, sizeof7(), "sizeof7");
     ASSERT(80, sizeof8(), "sizeof8");
     ASSERT(40, sizeof9(), "sizeof9");

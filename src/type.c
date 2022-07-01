@@ -39,6 +39,46 @@ int sizeOfType(Type *ty) {
     return ty->size;
 }
 
+size_t alignOfType(Type *ty) {
+    return ty->alignment;
+}
+
+void apply_align_struct(Type *ty) {
+    if (!ty || ty->kind != TYPE_STRUCT) {
+        error("apply_align_struct() failure: struct型ではありません");
+    }
+
+    if (ty->member == NULL) return;
+
+    size_t max_alginemnt = 0;
+    for (Var *v = ty->member; v; v = v->next) {
+        size_t alignment = v->type->alignment;
+        if (max_alginemnt < alignment) max_alginemnt = alignment;
+    }
+
+    ty->alignment = max_alginemnt;
+
+    Var *v = ty->member;
+    v->offset = 0;
+    int struct_size = 0;
+
+    while (v->next) {
+        v->next->offset = v->offset + sizeOfType(v->type);
+        int padding = (alignOfType(v->next->type) - v->next->offset) % alignOfType(v->next->type);
+        v->next->offset += padding;
+        struct_size += sizeOfType(v->type) + padding;
+        v = v->next;
+    }
+    // 最後の一つのメンバーのサイズを足す
+    struct_size += sizeOfType(v->type);
+
+    // max_alignmentの倍数に構造体のサイズを揃える
+    int padding = (max_alginemnt - struct_size) % max_alginemnt;
+    struct_size += padding;
+
+    ty->size = struct_size;
+}
+
 bool is_same_type(Type *ty1, Type *ty2) {
     if (ty1 == NULL || ty2 == NULL) {
         // NULL == NULLで等しい型
@@ -56,6 +96,7 @@ Type *new_type(TypeKind tykind) {
     Type *ty = memory_alloc(sizeof(Type));
     ty->kind = tykind;
     ty->size = tykind_to_size(tykind);
+    ty->alignment = ty->size;  // 基本型のアライメントはサイズと等しい
     return ty;
 }
 
@@ -64,6 +105,7 @@ Type *new_ptr_type(Type *ptr_to) {
     Type *ty = memory_alloc(sizeof(Type));
     ty->kind = TYPE_PTR;
     ty->size = tykind_to_size(TYPE_PTR);
+    ty->alignment = ty->size;
     ty->ptr_to = ptr_to;
     return ty;
 }
@@ -74,6 +116,7 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     Type *ty = memory_alloc(sizeof(Type));
     ty->kind = TYPE_ARRAY;
     ty->size = ptr_to->size * array_size;
+    ty->alignment = ptr_to->alignment;
     ty->array_size = array_size;
     ty->ptr_to = ptr_to;
     return ty;

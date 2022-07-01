@@ -181,10 +181,6 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
     member->len = tok->len;
     member->type = member_type;
     // offsetはalignmentを考慮するので後で決める
-    if (struct_type->member->type) {
-        member->offset = struct_type->member->offset + sizeOfType(struct_type->member->type);
-    }
-
     struct_type->member = member;
     struct_type->size += member_type->size;
 }
@@ -1133,6 +1129,10 @@ static Type *type_specifier() {
             type->member = tmp;
         }
         type->member = reverse_member->next;
+
+        // memberのアライメントを考慮したoffsetを決定する
+        apply_align_struct(type);
+
         return type;
     }
 

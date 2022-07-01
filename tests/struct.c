@@ -315,7 +315,7 @@ int main() {
     ASSERT(15, struct_arrow2(), "struct_arrow2");
     ASSERT(1, struct_arrow3(), "struct_arrow3");
 
-    ASSERT(5, struct_forward1(), "struct_forward1");
+    ASSERT(8, struct_forward1(), "struct_forward1");
     ASSERT(10, struct_forward2(), "struct_forward2");
 
     ASSERT(1, struct_assign1(), "struct_assign1");

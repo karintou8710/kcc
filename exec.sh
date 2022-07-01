@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMPILER="kcc2"
+COMPILER=$1
 SUCCESS=0
 FAILURE=1
 

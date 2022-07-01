@@ -58,6 +58,7 @@ struct Type {
     Type *ptr_to;
     int size;
     int array_size;
+    size_t alignment;
 
     // struct, enum
     char *name;
@@ -294,6 +295,7 @@ TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
 int array_base_type_size(Type *ty);
 bool is_same_type(Type *ty1, Type *ty2);
+void apply_align_struct(Type *ty);
 
 // preprocess.c
 Token *preprocess(Token *tok);
