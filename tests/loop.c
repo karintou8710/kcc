@@ -153,6 +153,25 @@ int continue_for3() {
     return res;
 }
 
+int continue_for4() {
+    int res = 0;
+    for (int i = 0; i < 5; i++) {
+        res++;
+        for (int j = 0; j < 5; j++) {
+            res++;
+        }
+
+        for (int j = 0; j < 5; j++) {
+            res++;
+            continue;
+        }
+
+        res++;
+        continue;
+    }
+    return res;
+}
+
 int continue_while1() {
     int i = 0;
     int res = 0;
@@ -261,6 +280,7 @@ int main() {
     ASSERT(25, continue_for1(), "continue_for1");
     ASSERT(3, continue_for2(), "continue_for2");
     ASSERT(5, continue_for3(), "continue_for3");
+    ASSERT(60, continue_for4(), "continue_for4");
     ASSERT(25, continue_while1(), "continue_while1");
     ASSERT(4, continue_while2(), "continue_while2");
 
