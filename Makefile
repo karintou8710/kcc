@@ -15,7 +15,7 @@ GEN2=kcc2
 GEN3=kcc3
 
 TEST_SCRIPT=tests/test-control.sh
-EXEC_SCRIPT=exec.sh
+EXEC_SCRIPT=run.sh
 DIFF_SCRIPT=selfhost/diff.sh
 
 # for franken compile
