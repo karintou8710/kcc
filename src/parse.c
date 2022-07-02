@@ -83,7 +83,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     if (tok->kind == TK_IDENT) {
         char *name = my_strndup(tok->str, tok->len);
-        return (bool)find_typedef_alias(name);
+        return find_typedef_alias(name) != NULL;
     }
 
     // 基礎型でもtypedefでもない
@@ -464,20 +464,20 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
             error("eval_concat() failure: オペランドが不適切です [%s]", op);
         }
-        int len = gl->len + max_digit + len + 1;
-        char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%s %s %ld", gl->str, op, gr->val);
+        int buf_size = gl->len + max_digit + len + 1;
+        char *buf = memory_alloc(sizeof(char) * buf_size);
+        buf_size = snprintf(buf, buf_size, "%s %s %ld", gl->str, op, gr->val);
         g->str = buf;
-        g->len = len;
+        g->len = buf_size;
     } else if (!gl->str && gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
             error("eval_concat() failure: オペランドが不適切です [%s]", op);
         }
-        int len = max_digit + gr->len + len + 1;
-        char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%ld %s %s", gl->val, op, gr->str);
+        int buf_size = max_digit + gr->len + len + 1;
+        char *buf = memory_alloc(sizeof(char) * buf_size);
+        buf_size = snprintf(buf, buf_size, "%ld %s %s", gl->val, op, gr->str);
         g->str = buf;
-        g->len = len;
+        g->len = buf_size;
     } else {
         if (strcmp(op, "+") == 0) {
             g->val = gl->val + gr->val;
@@ -1213,7 +1213,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     Token *t = token;
     expect(TK_IDENT);
     Var *var = new_enum_member(t, type, *enum_const_num);
-    (*enum_const_num)++;
+    *enum_const_num += 1;
 
     if (consume('=')) {
         GInit_el *el = eval(conditional());
@@ -1221,7 +1221,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
             error("enumerator() failure: 数値型の定数ではありません");
         }
         var->val = el->val;
-        (*enum_const_num) = el->val + 1;
+        *enum_const_num = el->val + 1;
     }
     return var;
 }
