@@ -42,7 +42,8 @@ static Node *stmt();
 static Node *expr();
 static Node *assign();
 static Node *conditional();
-static Node *logical_expression();
+static Node *logical_or();
+static Node *logical_and();
 static Node *inclusive_or();
 static Node *exclusive_or();
 static Node * and ();
@@ -1556,10 +1557,10 @@ static Node *assign() {
 }
 
 /*
- * <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
+ * <conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
  */
 static Node *conditional() {
-    Node *node = logical_expression();
+    Node *node = logical_or();
     if (consume('?')) {
         Node *n = new_node(ND_TERNARY);
         n->cond = node;
@@ -1574,16 +1575,29 @@ static Node *conditional() {
 }
 
 /*
- *  <logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
+ *  <logical_or> = <logical_and> ("||" <logical_and>)*
  */
-static Node *logical_expression() {
+static Node *logical_or() {
+    Node *node = logical_and();
+
+    for (;;) {
+        if (consume(TK_LOGICAL_OR)) {
+            node = new_binop(ND_LOGICAL_OR, node, logical_and());
+        } else {
+            return node;
+        }
+    }
+}
+
+/*
+ *  <logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
+ */
+static Node *logical_and() {
     Node *node = inclusive_or();
 
     for (;;) {
         if (consume(TK_LOGICAL_AND)) {
             node = new_binop(ND_LOGICAL_AND, node, inclusive_or());
-        } else if (consume(TK_LOGICAL_OR)) {
-            node = new_binop(ND_LOGICAL_OR, node, inclusive_or());
         } else {
             return node;
         }

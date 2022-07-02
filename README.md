@@ -74,8 +74,9 @@ $ make test
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>
-<conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
-<logical_expression> = <inclusive_or> ("&&" <inclusive_or> | "||" <inclusive_or>)*
+<conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
+<logical_or> = <logical_and> ("||" <logical_and>)*
+<logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
 <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*
 <exclusive_or> = <and> ( "^" <and> )*
 <and> = <equality> ( "&" <equality> )*

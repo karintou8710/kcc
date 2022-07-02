@@ -117,6 +117,12 @@ int logical_expr2() {
     return ((1 || *a) == 0 && (*a || 1 && *a)) || 1;
 }
 
+// &&を||より優先する
+int logical_expr3() {
+    // (1 && 1 && 0) || (1 && 0 && 1) || 0
+    return 1 && 1 && 0 || 1 && 0 && 1 || 0;
+}
+
 int termary1(int cond) {
     return cond ? 10 : 2;
 }
@@ -248,6 +254,7 @@ int main() {
 
     ASSERT(0, logical_expr1(), "logical_expr1");
     ASSERT(1, logical_expr2(), "logical_expr2");
+    ASSERT(0, logical_expr3(), "logical_expr3");
 
     ASSERT(10, termary1(1), "termary1(1)");
     ASSERT(2, termary1(0), "termary1(0)");
