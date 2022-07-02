@@ -318,12 +318,12 @@ void add_type(Node *node) {
         }
 
         if (lhs->type->kind == TYPE_PTR && is_integertype(rhs->type->kind)) {
-            node->type = rhs->type;
+            node->type = lhs->type;
             return;
         }
 
         if (lhs->type->kind == TYPE_ARRAY && is_integertype(rhs->type->kind)) {
-            node->type = rhs->type;
+            node->type = lhs->type;
             return;
         }
 

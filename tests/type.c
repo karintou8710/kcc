@@ -85,6 +85,11 @@ int pointer_sub3() {
     return b + 1 - a;
 }
 
+int pointer_sub4() {
+    int a[2] = {1, 2};
+    return 2 + *((a + 2) - 1);
+}
+
 long long1() {
     long a = 10;
     a += 1000000000000000;
@@ -144,6 +149,7 @@ int main() {
     ASSERT(3, pointer_sub1(), "pointer_sub1");
     ASSERT(3, pointer_sub2(), "pointer_sub2");
     ASSERT(11, pointer_sub3(), "pointer_sub3");
+    ASSERT(4, pointer_sub4(), "pointer_sub4");
 
     ASSERT(0, (char)(256), "cast1");
     ASSERT(4, (char)((1 << 30) + (1 << 2)), "cast2");
