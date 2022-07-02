@@ -22,6 +22,7 @@ static Function *current_fn;
 
 // continue, breakでどこに飛ぶのか値を保持
 int continue_label = -1;
+int logical_label = 0;
 
 typedef enum RegKind {
     REG_RAX,
@@ -424,6 +425,50 @@ static void gen(Node *node) {
         }
         push();
         return;
+    } else if (node->kind == ND_LOGICAL_AND) {
+        logical_label++;
+        int label_num = logical_label;
+
+        gen(node->lhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  je .Llogicalandfalse%04d\n", label_num);
+        gen(node->rhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  je .Llogicalandfalse%04d\n", label_num);
+        // true
+        printf("  mov rax, 1\n");
+        printf("  jmp .Llogicalandend%04d\n", label_num);
+        // false
+        printf(".Llogicalandfalse%04d:\n", label_num);
+        printf("  mov rax, 0\n");
+
+        printf(".Llogicalandend%04d:\n", label_num);
+        push();
+        return;
+    } else if (node->kind == ND_LOGICAL_OR) {
+        logical_label++;
+        int label_num = logical_label;
+
+        gen(node->lhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        gen(node->rhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        // false
+        printf("  mov rax, 0\n");
+        printf("  jmp .Llogicalandend%04d\n", label_num);
+        // true
+        printf(".Llogicalandfalse%04d:\n", label_num);
+        printf("  mov rax, 1\n");
+
+        printf(".Llogicalandend%04d:\n", label_num);
+        push();
+        return;
     }
 
     // 主に演算のATSで読みこまれる
@@ -462,22 +507,6 @@ static void gen(Node *node) {
         printf("  cmp rax, rdi\n");
         printf("  setle al\n");
         printf("  movzb rax, al\n");
-    } else if (node->kind == ND_LOGICAL_AND) {
-        printf("  cmp rax, 0\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
-        printf("  cmp rdi, 0\n");
-        printf("  setne dil\n");
-        printf("  movzb rdi, dil\n");
-        printf("  and rax, rdi\n");
-    } else if (node->kind == ND_LOGICAL_OR) {
-        printf("  cmp rax, 0\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
-        printf("  cmp rdi, 0\n");
-        printf("  setne dil\n");
-        printf("  movzb rdi, dil\n");
-        printf("  or rax, rdi\n");
     } else if (node->kind == ND_AND) {
         printf("  and rax, rdi\n");
     } else if (node->kind == ND_OR) {
