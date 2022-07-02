@@ -36,7 +36,7 @@ static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
-static Function *func_define();
+static Function *func_define(Type *type);
 static Node *compound_stmt();
 static Node *stmt();
 static Node *expr();
@@ -46,7 +46,7 @@ static Node *logical_or();
 static Node *logical_and();
 static Node *inclusive_or();
 static Node *exclusive_or();
-static Node * and ();
+static Node *bin_and();
 static Node *equality();
 static Node *relational();
 static Node *shift();
@@ -1283,7 +1283,9 @@ static Function *func_define(Type *type) {
     Function *fn = memory_alloc(sizeof(Function));
     cur_parse_func = fn;
     Token *tok = token;
-    Var head = {};
+    Var head;
+    memset(&head, 0, sizeof(Var));
+
     Var *cur = &head;  // 引数の単方向連結リスト
     bool is_variadic = false;
 
@@ -1363,7 +1365,7 @@ static Function *func_define(Type *type) {
 
         if (!is_same_params(fn->params, entry->params) ||
             !is_same_type(fn->ret_type, entry->ret_type)) {
-            error("func_define() failure: 異なる型での宣言です");
+            error("func_define() failure: %sは異なる型での宣言です", fn->name);
         }
     }
 
@@ -1620,14 +1622,14 @@ static Node *inclusive_or() {
 }
 
 /*
- * <exclusive_or> = <and> ( "^" <and> )*
+ * <exclusive_or> = <bin_and> ( "^" <bin_and> )*
  */
 static Node *exclusive_or() {
-    Node *node = and();
+    Node *node = bin_and();
 
     for (;;) {
         if (consume('^')) {
-            node = new_binop(ND_XOR, node, and());
+            node = new_binop(ND_XOR, node, bin_and());
         } else {
             return node;
         }
@@ -1635,9 +1637,9 @@ static Node *exclusive_or() {
 }
 
 /*
- * <and> = <equality> ( "&" <equality> )*
+ * <bin_and> = <equality> ( "&" <equality> )*
  */
-static Node * and () {
+static Node *bin_and() {
     Node *node = equality();
 
     for (;;) {

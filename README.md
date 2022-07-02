@@ -13,11 +13,12 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - 配列の初期化式
 - typedef, enum
 - #include "header"
+- 可変長引数
 
 ## TODO
 
 - switch
-- 可変長引数
+- union
 - 構造体の初期化式
 - \_Bool
 
@@ -78,8 +79,8 @@ $ make test
 <logical_or> = <logical_and> ("||" <logical_and>)*
 <logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
 <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*
-<exclusive_or> = <and> ( "^" <and> )*
-<and> = <equality> ( "&" <equality> )*
+<exclusive_or> = <bin_and> ( "^" <bin_and> )*
+<bin_and> = <equality> ( "&" <equality> )*
 <equality> = <relational> ("==" <relational> | "!=" <relational>)*
 <relational> = <shift> ("<" <shift> | "<=" <shift> | ">" <shift> | ">=" <shift>)*
 <shift> = <add> (">>" <add> | "<<" <add>)*
