@@ -64,7 +64,8 @@ void apply_align_struct(Type *ty) {
 
     while (v->next) {
         v->next->offset = v->offset + sizeOfType(v->type);
-        int padding = (alignOfType(v->next->type) - v->next->offset) % alignOfType(v->next->type);
+        // 負の割り算は未実装
+        int padding = (alignOfType(v->next->type) - v->next->offset % alignOfType(v->next->type)) % alignOfType(v->next->type);
         v->next->offset += padding;
         struct_size += sizeOfType(v->type) + padding;
         v = v->next;
@@ -73,7 +74,7 @@ void apply_align_struct(Type *ty) {
     struct_size += sizeOfType(v->type);
 
     // max_alignmentの倍数に構造体のサイズを揃える
-    int padding = (max_alginemnt - struct_size) % max_alginemnt;
+    int padding = (max_alginemnt - struct_size % max_alginemnt) % max_alginemnt;
     struct_size += padding;
 
     ty->size = struct_size;
