@@ -29,6 +29,14 @@ int for1() {
     return res;
 }
 
+// pushとpopの数の違いによるバグのテスト
+int while1() {
+    int a = 1;
+    while (a == '*') {
+    }
+    return a;
+}
+
 int break_for1() {
     int res = 0;
     for (int i = 0; i < 100; i++) {
@@ -270,6 +278,7 @@ int complex_loop1() {
 
 int main() {
     ASSERT(66, for1(), "for1");
+    ASSERT(1, while1(), "while1");
 
     ASSERT(10, break_for1(), "break_for1");
     ASSERT(14, break_for2(), "break_for2");

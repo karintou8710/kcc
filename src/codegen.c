@@ -270,18 +270,20 @@ static void gen(Node *node) {
         if (node->els) {
             printf("  je  .Lifelse%04d\n", if_count);
             gen(node->then);
+            pop();
             printf("  jmp .Lifend%04d\n", if_count);
             printf(".Lifelse%04d:\n", if_count);
             gen(node->els);
+            pop();
             printf(".Lifend%04d:\n", if_count);
         } else {
             printf("  je  .Lifend%04d\n", if_count);
             gen(node->then);
-            pop();  // 数合わせ
+            pop();
             printf(".Lifend%04d:\n", if_count);
-            push();  // 数合わせ
         }
 
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_TERNARY) {
         label_if_count++;
@@ -290,35 +292,44 @@ static void gen(Node *node) {
         printf("  cmp rax, 0\n");
         printf("  je  .Lifelse%04d\n", if_count);
         gen(node->then);
+        pop();
         printf("  jmp .Lifend%04d\n", if_count);
         printf(".Lifelse%04d:\n", if_count);
         gen(node->els);
+        pop();
         printf(".Lifend%04d:\n", if_count);
+        push();  // 数合わせ
 
         return;
     } else if (node->kind == ND_WHILE) {
         label_loop_count++;
         printf(".Lloopbegin%04d:\n", loop_count);
+
         gen(node->cond);
         pop();
+
         printf("  cmp rax, 0\n");
         printf("  je  .Lloopend%04d\n", loop_count);
 
         int tmp_label = continue_label;
         continue_label = loop_count;
         gen(node->body);
+        pop();
         continue_label = tmp_label;
 
         // whileには必要ないが、for文との辻褄合わせに入れる
         printf(".Lloopinc%04d:\n", loop_count);
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_FOR) {
         label_loop_count++;
         if (node->init) {
             gen(node->init);
+            pop();
         }
+
         printf(".Lloopbegin%04d:\n", loop_count);
         if (node->cond) {
             gen(node->cond);
@@ -330,14 +341,17 @@ static void gen(Node *node) {
         int tmp_label = continue_label;
         continue_label = loop_count;
         gen(node->body);
+        pop();
         continue_label = tmp_label;
 
         printf(".Lloopinc%04d:\n", loop_count);
         if (node->inc) {
             gen(node->inc);
+            pop();
         }
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_BREAK) {
         // loop_countは次の深さになっているので１を引く
