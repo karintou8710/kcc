@@ -211,21 +211,33 @@ void add_type(Node *node) {
     }
 
     if (node->kind == ND_TERNARY) {
-        if (is_integertype(node->then->type->kind) && is_integertype(node->els->type->kind)) {
-            node->type = new_type(large_numtype(node->then->type, node->els->type));
+        Type *then_t = node->then->type, *els_t = node->els->type;
+
+        // 算術型
+        if (is_integertype(then_t->kind) && is_integertype(els_t->kind)) {
+            node->type = new_type(large_numtype(then_t, els_t));
+            return;
+        }
+
+        // 示す先が同じポインター
+        if (then_t->kind == TYPE_PTR && els_t->kind == TYPE_PTR) {
+            if (!is_same_type(then_t, els_t)) {
+                error("add_type() failure: ND_TERNARY, different pointer type");
+            }
+            node->type = then_t;
             return;
         }
 
         // TODO: 構造体と配列
-        if (node->then->type->kind == TYPE_STRUCT && node->els->type->kind == TYPE_STRUCT) {
-            if (node->then->type != node->els->type) {
+        if (then_t->kind == TYPE_STRUCT && els_t->kind == TYPE_STRUCT) {
+            if (then_t != els_t) {
                 error("add_type() failure: ND_TERNARY, different struct type");
             }
-            node->type = node->then->type;
+            node->type = then_t;
             return;
         }
 
-        error("add_type() failure: ND_TERNARY error.");
+        error("add_type() failure: %d %d 不正な型です(ND_TERNARY)", then_t->kind, els_t->kind);
         return;
     }
 
