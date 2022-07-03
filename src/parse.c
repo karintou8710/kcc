@@ -891,7 +891,7 @@ static void initialize_array(Initializer *init) {
         expect('{');
         int i = 0;
         while (!consume('}')) {
-            if (i >= children_cap) {
+            if (i == children_cap) {
                 // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
                 Initializer *new_p = memory_alloc(sizeof(Initializer) * children_cap * 2);
                 memcpy(new_p, init->children, sizeof(Initializer) * children_cap);
