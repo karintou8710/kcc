@@ -1,6 +1,6 @@
-CC=gcc
+CC=clang -fsanitize=address -fno-omit-frame-pointer
 AS=as
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -Wall -Wextra -Wimplicit-fallthrough -Weverything -Wno-documentation -Wno-padded -Wno-missing-prototypes -Wno-switch-enum -Wno-sign-conversion -Wno-format-nonliteral
 
 SRCS=$(wildcard src/*.c)
 HEADERS=$(wildcard src/*.h)

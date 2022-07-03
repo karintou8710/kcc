@@ -17,7 +17,7 @@ fi
 for i in tests/*.c
 do
     debug "$COMPILER start compileing $i"
-    ./$COMPILER $i > tmp.s
+    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $i > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$COMPILER failed to compile"

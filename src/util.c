@@ -5,7 +5,7 @@ void assert(int n) {
         error("assert error");
 }
 
-void error(char *fmt, ...) {
+_Noreturn void error(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
@@ -17,7 +17,7 @@ void error(char *fmt, ...) {
 // format
 // foo.c:10: x = y + + 5;
 //                   ^ 式ではありません
-void error_at(char *loc, char *msg) {
+_Noreturn void error_at(char *loc, char *msg) {
     char *line = loc;
     while (user_input < line && line[-1] != '\n')
         line--;
