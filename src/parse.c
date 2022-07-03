@@ -782,7 +782,6 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
     Vector *suger = new_vec();
 
     if (init->children) {
-        fprintf(stderr, "init->len: %d\n", init->len);
         for (int i = 0; i < init->len; i++) {
             Node *deref = new_node(ND_DEREF);
             deref->lhs = new_add(node, new_node_num(i));
@@ -893,10 +892,11 @@ static void initialize_array(Initializer *init) {
         int i = 0;
         while (!consume('}')) {
             if (i >= children_cap) {
-                fprintf(stderr, "before: %p, %d\n", init->children, children_cap);
+                // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
+                Initializer *new_p = memory_alloc(sizeof(Initializer) * children_cap * 2);
+                memcpy(new_p, init->children, sizeof(Initializer) * children_cap);
                 children_cap *= 2;
-                init->children = realloc(init->children, sizeof(Initializer) * children_cap);
-                fprintf(stderr, "after : %p, %d\n", init->children, children_cap);
+                init->children = new_p;
             }
 
             (init->children + i)->var = init->var;
@@ -907,7 +907,6 @@ static void initialize_array(Initializer *init) {
         }
         // 省略された配列の長さとサイズを決定
         init->len = ty->array_size = i;
-        fprintf(stderr, "final len: %d\n", i);
         ty->size = ty->array_size * ty->ptr_to->size;
     } else {
         init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
