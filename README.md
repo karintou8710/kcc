@@ -31,7 +31,10 @@ $ cd kcc
 $ make
 
 # test
-$ make test
+$ make testall
+
+# diff between gen2 and gen3
+$ make diff
 ```
 
 ## BNF
