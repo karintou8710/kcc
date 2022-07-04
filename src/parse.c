@@ -885,6 +885,7 @@ static void initialize_array(Initializer *init) {
 
     if (ty->array_size == 0) {
         // 最初の添え字が省略されている
+        // TODO: Vectorで実装していない理由の調査
         int children_cap = 2;
         init->children = memory_alloc(sizeof(Initializer) * children_cap);
         expect('{');
