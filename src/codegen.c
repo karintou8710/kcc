@@ -21,8 +21,8 @@ static char *rdireg[] = {"rdi", "edi", "di", "dil"};  // size: 8, 4, 2, 1
 static Function *current_fn;
 
 // continue, breakでどこに飛ぶのか値を保持
-int continue_label = -1;
-int logical_label = 0;
+static int continue_label = -1;
+static int logical_label = 0;
 
 typedef enum RegKind {
     REG_RAX,
@@ -412,7 +412,7 @@ static void gen(Node *node) {
         printf("  pop rbp\n");
         push();  // 数合わせ
         return;
-    } else if (node->kind == ND_LOGICALNOT) {
+    } else if (node->kind == ND_LOGICAL_NOT) {
         gen(node->lhs);
         pop();
         printf("  test rax, rax\n");
@@ -571,7 +571,7 @@ void codegen() {
         printf("%s:\n", var->name);
 
         for (int i = 0; i < var->ginit->len; i++) {
-            GInit_el *g = var->ginit->body[i];
+            GInitEl *g = var->ginit->body[i];
 
             // ポインターかラベル
             if (g->str) {

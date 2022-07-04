@@ -1,6 +1,6 @@
 #include "kcc.h"
 
-void init() {
+static void init() {
     label_if_count = 0;    // ifのラベルにつけるユニークな値
     label_loop_count = 0;  // loopのラベルにつけるユニークな値
     globals = NULL;        // グローバル変数の初期化

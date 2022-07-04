@@ -26,7 +26,7 @@ void *vec_last(Vector *v) {
     return v->body[v->len - 1];
 }
 
-void *vec_delete(Vector *v, int index) {
+void vec_delete(Vector *v, int index) {
     assert(0 <= index && index < v->len);
     for (int i = index; i < v->len - 1; i++) {
         v->body[i] = v->body[i + 1];

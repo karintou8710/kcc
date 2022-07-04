@@ -6,12 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * ~ 構造体 ~
- * Vector, Type, Token, Var, Node, Function
- *
- */
-
 typedef struct Var Var;
 typedef struct Vector Vector;
 typedef struct Type Type;
@@ -19,60 +13,26 @@ typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Function Function;
 typedef struct Initializer Initializer;
-typedef struct GInit_el GInit_el;
-typedef struct Typedef_alias Typedef_alias;
+typedef struct GInitEl GInitEl;
+typedef struct TypedefAlias TypedefAlias;
 typedef enum TypeKind TypeKind;
 typedef enum NodeKind NodeKind;
 typedef enum TokenKind TokenKind;
 typedef enum StorageClass StorageClass;
 
-/* ベクターの定義 */
-
-struct Vector {
-    void **body;
-    int len;
-    int capacity;
-};
-
 enum StorageClass {
-    UNKNOWN,
+    UNKNOWN,  // NULL枠
     STORAGE_TYPEDEF,
     STORAGE_EXTERN,
 };
 
-/* 型の定義 */
-enum TypeKind {
-    TYPE_CHAR,
-    TYPE_SHORT,
-    TYPE_INT,
-    TYPE_LONG,
-    TYPE_PTR,
-    TYPE_ARRAY,
-    TYPE_VOID,
-    TYPE_STRUCT,
-    TYPE_ENUM,
-};
-
-struct Type {
-    TypeKind kind;
-    Type *ptr_to;
-    int size;
-    int array_size;
-    size_t alignment;
-
-    // struct, enum
-    char *name;
-    Var *member;
-    bool is_forward;
-};
-
-/* トークンの定義 */
+/* 0 ~ 255は1文字のトークン */
 enum TokenKind {
     TK_NUM = 256,    // number
     TK_IDENT,        // ident
     TK_EQ,           // ==
     TK_NE,           // !=
-    TK_LE,           // <= 260
+    TK_LE,           // <=
     TK_GE,           // >=
     TK_RSHIFT,       // >>
     TK_LSHIFT,       // <<
@@ -108,35 +68,18 @@ enum TokenKind {
     TK_EXTERN,       // extern
 };
 
-struct Token {
-    TokenKind kind;         //
-    Type *type;             //
-    Token *next;            //
-    long val;               //
-    char *str;              //
-    int str_literal_index;  //
-    int len;                //
-
-    bool is_standard;  // 標準ヘッダーファイルのインクルード
+enum TypeKind {
+    TYPE_CHAR,
+    TYPE_SHORT,
+    TYPE_INT,
+    TYPE_LONG,
+    TYPE_PTR,
+    TYPE_ARRAY,
+    TYPE_VOID,
+    TYPE_STRUCT,
+    TYPE_ENUM,
 };
 
-/* 変数・定数の定義 */
-struct Var {
-    Var *next;        // 次の変数かNULL
-    char *name;       // 変数の名前
-    int len;          // 名前の長さ
-    int offset;       // RBPからのオフセット
-    int next_offset;  // ローカルスコープでのオフセットを管理
-    Type *type;       // 型情報
-    long val;         // 定数の場合は値を持つ
-
-    bool is_global;
-    bool is_only_type;
-    bool is_extern;
-    Vector *ginit;  // GInit_elのVector
-};
-
-/* ノードの定義 */
 enum NodeKind {
     ND_ADD,            // +
     ND_SUB,            // -
@@ -168,7 +111,7 @@ enum NodeKind {
     ND_STRING,         // string literal
     ND_CONTINUE,       // continue
     ND_BREAK,          // break
-    ND_LOGICALNOT,     // !
+    ND_LOGICAL_NOT,    // !
     ND_LOGICAL_AND,    // &&
     ND_LOGICAL_OR,     // ||
     ND_SUGER,          // 糖衣構文
@@ -179,17 +122,63 @@ enum NodeKind {
     ND_STMT_EXPR,      // stmt in expr
 };
 
+struct Vector {
+    void **body;
+    int len;
+    int capacity;
+};
+
+struct Type {
+    TypeKind kind;
+    Type *ptr_to;
+    int size;        // 全体のサイズ
+    int array_size;  // 配列の要素数
+    size_t alignment;
+
+    // struct, enum
+    char *name;
+    Var *member;
+    bool is_forward;
+};
+
+struct Token {
+    TokenKind kind;
+    Type *type;
+    Token *next;
+    long val;
+    char *str;
+    int len;
+    int str_literal_index;  // 文字列リテラルの固有番号
+
+    bool is_standard;  // 標準ヘッダーファイルのインクルード
+};
+
+struct Var {
+    Var *next;        // 次の変数かNULL
+    char *name;       // 変数の名前
+    int len;          // 名前の長さ
+    int offset;       // RBPからのオフセット
+    int next_offset;  // ローカルスコープでのオフセットを管理
+    Type *type;       // 型情報
+    long val;         // 定数の場合は値を持つ
+    Vector *ginit;    // GInitElのVector
+
+    bool is_global;
+    bool is_only_type;  // プロトタイプ宣言で使用
+    bool is_extern;
+};
+
 struct Node {
     NodeKind kind;
-    Node *lhs;          // 左辺
-    Node *rhs;          // 右辺
-    long val;           // ND_NUM ND_STRINGの時に使う
-    Var *var;           // kindがND_VARの場合のみ使う
-    char *fn_name;      //
-    char *str_literal;  // ND_STRINGのときに使う
-    Vector *args;       //
-    Vector *stmts;      //
-    Type *type;         // 型
+    Node *lhs;
+    Node *rhs;
+    long val;
+    Var *var;
+    char *fn_name;
+    char *str_literal;
+    Vector *args;  // 関数呼び出し時の引数
+    Vector *stmts;
+    Type *type;
 
     // if (cond) then els
     // while (cond) body
@@ -202,19 +191,18 @@ struct Node {
     Node *inc;
 };
 
-/* 関数型の定義 */
 struct Function {
     char *name;
     Node *body;
     Var *params;
     Var *locals;
-    Var *va_area;
+    Var *va_area;  // 可変長引数のメモリ配置
     int stack_size;
 
     Type *ret_type;  // return_type
 
     bool is_prototype;
-    bool is_variadic;
+    bool is_variadic;  // 可変長引数を引数に持つか
 };
 
 struct Initializer {
@@ -222,25 +210,22 @@ struct Initializer {
     Var *var;  // 代入先の変数を格納
 
     Node *expr;
-    Initializer *children;
-    int len;
+    Initializer *children;  // 配列として領域確保する
+    int len;                // 配列長
 };
 
-// グローバル変数の初期化式
-struct GInit_el {
+/* グローバル変数のコンパイル時計算用 */
+struct GInitEl {
     long val;
-    char *str;
+    char *str;  // ポインタの加減算
     int len;
 };
 
-struct Typedef_alias {
+/* Vectorでtypedefの対象を管理する */
+struct TypedefAlias {
     char *name;
     Type *type;
 };
-
-// parse.c
-void program();
-Function *find_func(char *name);
 
 // util.c
 void assert(int n);
@@ -273,16 +258,10 @@ Vector *new_vec();
 void vec_push(Vector *v, void *elem);
 void *vec_pop(Vector *v);
 void *vec_last(Vector *v);
+void vec_delete(Vector *v, int index);
 bool vec_contains(Vector *v, void *elem);
 bool vec_union1(Vector *v, void *elem);
 void vec_concat(Vector *to, Vector *from);
-void *vec_delete(Vector *v, int index);
-
-// codegen.c
-void codegen();
-
-// token.c
-Token *tokenize(char *p);
 
 // type.c
 Type *new_type(TypeKind tykind);
@@ -290,12 +269,25 @@ Type *new_ptr_type(Type *ptr_to);
 Type *new_array_type(Type *ptr_to, int size);
 void add_type(Node *node);
 int sizeOfType(Type *ty);
+size_t alignOfType(Type *ty);
+int array_base_type_size(Type *ty);
+void apply_align_struct(Type *ty);
 bool is_integertype(TypeKind kind);
+bool is_scalartype(TypeKind kind);
+bool is_relationalnode(NodeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
-int array_base_type_size(Type *ty);
 bool is_same_type(Type *ty1, Type *ty2);
-void apply_align_struct(Type *ty);
+
+// parse.c
+void program();
+Function *find_func(char *name);
+
+// codegen.c
+void codegen();
+
+// token.c
+Token *tokenize(char *p);
 
 // preprocess.c
 Token *preprocess(Token *tok);
@@ -304,16 +296,16 @@ Token *preprocess(Token *tok);
 char *read_file(char *path);
 
 // グローバル変数
-Vector *string_literal;
-Var *globals;
-Token *token;      // tokenは単方向の連結リスト
-char *user_input;  // 入力プログラム
-char *file_name;
-Vector *funcs;         // Function型のVector
+char *user_input;      // 入力プログラム
+char *file_name;       // 入力されたファイル名
 int label_if_count;    // ifのラベル
 int label_loop_count;  // forとwhileのラベル
+Var *globals;
+Token *token;  // tokenは単方向の連結リスト
+Vector *string_literal;
+Vector *funcs;  // Function型のVector
 Vector *struct_global_lists;
-Vector *struct_local_lists;  // 既出の構造体
+Vector *struct_local_lists;
 Vector *enum_global_lists;
 Vector *enum_local_lists;  // 既出の列挙型
-Vector *typedef_alias;     // Type_alias
+Vector *typedef_alias;

@@ -1,6 +1,6 @@
 #include "kcc.h"
 
-void recursion_line_printf(int depth, char *fmt, ...) {
+static void recursion_line_printf(int depth, char *fmt, ...) {
     va_list ap;
     int space_width = 4;
     va_start(ap, fmt);
@@ -66,8 +66,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_CONTINUE");  // continue
     else if (kind == ND_BREAK)
         fprintf(stderr, "ND_BREAK");  // break
-    else if (kind == ND_LOGICALNOT)
-        fprintf(stderr, "ND_LOGICALNOT");  // !
+    else if (kind == ND_LOGICAL_NOT)
+        fprintf(stderr, "ND_LOGICAL_NOT");  // !
     else if (kind == ND_LOGICAL_AND)
         fprintf(stderr, "ND_LOGICAL_AND");  // &&
     else if (kind == ND_LOGICAL_OR)

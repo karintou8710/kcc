@@ -57,7 +57,7 @@ static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
-static GInit_el *eval(Node *node);
+static GInitEl *eval(Node *node);
 
 /* 指定された演算子が来る可能性がある */
 static bool consume(int op) {
@@ -195,8 +195,8 @@ static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
     return var;
 }
 
-static Typedef_alias *new_typedef_alias(char *name, Type *type) {
-    Typedef_alias *ta = memory_alloc(sizeof(Typedef_alias));
+static TypedefAlias *new_typedef_alias(char *name, Type *type) {
+    TypedefAlias *ta = memory_alloc(sizeof(TypedefAlias));
     ta->name = name;
     ta->type = type;
     return ta;
@@ -429,7 +429,7 @@ static Type *is_defined_enum_type(char *name) {
 static Type *find_typedef_alias(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < typedef_alias->len; i++) {
-        Typedef_alias *ta = typedef_alias->body[i];
+        TypedefAlias *ta = typedef_alias->body[i];
         if (!ta->name) continue;
         if (strcmp(ta->name, name) == 0) {
             return ta->type;
@@ -456,7 +456,7 @@ static Initializer *new_initializer(Var *var) {
     return init;
 }
 
-static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int len) {
+static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
     int max_digit = 50;
     if (gl->str && gr->str) {
         error("eval_concat() failure: オペランドが不適切です [%s]", op);
@@ -508,72 +508,72 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
 }
 
 /* TODO: 四則演算以外にも対応 */
-static GInit_el *eval(Node *node) {
-    GInit_el *g = memory_alloc(sizeof(GInit_el));
+static GInitEl *eval(Node *node) {
+    GInitEl *g = memory_alloc(sizeof(GInitEl));
     add_type(node);
 
     if (node->kind == ND_NUM) {
         g->val = node->val;
         return g;
     } else if (node->kind == ND_ADD) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "+", 2);
         return g;
     } else if (node->kind == ND_SUB) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         g->val = gl->val - gr->val;
         eval_concat(g, gl, gr, "-", 2);
         return g;
     } else if (node->kind == ND_MUL) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "*", 2);
         return g;
     } else if (node->kind == ND_DIV) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "/", 2);
         return g;
     } else if (node->kind == ND_MOD) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "%", 2);
         return g;
     } else if (node->kind == ND_EQ) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "==", 3);
         return g;
     } else if (node->kind == ND_NE) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "!=", 3);
         return g;
     } else if (node->kind == ND_LT) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "<", 2);
         return g;
     } else if (node->kind == ND_LE) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "<=", 3);
         return g;
-    } else if (node->kind == ND_LOGICALNOT) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = memory_alloc(sizeof(GInit_el));
+    } else if (node->kind == ND_LOGICAL_NOT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = memory_alloc(sizeof(GInitEl));
         eval_concat(g, gl, gr, "!", 2);
         return g;
     } else if (node->kind == ND_LOGICAL_AND) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "&&", 3);
         return g;
     } else if (node->kind == ND_LOGICAL_OR) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "||", 3);
         return g;
     } else if (node->kind == ND_STRING) {
@@ -841,7 +841,6 @@ static Node *get_node_ident(Token *tok) {
  *  <program> = ( <declaration_global> | <func_define> )*
  */
 void program() {
-    int i = 0;
     local_scope = new_vec();
     while (!at_eof()) {
         Type *type = type_specifier();
@@ -851,7 +850,7 @@ void program() {
             if (fn != NULL) vec_push(funcs, fn);
             is_global = true;
         } else {
-            Node *node = declaration_global(type);
+            declaration_global(type);
         }
     }
 }
@@ -1017,7 +1016,7 @@ static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume_nostep(';')) {
         if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            Typedef_alias *ta = new_typedef_alias(node->var->name, node->var->type);
+            TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
             current_storage = UNKNOWN;
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -1038,7 +1037,7 @@ static Node *declaration(Type *type) {
         Node *tmp_node = n->stmts->body[i];
         // typedefなら型名を記録する
         if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            Typedef_alias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
+            TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
             vec_push(typedef_alias, ta);
         } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
             tmp_node->var->is_extern = true;
@@ -1216,7 +1215,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     *enum_const_num += 1;
 
     if (consume('=')) {
-        GInit_el *el = eval(conditional());
+        GInitEl *el = eval(conditional());
         if (el->str) {
             error("enumerator() failure: 数値型の定数ではありません");
         }
@@ -1793,7 +1792,7 @@ static Node *unary() {
         add_type(node->lhs);
         return node;
     } else if (consume('!')) {
-        Node *node = new_node(ND_LOGICALNOT);
+        Node *node = new_node(ND_LOGICAL_NOT);
         node->lhs = cast();
         add_type(node->lhs);
         return node;
