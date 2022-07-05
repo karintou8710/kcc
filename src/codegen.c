@@ -559,10 +559,17 @@ void codegen() {
 
     // グローバル変数の生成
     for (Var *var = globals; var != NULL; var = var->next) {
+        // 外部ファイルで定義されるので何も出力しない
+        if (var->is_extern) continue;
+
         printf("  .globl %s\n", var->name);
 
         // 宣言のみ
         if (var->ginit->len == 0) {
+            /*
+             * .commは外部ファイルで定義されるかわからない変数。
+             * もし定義がされなければ、指定したサイズでメモリ確保される。
+             */
             printf("  .comm %s, %d\n", var->name, sizeOfType(var->type));
             continue;
         }
