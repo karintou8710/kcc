@@ -33,6 +33,18 @@ static char escape_single_letter(char *p) {
     error("single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
 }
 
+static void skip_space(char **p) {
+    char *q = *p;
+    while (*q && isspace(*q)) q++;
+    *p = q;
+}
+
+static void skip_to_target(char **p, char c) {
+    char *q = *p;
+    while (*q && *q != c) q++;
+    *p = q;
+}
+
 Token *tokenize(char *p) {
     Token head;
     head.next = NULL;
@@ -44,12 +56,11 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        // includeはスキップする
         if (strncmp(p, "#include", 8) == 0) {
             cur = new_token(TK_INCLUDE, cur, p, 8);
             p += 8;
 
-            while (isspace(*p)) p++;
+            skip_space(&p);
 
             if (*p == '<') {
                 // TODO: 標準ライブラリのインクルード
@@ -59,7 +70,7 @@ Token *tokenize(char *p) {
                 p++;
 
                 char *q = p;
-                while (*p && *p != '"') p++;
+                skip_to_target(&p, '"');
                 if (*p != '"') {
                     error("tokenize() failure: 「\"」で閉じていません。");
                 }
@@ -79,6 +90,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // 未実装
         if (strncmp(p, "static", 6) == 0) {
             p += 6;
             continue;
@@ -86,7 +98,7 @@ Token *tokenize(char *p) {
 
         if (strncmp(p, "//", 2) == 0) {
             p += 2;
-            while (*p != '\n') p++;
+            skip_to_target(&p, '\n');
             continue;
         }
 
@@ -245,13 +257,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        /*
+         * 文字列リテラル
+         * アセンブリにエスケープ文字を展開せずに出力する
+         */
         if (*p == '\"') {
             p++;
             cur = new_token(TK_STRING, cur, p, 0);
             char *q = p;
             int len = 0;
+            // 文字列の長さを取得する
             while (*p && *p != '"') {
-                // エスケープ文字を飛ばす
+                // \"があるのでエスケープ文字は飛ばす
                 if (*p == '\\') {
                     p += 2;
                     len += 2;
@@ -268,6 +285,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        /* TODO: 複数文字のシングルクオーテーション */
         if (*p == '\'') {
             p++;
             if (*p == '\\') {
@@ -385,7 +403,7 @@ Token *tokenize(char *p) {
             cur->type = new_type(TYPE_STRUCT);
             p += 6;
 
-            while (isspace(*p)) p++;
+            skip_space(&p);
 
             if (is_alpha(*p)) {
                 char *q = p;
@@ -393,6 +411,7 @@ Token *tokenize(char *p) {
                 cur->type->name = my_strndup(q, p - q);
                 continue;
             } else {
+                /* TODO: 無名構造体 */
                 error_at(p, "tokenize() failure: structの型名が存在しません。");
             }
         }
@@ -402,7 +421,7 @@ Token *tokenize(char *p) {
             cur->type = new_type(TYPE_ENUM);
             p += 4;
 
-            while (isspace(*p)) p++;
+            skip_space(&p);
 
             if (is_alpha(*p)) {
                 char *q = p;
