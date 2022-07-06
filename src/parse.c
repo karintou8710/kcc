@@ -61,6 +61,8 @@ static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
 static GInitEl *eval(Node *node);
 
+/*** parser utils ***/
+
 /* 指定された演算子が来る可能性がある */
 static bool consume(int op) {
     if (token->kind != op) {
@@ -147,13 +149,7 @@ static bool is_func(Token *tok) {
     return tok->kind == '(';
 }
 
-/* ノードを引数にもつsizeofの実装 */
-static int sizeOfNode(Node *node) {
-    add_type(node);
-    return sizeOfType(node->type);
-}
-
-/* ローカル変数の作成 */
+/*** new objects ***/
 static Var *new_lvar(Token *tok, Type *type) {
     Var *lvar = memory_alloc(sizeof(Var));
     lvar->next = locals;
@@ -209,23 +205,14 @@ static TypedefAlias *new_typedef_alias(char *name, Type *type) {
     return ta;
 }
 
-// TODO: 引数に適切な型をつけるようにする
-/* 引数からローカル変数を作成する(前から見ていく) */
-static void create_lvar_from_params(Var *params) {
-    if (!params)
-        return;
-
-    Var *lvar = memory_alloc(sizeof(Var));
-    lvar->name = params->name;
-    lvar->len = params->len;
-    lvar->type = params->type;
-    // 引数はトップのローカルスコープになるのでnext_offsetで条件分岐が必要ない
-    lvar->offset = locals->offset + sizeOfType(lvar->type);
-    lvar->next = locals;
-
-    locals = lvar;
-    create_lvar_from_params(params->next);
+static Initializer *new_initializer(Var *var) {
+    Initializer *init = memory_alloc(sizeof(Initializer));
+    init->type = var->type;
+    init->var = var;
+    return init;
 }
+
+/*** find ***/
 
 /* 既に定義されたローカル変数を検索 */
 static Var *find_lvar(Token *tok) {
@@ -271,31 +258,6 @@ Function *find_func(char *name) {
     }
 
     return NULL;
-}
-
-bool is_already_defined_global_obj(Token *tok) {
-    char *name = my_strndup(tok->str, tok->len);
-    return find_gvar(tok) || find_func(name);
-}
-
-bool is_same_params(Var *params1, Var *params2) {
-    for (Var *v1 = params1, *v2 = params2;; v1 = v1->next, v2 = v2->next) {
-        if (v1 == NULL || v2 == NULL) {
-            // NULL == NULL -> params1とparams2は等しい
-            return v1 == v2;
-        }
-
-        if (!is_same_type(params1->type, params2->type)) {
-            return false;
-        }
-    }
-}
-
-bool has_lvar_in_all_params(Var *params) {
-    for (Var *v = params; v; v = v->next) {
-        if (v->is_only_type) return false;
-    }
-    return true;
 }
 
 Var *find_params(char *name, Var *params) {
@@ -446,22 +408,7 @@ static Type *find_typedef_alias(char *name) {
     return NULL;
 }
 
-static void start_local_scope() {
-    vec_push(local_scope, locals);
-}
-
-static void end_local_scope() {
-    Var *var = vec_pop(local_scope);
-    var->next_offset = locals->next_offset > 0 ? locals->next_offset : locals->offset;
-    locals = var;
-}
-
-static Initializer *new_initializer(Var *var) {
-    Initializer *init = memory_alloc(sizeof(Initializer));
-    init->type = var->type;
-    init->var = var;
-    return init;
-}
+/*** eval ***/
 
 static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
     int max_digit = 50;
@@ -609,6 +556,68 @@ static GInitEl *eval(Node *node) {
 
     error("未対応のNodeタイプです");
 }
+
+/*** other func ***/
+
+/* ノードを引数にもつsizeofの実装 */
+static int sizeOfNode(Node *node) {
+    add_type(node);
+    return sizeOfType(node->type);
+}
+
+static void start_local_scope() {
+    vec_push(local_scope, locals);
+}
+
+static void end_local_scope() {
+    Var *var = vec_pop(local_scope);
+    var->next_offset = locals->next_offset > 0 ? locals->next_offset : locals->offset;
+    locals = var;
+}
+
+// TODO: 引数に適切な型をつけるようにする
+/* 引数からローカル変数を作成する(前から見ていく) */
+static void create_lvar_from_params(Var *params) {
+    if (!params)
+        return;
+
+    Var *lvar = memory_alloc(sizeof(Var));
+    lvar->name = params->name;
+    lvar->len = params->len;
+    lvar->type = params->type;
+    // 引数はトップのローカルスコープになるのでnext_offsetで条件分岐が必要ない
+    lvar->offset = locals->offset + sizeOfType(lvar->type);
+    lvar->next = locals;
+
+    locals = lvar;
+    create_lvar_from_params(params->next);
+}
+
+bool is_already_defined_global_obj(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    return find_gvar(tok) || find_func(name);
+}
+
+bool is_same_params(Var *params1, Var *params2) {
+    for (Var *v1 = params1, *v2 = params2;; v1 = v1->next, v2 = v2->next) {
+        if (v1 == NULL || v2 == NULL) {
+            // NULL == NULL -> params1とparams2は等しい
+            return v1 == v2;
+        }
+
+        if (!is_same_type(params1->type, params2->type)) {
+            return false;
+        }
+    }
+}
+
+bool has_lvar_in_all_params(Var *params) {
+    for (Var *v = params; v; v = v->next) {
+        if (v->is_only_type) return false;
+    }
+    return true;
+}
+
 /*************************************/
 /******                         ******/
 /******        NEW_NODE         ******/
@@ -1051,13 +1060,16 @@ static Type *pointer(Type *type) {
     return type;
 }
 
-/*
- *  <storage_class>  = "typedef" | "extern"
- *  <type_specifier> = <storage_class>? "int"
- *                   | <storage_class>? "char"
- *                   | <storage_class>? "void"
- *                   | <storage_class>? "struct" <ident>
- *                   | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
+/* <storage_class>  = "typedef" | "entern"
+ * <type_specifier> = <storage_class>? "int"
+ *                  | <storage_class>? "char"
+ *                  | <storage_class>? "void"
+ *                  | <storage_class>? "short"
+ *                  | <storage_class>? "long" "long"? "int"?
+ *                  | <storage_class>? ("struct" | "union") <ident>
+ *                  | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
+ *                  | <storage_class>? "enum" <ident>
+ *                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
  */
 static Type *type_specifier() {
     if (consume(TK_TYPEDEF))
