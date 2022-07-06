@@ -214,56 +214,11 @@ static Initializer *new_initializer(Var *var) {
 
 /*** find ***/
 
-/* 既に定義されたローカル変数を検索 */
-static Var *find_lvar(Token *tok) {
-    Var *vars = locals;
-    for (Var *var = vars; var; var = var->next) {
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-            return var;
-        }
-    }
-    return NULL;
-}
-
-/* 既に定義されたローカル変数を検索 */
-static Var *find_scope_lvar(Token *tok) {
-    Var *vars = locals, *scope = vec_last(local_scope);
-    for (Var *var = vars; var != scope; var = var->next) {
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-            return var;
-        }
-    }
-    return NULL;
-}
-
-/* 既に定義されたグローバル変数を検索 */
-static Var *find_gvar(Token *tok) {
-    Var *vars = globals;
-    for (Var *var = vars; var; var = var->next) {
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-            return var;
-        }
-    }
-    return NULL;
-}
-
-Function *find_func(char *name) {
+static Var *find_var(char *name, Var *vars, Var *end) {
     if (name == NULL) return NULL;
-    for (int i = 0; i < funcs->len; i++) {
-        Function *fn = funcs->body[i];
-        if (!fn->name) continue;
-        if (strcmp(fn->name, name) == 0) {
-            return fn;
-        }
-    }
+    if (vars == NULL) return NULL;
 
-    return NULL;
-}
-
-Var *find_params(char *name, Var *params) {
-    if (name == NULL) return NULL;
-    Var *vars = params;
-    for (Var *var = vars; var; var = var->next) {
+    for (Var *var = vars; var != end; var = var->next) {
         if (!var->name) continue;
         if (strcmp(name, var->name) == 0) {
             return var;
@@ -272,10 +227,34 @@ Var *find_params(char *name, Var *params) {
     return NULL;
 }
 
-static Type *find_lstruct_type(char *name) {
+/* ローカル変数取得時に使用 */
+static Var *find_lvar(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    return find_var(name, locals, NULL);
+}
+
+/* ローカル変数定義時に使用 */
+static Var *find_scope_lvar(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    return find_var(name, locals, vec_last(local_scope));
+}
+
+/* 既に定義されたグローバル変数を検索 */
+static Var *find_gvar(Token *tok) {
+    char *name = my_strndup(tok->str, tok->len);
+    return find_var(name, globals, NULL);
+}
+
+static Var *find_params(char *name, Var *params) {
+    return find_var(name, params, NULL);
+}
+
+static Type *find_aggregate_type(char *name, Vector *list) {
     if (name == NULL) return NULL;
-    for (int i = 0; i < struct_local_lists->len; i++) {
-        Type *t = struct_local_lists->body[i];
+    if (list == NULL) return NULL;
+
+    for (int i = 0; i < list->len; i++) {
+        Type *t = list->body[i];
         if (t->name == NULL) continue;
         if (strcmp(t->name, name) == 0) {
             return t;
@@ -283,46 +262,22 @@ static Type *find_lstruct_type(char *name) {
     }
 
     return NULL;
+}
+
+static Type *find_lstruct_type(char *name) {
+    return find_aggregate_type(name, struct_local_lists);
 }
 
 static Type *find_gstruct_type(char *name) {
-    if (name == NULL) return NULL;
-    for (int i = 0; i < struct_global_lists->len; i++) {
-        Type *t = struct_global_lists->body[i];
-        if (t->name == NULL) continue;
-        if (strcmp(t->name, name) == 0) {
-            return t;
-        }
-    }
-
-    return NULL;
+    return find_aggregate_type(name, struct_global_lists);
 }
 
-// enum型を探索
 static Type *find_lenum_type(char *name) {
-    if (name == NULL) return NULL;
-    for (int i = 0; i < enum_local_lists->len; i++) {
-        Type *t = enum_local_lists->body[i];
-        if (t->name == NULL) continue;
-        if (strcmp(t->name, name) == 0) {
-            return t;
-        }
-    }
-
-    return NULL;
+    return find_aggregate_type(name, enum_local_lists);
 }
 
 static Type *find_genum_type(char *name) {
-    if (name == NULL) return NULL;
-    for (int i = 0; i < enum_global_lists->len; i++) {
-        Type *t = enum_global_lists->body[i];
-        if (t->name == NULL) continue;
-        if (strcmp(t->name, name) == 0) {
-            return t;
-        }
-    }
-
-    return NULL;
+    return find_aggregate_type(name, enum_global_lists);
 }
 
 static Type *find_enum_type(char *name) {
@@ -340,12 +295,8 @@ static Var *find_lenum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
         Type *t = enum_local_lists->body[i];
-        for (Var *v = t->member; v; v = v->next) {
-            if (!v->name) continue;
-            if (strcmp(v->name, name) == 0) {
-                return v;
-            }
-        }
+        Var *v = find_var(name, t->member, NULL);
+        if (v) return v;
     }
 
     return NULL;
@@ -355,12 +306,8 @@ static Var *find_genum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
         Type *t = enum_global_lists->body[i];
-        for (Var *v = t->member; v; v = v->next) {
-            if (!v->name) continue;
-            if (strcmp(v->name, name) == 0) {
-                return v;
-            }
-        }
+        Var *v = find_var(name, t->member, NULL);
+        if (v) return v;
     }
 
     return NULL;
@@ -377,24 +324,6 @@ static Var *find_enum_member(Token *tok) {
     return v;
 }
 
-static Type *is_defined_enum_type(char *name) {
-    if (is_global) {
-        Type *t = find_genum_type(name);
-        if (t != NULL && !t->is_forward) {
-            error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
-        }
-        // 前方宣言
-        return t;
-    } else {
-        Type *t = find_lenum_type(name);
-        if (t != NULL && !t->is_forward) {
-            error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
-        }
-        // 前方宣言
-        return t;
-    }
-}
-
 static Type *find_typedef_alias(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < typedef_alias->len; i++) {
@@ -408,6 +337,18 @@ static Type *find_typedef_alias(char *name) {
     return NULL;
 }
 
+Function *find_func(char *name) {
+    if (name == NULL) return NULL;
+    for (int i = 0; i < funcs->len; i++) {
+        Function *fn = funcs->body[i];
+        if (!fn->name) continue;
+        if (strcmp(fn->name, name) == 0) {
+            return fn;
+        }
+    }
+
+    return NULL;
+}
 /*** eval ***/
 
 static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
@@ -558,6 +499,24 @@ static GInitEl *eval(Node *node) {
 }
 
 /*** other func ***/
+
+static Type *is_defined_enum_type(char *name) {
+    if (is_global) {
+        Type *t = find_genum_type(name);
+        if (t != NULL && !t->is_forward) {
+            error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
+        }
+        // 前方宣言
+        return t;
+    } else {
+        Type *t = find_lenum_type(name);
+        if (t != NULL && !t->is_forward) {
+            error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
+        }
+        // 前方宣言
+        return t;
+    }
+}
 
 /* ノードを引数にもつsizeofの実装 */
 static int sizeOfNode(Node *node) {
