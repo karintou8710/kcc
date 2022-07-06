@@ -8,6 +8,7 @@ HEADERS=$(wildcard src/*.h)
 TESTSRCS=$(wildcard tests/*.c)
 
 GEN1_OBJS=$(SRCS:.c=.o)
+GEN1_CLANG_OBJS=$(SRCS:%.c=%_clang.o)
 GEN2_OBJS=$(GEN1_OBJS:src/%.o=selfhost/gen2/%.o)
 GEN3_OBJS=$(GEN1_OBJS:src/%.o=selfhost/gen3/%.o)
 
@@ -31,12 +32,13 @@ DUMMY_LIB_DIR=selfhost/dummy_headers
 $(GEN1): $(GEN1_OBJS)
 	$(CC) -o $@ $^
 
-$(GEN1_CLANG): $(GEN1_OBJS)
-	$(CLANG) -o $@ $^
-
 $(GEN1_OBJS): $(HEADERS)
 
-$(GEN1_CLANG_OBJS): $(HEADERS)
+$(GEN1_CLANG): $(GEN1_CLANG_OBJS)
+	$(CLANG) -o $@ $^
+
+src/%_clang.o: src/%.c $(HEADERS)
+	$(CLANG) -c -o $@ $<
 
 ### second generation ###
 $(GEN2): $(GEN2_OBJS)
@@ -91,7 +93,7 @@ test1_clang: $(GEN1_CLANG)
 test1_gcc_and_clang: $(GEN1) $(GEN1_CLANG)
 	sh $(TEST_GCC_AND_CLANG) $(GEN1) $(GEN1_CLANG)
 
-testall: test1 test2 test3
+testall: test1 test2 test3 diff
 
 testextra: test1_clang test1_gcc_and_clang
 
@@ -107,6 +109,7 @@ run3: $(GEN3)
 
 ### utils ###
 clean:
-	find . -name "kcc[1-3]" -o -name "*.o" -o -name "*~" -o -name "tmp*" -o -path "./selfhost/gen[2-3]/*" | xargs rm -f
+	find . -name "*.o" -o -name "*~" -o -name "tmp*" -o -path "./selfhost/gen[2-3]/*" | xargs rm -f
+	rm -f kcc1 kcc2 kcc3 kcc1_clang kcc1_gcc
 
-.PHONY: test1 test1_clang test2 test3 diff testall testextra exec clean
+.PHONY: test1 test1_clang test1_gcc_and_clang test2 test3  diff testall testextra run1 run2 run3 clean
