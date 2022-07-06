@@ -10,8 +10,11 @@ Vector *new_vec() {
 
 void vec_push(Vector *v, void *elem) {
     if (v->len == v->capacity) {
+        // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
+        void *new_p = memory_alloc(sizeof(void *) * v->capacity * 2);
+        memcpy(new_p, v->body, sizeof(void *) * v->capacity);
+        v->body = new_p;
         v->capacity *= 2;
-        v->body = realloc(v->body, sizeof(void *) * v->capacity);
     }
     v->body[v->len++] = elem;
 }
