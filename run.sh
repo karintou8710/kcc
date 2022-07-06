@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMPILER="kcc"
+COMPILER=$1
 SUCCESS=0
 FAILURE=1
 
@@ -9,16 +9,17 @@ debug() {
     echo "$FILENAME: $1"
 }
 
-exec() {
+run() {
     if [ ! -e "$COMPILER" ]; then
-        debug "./kcc does not exist"
+        debug "./$COMPILER does not exist"
         exit $FAILURE
     fi
-
-    ./kcc test_exec.c > tmp.s
+    
+    touch test_exec.c
+    ./$COMPILER test_exec.c > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "kcc failed to compile"
+        debug "$COMPILER failed to compile"
         exit $FAILURE
     fi
     
@@ -29,4 +30,4 @@ exec() {
     debug "exit status => $status"
 }
 
-exec
+run

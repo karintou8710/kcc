@@ -20,8 +20,9 @@ static char *raxreg[] = {"rax", "eax", "ax", "al"};   // size: 8, 4, 2, 1
 static char *rdireg[] = {"rdi", "edi", "di", "dil"};  // size: 8, 4, 2, 1
 static Function *current_fn;
 
-// continue, breakに使う
-int now_loop_count = 0;
+// continue, breakでどこに飛ぶのか値を保持
+static int continue_label = -1;
+static int logical_label = 0;
 
 typedef enum RegKind {
     REG_RAX,
@@ -189,7 +190,7 @@ static void load(Type *ty) {
 
 static void gen(Node *node) {
     // 入れ子ループに対応するためにローカル変数で深さを持つ
-    int loop_count = label_loop_count;  // ループカウントの一時保存にも使う
+    int loop_count = label_loop_count;  // 現在のラベルの値を保持
     int if_count = label_if_count;
 
     if (node->kind == ND_NULL) {
@@ -269,18 +270,20 @@ static void gen(Node *node) {
         if (node->els) {
             printf("  je  .Lifelse%04d\n", if_count);
             gen(node->then);
+            pop();
             printf("  jmp .Lifend%04d\n", if_count);
             printf(".Lifelse%04d:\n", if_count);
             gen(node->els);
+            pop();
             printf(".Lifend%04d:\n", if_count);
         } else {
             printf("  je  .Lifend%04d\n", if_count);
             gen(node->then);
-            pop();  // 数合わせ
+            pop();
             printf(".Lifend%04d:\n", if_count);
-            push();  // 数合わせ
         }
 
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_TERNARY) {
         label_if_count++;
@@ -289,36 +292,44 @@ static void gen(Node *node) {
         printf("  cmp rax, 0\n");
         printf("  je  .Lifelse%04d\n", if_count);
         gen(node->then);
+        pop();
         printf("  jmp .Lifend%04d\n", if_count);
         printf(".Lifelse%04d:\n", if_count);
         gen(node->els);
+        pop();
         printf(".Lifend%04d:\n", if_count);
+        push();  // 数合わせ
 
         return;
     } else if (node->kind == ND_WHILE) {
         label_loop_count++;
         printf(".Lloopbegin%04d:\n", loop_count);
+
         gen(node->cond);
         pop();
+
         printf("  cmp rax, 0\n");
         printf("  je  .Lloopend%04d\n", loop_count);
 
-        // 次のループカウントにする
-        now_loop_count = label_loop_count;
+        int tmp_label = continue_label;
+        continue_label = loop_count;
         gen(node->body);
-        // 元のループカウントに戻す
-        now_loop_count = loop_count;
+        pop();
+        continue_label = tmp_label;
 
         // whileには必要ないが、for文との辻褄合わせに入れる
         printf(".Lloopinc%04d:\n", loop_count);
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_FOR) {
         label_loop_count++;
         if (node->init) {
             gen(node->init);
+            pop();
         }
+
         printf(".Lloopbegin%04d:\n", loop_count);
         if (node->cond) {
             gen(node->cond);
@@ -327,32 +338,36 @@ static void gen(Node *node) {
             printf("  je  .Lloopend%04d\n", loop_count);
         }
 
-        now_loop_count = label_loop_count;
+        int tmp_label = continue_label;
+        continue_label = loop_count;
         gen(node->body);
-        now_loop_count = loop_count;
+        pop();
+        continue_label = tmp_label;
 
         printf(".Lloopinc%04d:\n", loop_count);
         if (node->inc) {
             gen(node->inc);
+            pop();
         }
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
+        push();  // 数合わせ
         return;
     } else if (node->kind == ND_BREAK) {
         // loop_countは次の深さになっているので１を引く
-        if (now_loop_count - 1 < 0) {
+        if (continue_label < 0) {
             error("forブロックの中でbreakを使用していません。");
         }
         push();  // 数合わせ
-        printf("  jmp .Lloopend%04d\n", now_loop_count - 1);
+        printf("  jmp .Lloopend%04d\n", continue_label);
         return;
     } else if (node->kind == ND_CONTINUE) {
         // loop_countは次の深さになっているので１を引く
-        if (now_loop_count - 1 < 0) {
-            error("forブロックの中でbreakを使用していません。");
+        if (continue_label < 0) {
+            error("forブロックの中でcontinueを使用していません。");
         }
         push();  // 数合わせ
-        printf("  jmp .Lloopinc%04d\n", now_loop_count - 1);
+        printf("  jmp .Lloopinc%04d\n", continue_label);
         return;
     } else if (node->kind == ND_BLOCK || node->kind == ND_STMT_EXPR) {
         for (int i = 0; i < node->stmts->len; i++) {
@@ -397,7 +412,7 @@ static void gen(Node *node) {
         printf("  pop rbp\n");
         push();  // 数合わせ
         return;
-    } else if (node->kind == ND_LOGICALNOT) {
+    } else if (node->kind == ND_LOGICAL_NOT) {
         gen(node->lhs);
         pop();
         printf("  test rax, rax\n");
@@ -422,6 +437,50 @@ static void gen(Node *node) {
         } else {
             printf("  movsx rax, %s\n", proper_register(node->type, REG_RAX));
         }
+        push();
+        return;
+    } else if (node->kind == ND_LOGICAL_AND) {
+        logical_label++;
+        int label_num = logical_label;
+
+        gen(node->lhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  je .Llogicalandfalse%04d\n", label_num);
+        gen(node->rhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  je .Llogicalandfalse%04d\n", label_num);
+        // true
+        printf("  mov rax, 1\n");
+        printf("  jmp .Llogicalandend%04d\n", label_num);
+        // false
+        printf(".Llogicalandfalse%04d:\n", label_num);
+        printf("  mov rax, 0\n");
+
+        printf(".Llogicalandend%04d:\n", label_num);
+        push();
+        return;
+    } else if (node->kind == ND_LOGICAL_OR) {
+        logical_label++;
+        int label_num = logical_label;
+
+        gen(node->lhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        gen(node->rhs);
+        pop();
+        printf("  test rax, rax\n");
+        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        // false
+        printf("  mov rax, 0\n");
+        printf("  jmp .Llogicalandend%04d\n", label_num);
+        // true
+        printf(".Llogicalandfalse%04d:\n", label_num);
+        printf("  mov rax, 1\n");
+
+        printf(".Llogicalandend%04d:\n", label_num);
         push();
         return;
     }
@@ -462,22 +521,6 @@ static void gen(Node *node) {
         printf("  cmp rax, rdi\n");
         printf("  setle al\n");
         printf("  movzb rax, al\n");
-    } else if (node->kind == ND_LOGICAL_AND) {
-        printf("  cmp rax, 0\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
-        printf("  cmp rdi, 0\n");
-        printf("  setne dil\n");
-        printf("  movzb rdi, dil\n");
-        printf("  and rax, rdi\n");
-    } else if (node->kind == ND_LOGICAL_OR) {
-        printf("  cmp rax, 0\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
-        printf("  cmp rdi, 0\n");
-        printf("  setne dil\n");
-        printf("  movzb rdi, dil\n");
-        printf("  or rax, rdi\n");
     } else if (node->kind == ND_AND) {
         printf("  and rax, rdi\n");
     } else if (node->kind == ND_OR) {
@@ -516,18 +559,26 @@ void codegen() {
 
     // グローバル変数の生成
     for (Var *var = globals; var != NULL; var = var->next) {
+        // 外部ファイルで定義されるので何も出力しない
         if (var->is_extern) continue;
 
-        printf("%s:\n", var->name);
+        printf("  .globl %s\n", var->name);
+
         // 宣言のみ
         if (var->ginit->len == 0) {
-            printf("  .zero %d\n", var->type->size);
+            /*
+             * .commは外部ファイルで定義されるかわからない変数。
+             * もし定義がされなければ、指定したサイズでメモリ確保される。
+             */
+            printf("  .comm %s, %d\n", var->name, sizeOfType(var->type));
             continue;
         }
 
         // 初期化式あり
+        printf("%s:\n", var->name);
+
         for (int i = 0; i < var->ginit->len; i++) {
-            GInit_el *g = var->ginit->body[i];
+            GInitEl *g = var->ginit->body[i];
 
             // ポインターかラベル
             if (g->str) {

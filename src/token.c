@@ -15,7 +15,7 @@ static char escape_letters[][2] = {
     {'"', 34},
     {'?', 63}};
 
-Token *new_token(int kind, Token *cur, char *str, int len) {
+static Token *new_token(int kind, Token *cur, char *str, int len) {
     Token *tok = memory_alloc(sizeof(Token));
     tok->kind = kind;
     tok->str = str;
@@ -24,7 +24,7 @@ Token *new_token(int kind, Token *cur, char *str, int len) {
     return tok;
 }
 
-char escape_single_letter(char *p) {
+static char escape_single_letter(char *p) {
     for (int i = 0; i < sizeof(escape_letters) / sizeof(char[2]); i++) {
         if (escape_letters[i][0] == *p) {
             return escape_letters[i][1];
@@ -70,6 +70,12 @@ Token *tokenize(char *p) {
             } else {
                 error("tokenize() failure: #includeに失敗しました");
             }
+            continue;
+        }
+
+        // プリプロセッサーが出力するメタ情報を削除
+        if (startsWith(p, "#") && (user_input == p || *(p - 1) == '\n')) {
+            while (*p != '\n') p++;
             continue;
         }
 

@@ -42,4 +42,7 @@ int main() {
     ASSERT(0, strcmp(variadic1("%d/%d/%s", 10000, -200, ""), "10000/-200/"), "variadic1()");
     ASSERT(0, strcmp(variadic2("%d %d %s", 10, 20, "hello"), "10 20 hello"), "variadic2()");
     ASSERT(0, strcmp(variadic2("%d/%d/%s", 10000, -200, ""), "10000/-200/"), "variadic2()");
+
+    printf("ALL TEST OF variadic.c SUCCESS :)\n");
+    return 0;
 }

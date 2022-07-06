@@ -36,16 +36,17 @@ static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
-static Function *func_define();
+static Function *func_define(Type *type);
 static Node *compound_stmt();
 static Node *stmt();
 static Node *expr();
 static Node *assign();
 static Node *conditional();
-static Node *logical_expression();
+static Node *logical_or();
+static Node *logical_and();
 static Node *inclusive_or();
 static Node *exclusive_or();
-static Node * and ();
+static Node *bin_and();
 static Node *equality();
 static Node *relational();
 static Node *shift();
@@ -56,7 +57,7 @@ static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
-static GInit_el *eval(Node *node);
+static GInitEl *eval(Node *node);
 
 /* 指定された演算子が来る可能性がある */
 static bool consume(int op) {
@@ -82,7 +83,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     if (tok->kind == TK_IDENT) {
         char *name = my_strndup(tok->str, tok->len);
-        return (bool)find_typedef_alias(name);
+        return find_typedef_alias(name) != NULL;
     }
 
     // 基礎型でもtypedefでもない
@@ -180,7 +181,7 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
     member->name = my_strndup(tok->str, tok->len);
     member->len = tok->len;
     member->type = member_type;
-    member->offset = struct_type->member->offset + sizeOfType(member_type);
+    // offsetはalignmentを考慮するので後で決める
     struct_type->member = member;
     struct_type->size += member_type->size;
 }
@@ -194,8 +195,8 @@ static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
     return var;
 }
 
-static Typedef_alias *new_typedef_alias(char *name, Type *type) {
-    Typedef_alias *ta = memory_alloc(sizeof(Typedef_alias));
+static TypedefAlias *new_typedef_alias(char *name, Type *type) {
+    TypedefAlias *ta = memory_alloc(sizeof(TypedefAlias));
     ta->name = name;
     ta->type = type;
     return ta;
@@ -428,7 +429,7 @@ static Type *is_defined_enum_type(char *name) {
 static Type *find_typedef_alias(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < typedef_alias->len; i++) {
-        Typedef_alias *ta = typedef_alias->body[i];
+        TypedefAlias *ta = typedef_alias->body[i];
         if (!ta->name) continue;
         if (strcmp(ta->name, name) == 0) {
             return ta->type;
@@ -455,7 +456,7 @@ static Initializer *new_initializer(Var *var) {
     return init;
 }
 
-static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int len) {
+static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
     int max_digit = 50;
     if (gl->str && gr->str) {
         error("eval_concat() failure: オペランドが不適切です [%s]", op);
@@ -463,20 +464,20 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
             error("eval_concat() failure: オペランドが不適切です [%s]", op);
         }
-        int len = gl->len + max_digit + len + 1;
-        char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%s %s %ld", gl->str, op, gr->val);
+        int buf_size = gl->len + max_digit + len + 1;
+        char *buf = memory_alloc(sizeof(char) * buf_size);
+        buf_size = snprintf(buf, buf_size, "%s %s %ld", gl->str, op, gr->val);
         g->str = buf;
-        g->len = len;
+        g->len = buf_size;
     } else if (!gl->str && gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
             error("eval_concat() failure: オペランドが不適切です [%s]", op);
         }
-        int len = max_digit + gr->len + len + 1;
-        char *buf = memory_alloc(sizeof(char) * len);
-        len = snprintf(buf, len, "%ld %s %s", gl->val, op, gr->str);
+        int buf_size = max_digit + gr->len + len + 1;
+        char *buf = memory_alloc(sizeof(char) * buf_size);
+        buf_size = snprintf(buf, buf_size, "%ld %s %s", gl->val, op, gr->str);
         g->str = buf;
-        g->len = len;
+        g->len = buf_size;
     } else {
         if (strcmp(op, "+") == 0) {
             g->val = gl->val + gr->val;
@@ -507,72 +508,72 @@ static void eval_concat(GInit_el *g, GInit_el *gl, GInit_el *gr, char *op, int l
 }
 
 /* TODO: 四則演算以外にも対応 */
-static GInit_el *eval(Node *node) {
-    GInit_el *g = memory_alloc(sizeof(GInit_el));
+static GInitEl *eval(Node *node) {
+    GInitEl *g = memory_alloc(sizeof(GInitEl));
     add_type(node);
 
     if (node->kind == ND_NUM) {
         g->val = node->val;
         return g;
     } else if (node->kind == ND_ADD) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "+", 2);
         return g;
     } else if (node->kind == ND_SUB) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         g->val = gl->val - gr->val;
         eval_concat(g, gl, gr, "-", 2);
         return g;
     } else if (node->kind == ND_MUL) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "*", 2);
         return g;
     } else if (node->kind == ND_DIV) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "/", 2);
         return g;
     } else if (node->kind == ND_MOD) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "%", 2);
         return g;
     } else if (node->kind == ND_EQ) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "==", 3);
         return g;
     } else if (node->kind == ND_NE) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "!=", 3);
         return g;
     } else if (node->kind == ND_LT) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "<", 2);
         return g;
     } else if (node->kind == ND_LE) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "<=", 3);
         return g;
-    } else if (node->kind == ND_LOGICALNOT) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = memory_alloc(sizeof(GInit_el));
+    } else if (node->kind == ND_LOGICAL_NOT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = memory_alloc(sizeof(GInitEl));
         eval_concat(g, gl, gr, "!", 2);
         return g;
     } else if (node->kind == ND_LOGICAL_AND) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "&&", 3);
         return g;
     } else if (node->kind == ND_LOGICAL_OR) {
-        GInit_el *gl = eval(node->lhs);
-        GInit_el *gr = eval(node->rhs);
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
         eval_concat(g, gl, gr, "||", 3);
         return g;
     } else if (node->kind == ND_STRING) {
@@ -840,7 +841,6 @@ static Node *get_node_ident(Token *tok) {
  *  <program> = ( <declaration_global> | <func_define> )*
  */
 void program() {
-    int i = 0;
     local_scope = new_vec();
     while (!at_eof()) {
         Type *type = type_specifier();
@@ -850,7 +850,7 @@ void program() {
             if (fn != NULL) vec_push(funcs, fn);
             is_global = true;
         } else {
-            Node *node = declaration_global(type);
+            declaration_global(type);
         }
     }
 }
@@ -885,14 +885,18 @@ static void initialize_array(Initializer *init) {
 
     if (ty->array_size == 0) {
         // 最初の添え字が省略されている
+        // TODO: Vectorで実装していない理由の調査
         int children_cap = 2;
         init->children = memory_alloc(sizeof(Initializer) * children_cap);
         expect('{');
         int i = 0;
         while (!consume('}')) {
-            if (i >= children_cap) {
+            if (i == children_cap) {
+                // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
+                Initializer *new_p = memory_alloc(sizeof(Initializer) * children_cap * 2);
+                memcpy(new_p, init->children, sizeof(Initializer) * children_cap);
                 children_cap *= 2;
-                init->children = realloc(init->children, sizeof(Initializer) * children_cap);
+                init->children = new_p;
             }
 
             (init->children + i)->var = init->var;
@@ -1016,7 +1020,7 @@ static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume_nostep(';')) {
         if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            Typedef_alias *ta = new_typedef_alias(node->var->name, node->var->type);
+            TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
             current_storage = UNKNOWN;
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -1037,7 +1041,7 @@ static Node *declaration(Type *type) {
         Node *tmp_node = n->stmts->body[i];
         // typedefなら型名を記録する
         if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            Typedef_alias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
+            TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
             vec_push(typedef_alias, ta);
         } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
             tmp_node->var->is_extern = true;
@@ -1129,6 +1133,10 @@ static Type *type_specifier() {
             type->member = tmp;
         }
         type->member = reverse_member->next;
+
+        // memberのアライメントを考慮したoffsetを決定する
+        apply_align_struct(type);
+
         return type;
     }
 
@@ -1208,15 +1216,15 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     Token *t = token;
     expect(TK_IDENT);
     Var *var = new_enum_member(t, type, *enum_const_num);
-    (*enum_const_num)++;
+    *enum_const_num += 1;
 
     if (consume('=')) {
-        GInit_el *el = eval(conditional());
+        GInitEl *el = eval(conditional());
         if (el->str) {
             error("enumerator() failure: 数値型の定数ではありません");
         }
         var->val = el->val;
-        (*enum_const_num) = el->val + 1;
+        *enum_const_num = el->val + 1;
     }
     return var;
 }
@@ -1278,7 +1286,9 @@ static Function *func_define(Type *type) {
     Function *fn = memory_alloc(sizeof(Function));
     cur_parse_func = fn;
     Token *tok = token;
-    Var head = {};
+    Var head;
+    memset(&head, 0, sizeof(Var));
+
     Var *cur = &head;  // 引数の単方向連結リスト
     bool is_variadic = false;
 
@@ -1358,7 +1368,7 @@ static Function *func_define(Type *type) {
 
         if (!is_same_params(fn->params, entry->params) ||
             !is_same_type(fn->ret_type, entry->ret_type)) {
-            error("func_define() failure: 異なる型での宣言です");
+            error("func_define() failure: %sは異なる型での宣言です", fn->name);
         }
     }
 
@@ -1552,10 +1562,10 @@ static Node *assign() {
 }
 
 /*
- * <conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
+ * <conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
  */
 static Node *conditional() {
-    Node *node = logical_expression();
+    Node *node = logical_or();
     if (consume('?')) {
         Node *n = new_node(ND_TERNARY);
         n->cond = node;
@@ -1570,16 +1580,29 @@ static Node *conditional() {
 }
 
 /*
- *  <logical_expression> = <equality> ("&&" <equality> | "||" <equality>)*
+ *  <logical_or> = <logical_and> ("||" <logical_and>)*
  */
-static Node *logical_expression() {
+static Node *logical_or() {
+    Node *node = logical_and();
+
+    for (;;) {
+        if (consume(TK_LOGICAL_OR)) {
+            node = new_binop(ND_LOGICAL_OR, node, logical_and());
+        } else {
+            return node;
+        }
+    }
+}
+
+/*
+ *  <logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
+ */
+static Node *logical_and() {
     Node *node = inclusive_or();
 
     for (;;) {
         if (consume(TK_LOGICAL_AND)) {
             node = new_binop(ND_LOGICAL_AND, node, inclusive_or());
-        } else if (consume(TK_LOGICAL_OR)) {
-            node = new_binop(ND_LOGICAL_OR, node, inclusive_or());
         } else {
             return node;
         }
@@ -1602,14 +1625,14 @@ static Node *inclusive_or() {
 }
 
 /*
- * <exclusive_or> = <and> ( "^" <and> )*
+ * <exclusive_or> = <bin_and> ( "^" <bin_and> )*
  */
 static Node *exclusive_or() {
-    Node *node = and();
+    Node *node = bin_and();
 
     for (;;) {
         if (consume('^')) {
-            node = new_binop(ND_XOR, node, and());
+            node = new_binop(ND_XOR, node, bin_and());
         } else {
             return node;
         }
@@ -1617,9 +1640,9 @@ static Node *exclusive_or() {
 }
 
 /*
- * <and> = <equality> ( "&" <equality> )*
+ * <bin_and> = <equality> ( "&" <equality> )*
  */
-static Node * and () {
+static Node *bin_and() {
     Node *node = equality();
 
     for (;;) {
@@ -1773,7 +1796,7 @@ static Node *unary() {
         add_type(node->lhs);
         return node;
     } else if (consume('!')) {
-        Node *node = new_node(ND_LOGICALNOT);
+        Node *node = new_node(ND_LOGICAL_NOT);
         node->lhs = cast();
         add_type(node->lhs);
         return node;
@@ -1842,7 +1865,7 @@ static Node *postfix() {
                     Node *n = new_node(ND_STRUCT_MEMBER);
                     // 変数をコピー
                     n->lhs = node;
-                    n->val = member->offset - member->type->size;
+                    n->val = member->offset;
                     n->type = member->type;
                     node = n;
                     break;

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMPILER="kcc"
+COMPILER=$1
 SUCCESS=0
 FAILURE=1
 
@@ -10,17 +10,17 @@ debug() {
 }
 
 if [ ! -e "$COMPILER" ]; then
-    debug "./kcc does not exist"
+    debug "./$COMPILER does not exist"
     exit $FAILURE
 fi
 
 for i in tests/*.c
 do
-    debug "kcc start compileing $i"
-    ./kcc $i > tmp.s
+    debug "$COMPILER start compileing $i"
+    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $i > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "kcc failed to compile"
+        debug "$COMPILER failed to compile"
         exit $FAILURE
     fi
 

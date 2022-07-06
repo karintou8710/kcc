@@ -2,16 +2,15 @@ name: C CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: make test
-      run: make test
+      - uses: actions/checkout@v3
+      - name: make testall
+        run: make testall

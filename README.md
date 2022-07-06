@@ -13,11 +13,12 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - 配列の初期化式
 - typedef, enum
 - #include "header"
+- 可変長引数
 
 ## TODO
 
 - switch
-- 可変長引数
+- union
 - 構造体の初期化式
 - \_Bool
 
@@ -30,7 +31,10 @@ $ cd kcc
 $ make
 
 # test
-$ make test
+$ make testall
+
+# diff between gen2 and gen3
+$ make diff
 ```
 
 ## BNF
@@ -74,11 +78,12 @@ $ make test
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>
-<conditional> = <logical_expression> | <logical_expression> "?" <assign> ":" <conditional>
-<logical_expression> = <inclusive_or> ("&&" <inclusive_or> | "||" <inclusive_or>)*
+<conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
+<logical_or> = <logical_and> ("||" <logical_and>)*
+<logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
 <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*
-<exclusive_or> = <and> ( "^" <and> )*
-<and> = <equality> ( "&" <equality> )*
+<exclusive_or> = <bin_and> ( "^" <bin_and> )*
+<bin_and> = <equality> ( "&" <equality> )*
 <equality> = <relational> ("==" <relational> | "!=" <relational>)*
 <relational> = <shift> ("<" <shift> | "<=" <shift> | ">" <shift> | ">=" <shift>)*
 <shift> = <add> (">>" <add> | "<<" <add>)*

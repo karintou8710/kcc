@@ -108,7 +108,7 @@ void swap(void **p, void **q) {
 void *memory_alloc(size_t size) {
     void *p = calloc(1, size);
     if (p == NULL) {
-        error("calloc() failure");
+        error("calloc() failure: %s", strerror(errno));
     }
     return p;
 }

@@ -74,6 +74,13 @@ int logical_and5() {
     return a + b;
 }
 
+// 左が0の時は右を評価しない
+int logical_and6() {
+    int *a = 0;
+    int b = 0;
+    return b && *a;
+}
+
 int logical_or1() {
     return 0 || 0;
 }
@@ -94,8 +101,26 @@ int logical_or5() {
     return (0 || 100) + (100 || 0);
 }
 
+// 左が1の時は右を評価しない
+int logical_or6() {
+    int *a = 0;
+    int b = 1;
+    return b || *a;
+}
+
 int logical_expr1() {
     return (0 && 1 == 0) || (123 > 2 && 13 || !0) && !123;
+}
+
+int logical_expr2() {
+    int *a = 0;
+    return ((1 || *a) == 0 && (*a || 1 && *a)) || 1;
+}
+
+// &&を||より優先する
+int logical_expr3() {
+    // (1 && 1 && 0) || (1 && 0 && 1) || 0
+    return 1 && 1 && 0 || 1 && 0 && 1 || 0;
 }
 
 int termary1(int cond) {
@@ -111,6 +136,12 @@ int termary3() {
     int a = 1, b = 2, ans;
     ans = (a == 1 ? (b == 2 ? 3 : 5) : 0);
     return ans;
+}
+
+int termary4(int cond) {
+    int a = 10, b = 20;
+    int *c = &a, *d = &b;
+    return *(cond == 0 ? c : d) + 5;
 }
 
 int and_or_xor1() {
@@ -218,20 +249,26 @@ int main() {
     ASSERT(0, logical_and3(), "logical_and3");
     ASSERT(1, logical_and4(), "logical_and4");
     ASSERT(1, logical_and5(), "logical_and5");
+    ASSERT(0, logical_and6(), "logical_and6");
 
     ASSERT(0, logical_or1(), "logical_or1");
     ASSERT(1, logical_or2(), "logical_or2");
     ASSERT(1, logical_or3(), "logical_or3");
     ASSERT(1, logical_or4(), "logical_or4");
     ASSERT(2, logical_or5(), "logical_or5");
+    ASSERT(1, logical_or6(), "logical_or6");
 
     ASSERT(0, logical_expr1(), "logical_expr1");
+    ASSERT(1, logical_expr2(), "logical_expr2");
+    ASSERT(0, logical_expr3(), "logical_expr3");
 
     ASSERT(10, termary1(1), "termary1(1)");
     ASSERT(2, termary1(0), "termary1(0)");
     ASSERT(0, termary2(0), "termary2(0)");
     ASSERT(100, termary2(1), "termary2(1)");
     ASSERT(3, termary3(), "termary3");
+    ASSERT(15, termary4(0), "termary4(0)");
+    ASSERT(25, termary4(1), "termary4(1)");
 
     ASSERT(1, and_or_xor1(), "and_or_xor1");
     ASSERT(3, and_or_xor2(), "and_or_xor2");

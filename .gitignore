@@ -2,12 +2,15 @@
 *.o
 tmp*
 a.out
-kcc
+kcc1
 kcc2
 kcc3
+kcc1_gcc
+kcc1_clang
 test_exec.*
 out
 peda*
 .gdb*
-selfhost/src/*.c
+selfhost/gen2
+selfhost/gen3
 *.log
