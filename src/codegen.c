@@ -658,8 +658,7 @@ void codegen() {
         // エピローグ
         // 最後の式の結果がRAXに残っているのでそれが返り値になる
         printf(".L.return.%s:\n", current_fn->name);
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
+        printf("  leave\n");
         printf("  ret\n");
     }
 }
