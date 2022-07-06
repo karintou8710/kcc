@@ -1,7 +1,7 @@
 # kcc
 
 Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイラ作成入門」
-を参考に、セルフホストを目指して作成しています。
+を参考に開発しています。
 
 ## Implemented
 
@@ -40,14 +40,12 @@ $ make diff
 ## BNF
 
 ```
-<program> = ( <declaration_global> | <func_define> )*
-<declaration_global> = <declaration> ";"
+<program> = ( <declaration> | <func_define> )*
+<declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
+<declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
 <pointer> = "*"*
-<declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
-<declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
-<struct_declaration> = <type_specifier> <pointer> <ident> ";"
 <storage_class>  = "typedef" | "entern"
 <type_specifier> = <storage_class>? "int"
                  | <storage_class>? "char"
@@ -59,10 +57,11 @@ $ make diff
                  | <storage_class>? "enum" <ident>
                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
 <type_name> = <type_specifier> <pointer> <type_suffix>
+<type_suffix> = "[" <num>? "]" <type_suffix> | ε
+<struct_declaration> = <type_specifier> <pointer> <ident> ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <conditional>
-<type_suffix> = "[" <num>? "]" <type_suffix> | ε
 <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
 <func_define> = <type_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"

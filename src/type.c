@@ -1,10 +1,5 @@
 #include "kcc.h"
 
-/*
- * TODO: 型のキャスト、静的型チェック
- *
- */
-
 /* 固定長の型のサイズを返す */
 static int tykind_to_size(TypeKind tykind) {
     if (tykind == TYPE_VOID) {

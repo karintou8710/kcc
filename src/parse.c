@@ -30,6 +30,7 @@ static Vector *new_node_init2(Initializer *init, Node *node);
 static Type *type_specifier();
 static Var *enumerator(Type *type, int *enum_const_num);
 static void enumerator_list(Type *type);
+static Node *initialize(Initializer *init, Node *node);
 static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
@@ -37,6 +38,7 @@ static Node *declaration(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static Function *func_define(Type *type);
+Type *struct_declaration(Type *type);
 static Node *compound_stmt();
 static Node *stmt();
 static Node *expr();
@@ -77,16 +79,21 @@ static bool consume_nostep(int op) {
 
 // typedefに対応
 static bool consume_is_type_nostep(Token *tok) {
-    if (tok->kind == TK_TYPE) {
-        return true;
-    }
+    if (tok->kind == TK_TYPE) return true;
 
     if (tok->kind == TK_IDENT) {
         char *name = my_strndup(tok->str, tok->len);
-        return find_typedef_alias(name) != NULL;
+        if (find_typedef_alias(name) != NULL) return true;
     }
 
-    // 基礎型でもtypedefでもない
+    // 型の修飾子や指定子
+    TokenKind type_tokens[] = {
+        TK_EXTERN};
+
+    for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
+        if (tok->kind == type_tokens[i]) return true;
+    }
+
     return false;
 }
 
@@ -838,7 +845,7 @@ static Node *get_node_ident(Token *tok) {
 /*************************************/
 
 /*
- *  <program> = ( <declaration_global> | <func_define> )*
+ *  <program> = ( <declaration> | <func_define> )*
  */
 void program() {
     local_scope = new_vec();
@@ -850,22 +857,86 @@ void program() {
             if (fn != NULL) vec_push(funcs, fn);
             is_global = true;
         } else {
-            declaration_global(type);
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+                consume(';')) {
+                // 構造体・列強型の作成 or 宣言
+                continue;
+            }
+            declaration(type);
         }
     }
 }
 
 /*
- *  <declaration_global> = <declaration> ";"
+ *  <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)* ";"
  */
-static Node *declaration_global(Type *type) {
-    if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
-        consume(';')) {
-        // 構造体・列強型の作成 or 宣言
-        return new_node(ND_NULL);
+static Node *declaration(Type *type) {
+    Node *node = declaration_var(type);
+    if (consume(';')) {
+        if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
+            vec_push(typedef_alias, ta);
+            current_storage = UNKNOWN;
+        } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
+            node->var->is_extern = true;
+            current_storage = UNKNOWN;
+        }
+        return node;
     }
-    Node *node = declaration(type);
+
+    Node *n = new_node(ND_SUGER);
+    n->stmts = new_vec();
+    vec_push(n->stmts, node);
+    while (consume(',')) {
+        vec_push(n->stmts, declaration_var(type));
+    }
+
+    for (int i = 0; i < n->stmts->len; i++) {
+        Node *tmp_node = n->stmts->body[i];
+        // typedefなら型名を記録する
+        if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
+            vec_push(typedef_alias, ta);
+        } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
+            tmp_node->var->is_extern = true;
+        }
+    }
+    current_storage = UNKNOWN;
+
     expect(';');
+    return n;
+}
+
+/*
+ *  <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+ */
+static Node *declaration_var(Type *type) {
+    type = pointer(type);
+    Node *node = declear_node_ident(token, type);
+    next_token();
+
+    if (consume_nostep('[')) {
+        // 配列
+        node->var->type = type_suffix(node->var->type, true);
+        // 新しい型のオフセットにする
+        node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
+    }
+    // 変数
+    if (consume('=')) {
+        if (current_storage == STORAGE_TYPEDEF) {
+            error("declaration_var() failure: typedef中で初期化はできません");
+        } else if (current_storage == STORAGE_EXTERN) {
+            error("declaration_var() failure: extern中で初期化はできません");
+        }
+
+        Initializer *init = new_initializer(node->var);
+        return initialize(init, node);
+    }
+
+    if (node->var->type->kind == TYPE_ARRAY && sizeOfType(node->var->type) == 0) {
+        error("declaration_var() failure: 宣言で配列の添え字は省略できません");
+    }
+
     return node;
 }
 
@@ -977,92 +1048,6 @@ static Type *pointer(Type *type) {
         Type *t = new_ptr_type(type);
         type = t;
     }
-    return type;
-}
-
-/*
- *  <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
- */
-static Node *declaration_var(Type *type) {
-    type = pointer(type);
-    Node *node = declear_node_ident(token, type);
-    next_token();
-
-    if (consume_nostep('[')) {
-        // 配列
-        node->var->type = type_suffix(node->var->type, true);
-        // 新しい型のオフセットにする
-        node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
-    }
-    // 変数
-    if (consume('=')) {
-        if (current_storage == STORAGE_TYPEDEF) {
-            error("declaration_var() failure: typedef中で初期化はできません");
-        } else if (current_storage == STORAGE_EXTERN) {
-            error("declaration_var() failure: extern中で初期化はできません");
-        }
-
-        Initializer *init = new_initializer(node->var);
-        return initialize(init, node);
-    }
-
-    if (node->var->type->kind == TYPE_ARRAY && sizeOfType(node->var->type) == 0) {
-        error("declaration_var() failure: 宣言で配列の添え字は省略できません");
-    }
-
-    return node;
-}
-
-/*
- *  <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
- */
-static Node *declaration(Type *type) {
-    Node *node = declaration_var(type);
-    if (consume_nostep(';')) {
-        if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
-            vec_push(typedef_alias, ta);
-            current_storage = UNKNOWN;
-        } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
-            node->var->is_extern = true;
-            current_storage = UNKNOWN;
-        }
-        return node;
-    }
-
-    Node *n = new_node(ND_SUGER);
-    n->stmts = new_vec();
-    vec_push(n->stmts, node);
-    while (consume(',')) {
-        vec_push(n->stmts, declaration_var(type));
-    }
-
-    for (int i = 0; i < n->stmts->len; i++) {
-        Node *tmp_node = n->stmts->body[i];
-        // typedefなら型名を記録する
-        if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
-            TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
-            vec_push(typedef_alias, ta);
-        } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
-            tmp_node->var->is_extern = true;
-        }
-    }
-    current_storage = UNKNOWN;
-
-    return n;
-}
-
-/*
- *  <struct_declaration> = <type_specifier> <pointer> <ident> ";"
- */
-Type *struct_declaration(Type *type) {
-    Type *t = type_specifier();
-    t = pointer(t);
-    Token *tok = token;
-    next_token();
-    t = type_suffix(t, false);
-    new_struct_member(tok, t, type);
-    expect(';');
     return type;
 }
 
@@ -1191,6 +1176,39 @@ Type *type_name() {
     return type;
 }
 
+// is_firstは配列の初期化時のみ使用
+/*
+ *  <type_suffix> = "[" <num>? "]" <type_suffix> | ε
+ */
+static Type *type_suffix(Type *type, bool is_first) {
+    if (consume('[')) {
+        int array_size;
+        if (is_first && consume(']')) {
+            array_size = 0;
+        } else {
+            array_size = expect_number();
+            expect(']');
+        }
+        type = new_array_type(type_suffix(type, false), array_size);
+    }
+
+    return type;
+}
+
+/*
+ *  <struct_declaration> = <type_specifier> <pointer> <ident> ";"
+ */
+Type *struct_declaration(Type *type) {
+    Type *t = type_specifier();
+    t = pointer(t);
+    Token *tok = token;
+    next_token();
+    t = type_suffix(t, false);
+    new_struct_member(tok, t, type);
+    expect(';');
+    return type;
+}
+
 /*
  * <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
  */
@@ -1227,25 +1245,6 @@ static Var *enumerator(Type *type, int *enum_const_num) {
         *enum_const_num = el->val + 1;
     }
     return var;
-}
-
-// is_firstは配列の初期化時のみ使用
-/*
- *  <type_suffix> = "[" <num>? "]" <type_suffix> | ε
- */
-static Type *type_suffix(Type *type, bool is_first) {
-    if (consume('[')) {
-        int array_size;
-        if (is_first && consume(']')) {
-            array_size = 0;
-        } else {
-            array_size = expect_number();
-            expect(']');
-        }
-        type = new_array_type(type_suffix(type, false), array_size);
-    }
-
-    return type;
 }
 
 /*
@@ -1399,7 +1398,7 @@ static Function *func_define(Type *type) {
 }
 
 /*
- *  <compound_stmt> = { <stmt>* }
+ *  <compound_stmt> = "{" (<declaration> | <stmt>)* "}"
  */
 static Node *compound_stmt() {
     expect('{');
@@ -1408,7 +1407,20 @@ static Node *compound_stmt() {
     Node *node = new_node(ND_BLOCK);
     node->stmts = new_vec();
     while (!consume('}')) {
-        Node *n = stmt();
+        Node *n;
+        if (consume_is_type_nostep(token)) {
+            Type *type = type_specifier();
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+                consume_nostep(';')) {
+                // 構造体か列挙型の作成 or 宣言
+                continue;
+            }
+            n = declaration(type);
+            vec_push(node->stmts, n);
+            continue;
+        }
+
+        n = stmt();
         if (n->kind == ND_VAR) {
             // ローカル変数の宣言はコンパイルしない
             n = new_node(ND_NULL);
@@ -1427,6 +1439,7 @@ static Node *compound_stmt() {
  *         | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
  *         | "while" "(" <expr> ")" <stmt>
  *         | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
+ *         | "for" "(" <declaration> <expr>? ";" <expr>? ")" <stmt>
  *         | ("continue" | "break")
  *         | <compound_stmt>
  */
@@ -1468,14 +1481,29 @@ static Node *stmt() {
         start_local_scope();
         node = new_node(ND_FOR);
         expect('(');
-        if (!consume(';')) {
-            node->init = expr();
-            expect(';');
+        // init
+        if (consume_is_type_nostep(token)) {
+            // <declaration>
+            Type *type = type_specifier();
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+                consume_nostep('{')) {
+                // 構造体か列挙型の作成
+                error("stmt() failure: failure");
+            }
+            node->init = declaration(type);
+        } else {
+            // <expr>?
+            if (!consume(';')) {
+                node->init = expr();
+                expect(';');
+            }
         }
+        // cond
         if (!consume(';')) {
             node->cond = expr();
             expect(';');
         }
+        // inc
         if (!consume(')')) {
             node->inc = expr();
             expect(')');
@@ -1502,21 +1530,9 @@ static Node *stmt() {
 }
 
 /*
- *  <expr> = <assign> ("," <assign>)* | <declaration>
+ *  <expr> = <assign> ("," <assign>)*
  */
 static Node *expr() {
-    if (consume_is_type_nostep(token)) {
-        Type *type = type_specifier();
-        if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
-            consume_nostep(';')) {
-            // 構造体か列挙型の作成 or 宣言
-            return new_node(ND_NULL);
-        }
-
-        Node *node = declaration(type);
-        return node;
-    }
-
     Node *node = new_node(ND_SUGER), *n = assign();
     node->stmts = new_vec();
     vec_push(node->stmts, n);
