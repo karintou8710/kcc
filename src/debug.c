@@ -196,6 +196,8 @@ void print_type_kind(TypeKind kind) {
         fprintf(stderr, "TYPE_VOID");
     else if (kind == TYPE_STRUCT)
         fprintf(stderr, "TYPE_STRUCT");
+    else if (kind == TYPE_UNION)
+        fprintf(stderr, "TYPE_UNION");
     else if (kind == TYPE_ENUM)
         fprintf(stderr, "TYPE_ENUM");
     else
@@ -274,7 +276,7 @@ void debug_type(Type *ty, int depth) {
     print_type_kind(ty->kind);
     puts("");
 
-    if (ty->kind == TYPE_STRUCT) {
+    if (ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION) {
         recursion_line_printf(depth, "name -> %s\n", ty->name);
         recursion_line_printf(depth, "size -> %d\n", ty->size);
         for (Var *member = ty->member; member; member = member->next) {

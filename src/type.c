@@ -12,7 +12,7 @@ static int tykind_to_size(TypeKind tykind) {
         return 4;
     } else if (tykind == TYPE_PTR || tykind == TYPE_LONG) {
         return 8;
-    } else if (tykind == TYPE_STRUCT) {
+    } else if (tykind == TYPE_STRUCT || tykind == TYPE_UNION) {
         return 0;  // parser側でsizeを決める
     } else if (tykind == TYPE_ENUM) {
         return 4;  // INT型と同じサイズ
@@ -39,8 +39,8 @@ size_t alignOfType(Type *ty) {
 }
 
 void apply_align_struct(Type *ty) {
-    if (!ty || ty->kind != TYPE_STRUCT) {
-        error("apply_align_struct() failure: struct型ではありません");
+    if (!ty || (ty->kind != TYPE_STRUCT && ty->kind != TYPE_UNION)) {
+        error("apply_align_struct() failure: struct or union型ではありません");
     }
 
     if (ty->member == NULL) return;
@@ -58,15 +58,25 @@ void apply_align_struct(Type *ty) {
     int struct_size = 0;
 
     while (v->next) {
-        v->next->offset = v->offset + sizeOfType(v->type);
-        // 負の割り算は未実装
-        int padding = (alignOfType(v->next->type) - v->next->offset % alignOfType(v->next->type)) % alignOfType(v->next->type);
-        v->next->offset += padding;
-        struct_size += sizeOfType(v->type) + padding;
+        if (ty->kind == TYPE_UNION) {
+            v->next->offset = 0;
+            if (struct_size < sizeOfType(v->type)) struct_size = sizeOfType(v->type);
+        } else {
+            // struct
+            v->next->offset = v->offset + sizeOfType(v->type);
+            // 負の割り算は未実装
+            int padding = (alignOfType(v->next->type) - v->next->offset % alignOfType(v->next->type)) % alignOfType(v->next->type);
+            v->next->offset += padding;
+            struct_size += sizeOfType(v->type) + padding;
+        }
         v = v->next;
     }
     // 最後の一つのメンバーのサイズを足す
-    struct_size += sizeOfType(v->type);
+    if (ty->kind == TYPE_UNION) {
+        if (struct_size < sizeOfType(v->type)) struct_size = sizeOfType(v->type);
+    } else {
+        struct_size += sizeOfType(v->type);
+    }
 
     // max_alignmentの倍数に構造体のサイズを揃える
     int padding = (max_alginemnt - struct_size % max_alginemnt) % max_alginemnt;
@@ -232,6 +242,14 @@ void add_type(Node *node) {
             return;
         }
 
+        if (then_t->kind == TYPE_UNION && els_t->kind == TYPE_UNION) {
+            if (then_t != els_t) {
+                error("add_type() failure: ND_TERNARY, different union type");
+            }
+            node->type = then_t;
+            return;
+        }
+
         error("add_type() failure: %d %d 不正な型です(ND_TERNARY)", then_t->kind, els_t->kind);
         return;
     }
@@ -283,6 +301,15 @@ void add_type(Node *node) {
         if (node->rhs->type->kind == TYPE_STRUCT && node->lhs->type->kind == TYPE_STRUCT) {
             if (node->rhs->type != node->lhs->type) {
                 error("add_type() failure: 異なる型の構造体に代入はできません");
+            }
+
+            node->type = node->rhs->type;
+            return;
+        }
+
+        if (node->rhs->type->kind == TYPE_UNION && node->lhs->type->kind == TYPE_UNION) {
+            if (node->rhs->type != node->lhs->type) {
+                error("add_type() failure: 異なる型の共用体に代入はできません");
             }
 
             node->type = node->rhs->type;

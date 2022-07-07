@@ -199,7 +199,8 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
     member->name = my_strndup(tok->str, tok->len);
     member->len = tok->len;
     member->type = member_type;
-    // offsetはalignmentを考慮するので後で決める
+    // offsetはalignmentを考慮するので後で決める。unionは0。
+    member->offset = 0;
     struct_type->member = member;
     struct_type->size += member_type->size;
 }
@@ -285,6 +286,14 @@ static Type *find_lstruct_type(char *name) {
 
 static Type *find_gstruct_type(char *name) {
     return find_aggregate_type(name, struct_global_lists);
+}
+
+static Type *find_lunion_type(char *name) {
+    return find_aggregate_type(name, union_local_lists);
+}
+
+static Type *find_gunion_type(char *name) {
+    return find_aggregate_type(name, union_global_lists);
 }
 
 static Type *find_lenum_type(char *name) {
@@ -567,12 +576,12 @@ static void create_lvar_from_params(Var *params) {
     create_lvar_from_params(params->next);
 }
 
-bool is_already_defined_global_obj(Token *tok) {
+static bool is_already_defined_global_obj(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
     return find_gvar(tok) || find_func(name);
 }
 
-bool is_same_params(Var *params1, Var *params2) {
+static bool is_same_params(Var *params1, Var *params2) {
     for (Var *v1 = params1, *v2 = params2;; v1 = v1->next, v2 = v2->next) {
         if (v1 == NULL || v2 == NULL) {
             // NULL == NULL -> params1とparams2は等しい
@@ -585,11 +594,54 @@ bool is_same_params(Var *params1, Var *params2) {
     }
 }
 
-bool has_lvar_in_all_params(Var *params) {
+static bool has_lvar_in_all_params(Var *params) {
     for (Var *v = params; v; v = v->next) {
         if (v->is_only_type) return false;
     }
     return true;
+}
+
+static Var *reverse_linked_list_var(Var *cur) {
+    Var *reversed = NULL;
+    while (cur) {
+        Var *tmp = cur->next;
+        cur->next = reversed;
+        reversed = cur;
+        cur = tmp;
+    }
+    return reversed->next;
+}
+
+static Type *struct_defined_or_forward(Type *type) {
+    if (is_global) {
+        Type *t = find_gstruct_type(type->name);
+        if (t != NULL && !t->is_forward) {
+            error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+        }
+        return t;
+    } else {
+        Type *t = find_lstruct_type(type->name);
+        if (t != NULL && !t->is_forward) {
+            error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+        }
+        return t;
+    }
+}
+
+static Type *union_defined_or_forward(Type *type) {
+    if (is_global) {
+        Type *t = find_gunion_type(type->name);
+        if (t != NULL && !t->is_forward) {
+            error("find_gunion_type() failure: %s構造体は既に宣言済みです。", type->name);
+        }
+        return t;
+    } else {
+        Type *t = find_lunion_type(type->name);
+        if (t != NULL && !t->is_forward) {
+            error("find_lunion_type() failure: %s構造体は既に宣言済みです。", type->name);
+        }
+        return t;
+    }
 }
 
 /*************************************/
@@ -840,7 +892,7 @@ void program() {
             if (fn != NULL) vec_push(funcs, fn);
             is_global = true;
         } else {
-            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume(';')) {
                 // 構造体・列強型の作成 or 宣言
                 continue;
@@ -1046,6 +1098,7 @@ static Type *pointer(Type *type) {
  *                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
  */
 static Type *type_specifier() {
+    // storage class
     if (consume(TK_TYPEDEF))
         current_storage = STORAGE_TYPEDEF;
     else if (consume(TK_EXTERN)) {
@@ -1070,19 +1123,8 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
-        if (is_global) {
-            Type *t = find_gstruct_type(type->name);
-            if (t != NULL && !t->is_forward) {
-                error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
-            }
-            if (t) type = t;
-        } else {
-            Type *t = find_lstruct_type(type->name);
-            if (t != NULL && !t->is_forward) {
-                error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
-            }
-            if (t) type = t;
-        }
+        Type *t = struct_defined_or_forward(type);
+        if (t != NULL) type = t;
 
         if (!type->is_forward) {
             vec_push(is_global ? struct_global_lists : struct_local_lists, type);
@@ -1096,16 +1138,31 @@ static Type *type_specifier() {
             type = struct_declaration(type);
         }
         // 定義した順に並べ直す
-        Var *reverse_member = NULL;
-        while (type->member) {
-            Var *tmp = type->member->next;
-            type->member->next = reverse_member;
-            reverse_member = type->member;
-            type->member = tmp;
-        }
-        type->member = reverse_member->next;
-
+        type->member = reverse_linked_list_var(type->member);
         // memberのアライメントを考慮したoffsetを決定する
+        apply_align_struct(type);
+
+        return type;
+    }
+
+    if (type->kind == TYPE_UNION && consume('{')) {
+        Type *t = union_defined_or_forward(type);
+        if (t != NULL) type = t;
+
+        if (!type->is_forward) {
+            vec_push(is_global ? union_global_lists : union_local_lists, type);
+        } else {
+            type->is_forward = false;
+        }
+
+        // 構造体のメンバーの宣言
+        type->member = memory_alloc(sizeof(Var));
+        while (!consume('}')) {
+            type = struct_declaration(type);
+        }
+        // 定義した順に並べ直す
+        type->member = reverse_linked_list_var(type->member);
+
         apply_align_struct(type);
 
         return type;
@@ -1137,6 +1194,19 @@ static Type *type_specifier() {
                 type->is_forward = true;
                 stype = type;
                 vec_push(is_global ? struct_global_lists : struct_local_lists, stype);
+            }
+        }
+        type = stype;
+    }
+
+    if (type->kind == TYPE_UNION) {
+        Type *stype = find_lunion_type(type->name);
+        if (stype == NULL) {
+            stype = find_gunion_type(type->name);
+            if (stype == NULL) {
+                type->is_forward = true;
+                stype = type;
+                vec_push(is_global ? union_global_lists : union_local_lists, stype);
             }
         }
         type = stype;
@@ -1364,6 +1434,7 @@ static Function *func_define(Type *type) {
 
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
+    union_local_lists = new_vec();
     enum_local_lists = new_vec();
     locals->offset = 0;
     start_local_scope();
@@ -1396,7 +1467,7 @@ static Node *compound_stmt() {
         Node *n;
         if (consume_is_type_nostep(token)) {
             Type *type = type_specifier();
-            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep(';')) {
                 // 構造体か列挙型の作成 or 宣言
                 continue;
@@ -1471,7 +1542,7 @@ static Node *stmt() {
         if (consume_is_type_nostep(token)) {
             // <declaration>
             Type *type = type_specifier();
-            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) &&
+            if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep('{')) {
                 // 構造体か列挙型の作成
                 error("stmt() failure: failure");
@@ -1858,8 +1929,8 @@ static Node *postfix() {
             Token *tok = token;
             expect(TK_IDENT);
             add_type(node);
-            if (node->type->kind != TYPE_STRUCT) {
-                error("postfix() failure: struct型ではありません。");
+            if (node->type->kind != TYPE_STRUCT && node->type->kind != TYPE_UNION) {
+                error("postfix() failure: struct or union型ではありません。");
             }
             Var *member = node->type->member;
             while (member) {

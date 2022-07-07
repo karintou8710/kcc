@@ -167,7 +167,7 @@ static void gen_addr(Node *node) {
 }
 
 static void load(Type *ty) {
-    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT) {
+    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION) {
         // アドレスのまま読みこむようにする
         return;
     }
@@ -232,7 +232,7 @@ static void gen(Node *node) {
         pop_rdi();
         pop();
         add_type(node->lhs);
-        if (node->type->kind == TYPE_STRUCT) {
+        if (node->type->kind == TYPE_STRUCT || node->type->kind == TYPE_UNION) {
             // メモリコピー
             for (int i = 0; i < node->type->size; i++) {
                 printf("  mov r8, [rdi+%d]\n", i);

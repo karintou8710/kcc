@@ -8,7 +8,7 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - if, for, 配列, ポインター
 - グローバル変数の定義
 - 関数の定義、呼び出し
-- 構造体の基礎
+- struct, union
 - ブロックスコープ
 - 配列の初期化式
 - typedef, enum
@@ -18,7 +18,6 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 ## TODO
 
 - switch
-- union
 - 構造体の初期化式
 - \_Bool
 
@@ -52,8 +51,8 @@ $ make diff
                  | <storage_class>? "void"
                  | <storage_class>? "short"
                  | <storage_class>? "long" "long"? "int"?
-                 | <storage_class>? "struct" <ident>
-                 | <storage_class>? "struct" <ident> "{" <struct_declaration>* "}"
+                 | <storage_class>? ("struct" | "union") <ident>
+                 | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
                  | <storage_class>? "enum" <ident>
                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
 <type_name> = <type_specifier> <pointer> <type_suffix>

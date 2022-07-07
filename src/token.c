@@ -416,6 +416,24 @@ Token *tokenize(char *p) {
             }
         }
 
+        if (strncmp(p, "union", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_TYPE, cur, p, 5);
+            cur->type = new_type(TYPE_UNION);
+            p += 5;
+
+            skip_space(&p);
+
+            if (is_alpha(*p)) {
+                char *q = p;
+                str_advanve(&p);
+                cur->type->name = my_strndup(q, p - q);
+                continue;
+            } else {
+                /* TODO: 無名共用体 */
+                error_at(p, "tokenize() failure: unionの型名が存在しません。");
+            }
+        }
+
         if (strncmp(p, "enum", 4) == 0 && !is_alnum(p[4])) {
             cur = new_token(TK_TYPE, cur, p, 4);
             cur->type = new_type(TYPE_ENUM);

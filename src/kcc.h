@@ -77,6 +77,7 @@ enum TypeKind {
     TYPE_ARRAY,
     TYPE_VOID,
     TYPE_STRUCT,
+    TYPE_UNION,
     TYPE_ENUM,
 };
 
@@ -306,6 +307,8 @@ Vector *string_literal;
 Vector *funcs;  // Function型のVector
 Vector *struct_global_lists;
 Vector *struct_local_lists;
+Vector *union_global_lists;
+Vector *union_local_lists;
 Vector *enum_global_lists;
 Vector *enum_local_lists;  // 既出の列挙型
 Vector *typedef_alias;
