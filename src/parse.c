@@ -152,7 +152,6 @@ static bool is_func(Token *tok) {
 /*** new objects ***/
 static Var *new_lvar(Token *tok, Type *type) {
     Var *lvar = memory_alloc(sizeof(Var));
-    lvar->next = locals;
     lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
     lvar->type = type;
@@ -162,19 +161,35 @@ static Var *new_lvar(Token *tok, Type *type) {
         lvar->offset = locals->offset + sizeOfType(type);
     }
 
-    locals = lvar;  // localsを新しいローカル変数に更新
+    /*
+     * typedefはローカル変数を生成しない
+     * コードの都合上変数自体は生成する
+     */
+    if (current_storage != STORAGE_TYPEDEF) {
+        lvar->next = locals;
+        locals = lvar;  // localsを新しいローカル変数に更新
+    }
+
     return lvar;
 }
 
 static Var *new_gvar(Token *tok, Type *type) {
     Var *gvar = memory_alloc(sizeof(Var));
-    gvar->next = globals;
     gvar->name = my_strndup(tok->str, tok->len);
     gvar->len = tok->len;
     gvar->type = type;
     gvar->is_global = true;
     gvar->ginit = new_vec();
-    globals = gvar;  // globalsを新しいグローバル変数に更新
+
+    /*
+     * typedefはグローバル変数を生成しない
+     * コードの都合上変数自体は生成する
+     */
+    if (current_storage != STORAGE_TYPEDEF) {
+        gvar->next = globals;
+        globals = gvar;  // globalsを新しいグローバル変数に更新
+    }
+
     return gvar;
 }
 
