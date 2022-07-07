@@ -1,7 +1,6 @@
 # 141 "/usr/include/x86_64-linux-gnu/bits/types.h" 3 4
 
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 # 1 "/usr/include/x86_64-linux-gnu/bits/typesizes.h" 1 3 4
 # 142 "/usr/include/x86_64-linux-gnu/bits/types.h" 2 3 4

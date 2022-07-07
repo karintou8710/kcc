@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -18,12 +17,6 @@ int ret() {
 
 void p() {
     printf("Hello, World\n");
-}
-
-int int_scanf() {
-    int c;
-    scanf("%d", &c);
-    return c;
 }
 
 void new_line() {

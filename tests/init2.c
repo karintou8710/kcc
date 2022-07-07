@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -10,14 +9,12 @@ int ASSERT(int expected, int actual, char *name) {
     exit(1);
 }
 
-
 int init_array8() {
     int a[] = {1, 2, 3, 4, 5};
     return a[0] + a[4];
 }
 
 int test9[] = {1, 2, 3};
-
 
 int main() {
     ASSERT(6, init_array8(), "init_array8");

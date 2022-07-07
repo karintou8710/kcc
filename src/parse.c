@@ -37,7 +37,7 @@ static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
-static Function *func_define(Type *type);
+static void func_define(Type *type);
 Type *struct_declaration(Type *type);
 static Node *compound_stmt();
 static Node *stmt();
@@ -888,8 +888,7 @@ void program() {
         Type *type = type_specifier();
         if (is_func(token)) {
             is_global = false;
-            Function *fn = func_define(type);
-            if (fn != NULL) vec_push(funcs, fn);
+            func_define(type);
             is_global = true;
         } else {
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
@@ -1336,7 +1335,7 @@ static Var *declaration_param(Var *cur) {
  *                  "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
  *                  <compound_stmt>
  */
-static Function *func_define(Type *type) {
+static void func_define(Type *type) {
     type = pointer(type);
     Function *fn = memory_alloc(sizeof(Function));
     cur_parse_func = fn;
@@ -1404,7 +1403,8 @@ static Function *func_define(Type *type) {
         // プロトタイプ宣言
         fn->is_prototype = true;
         if (entry == NULL) {
-            return fn;
+            vec_push(funcs, fn);
+            return;
         }
 
         if (!is_same_params(fn->params, entry->params) ||
@@ -1412,7 +1412,7 @@ static Function *func_define(Type *type) {
             error("func_define() failure: 異なる型でのプロトタイプ宣言です");
         }
 
-        return NULL;
+        return;
     }
 
     // 定義
@@ -1431,6 +1431,9 @@ static Function *func_define(Type *type) {
     if (!has_lvar_in_all_params(fn->params)) {
         error("has_lvar_in_all_params() failure: 引数の定義には変数名が必要です");
     }
+
+    /* 再帰関数用に先に登録する */
+    vec_push(funcs, fn);
 
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
@@ -1451,7 +1454,7 @@ static Function *func_define(Type *type) {
     fn->body = compound_stmt();
     end_local_scope();
     fn->locals = locals;
-    return fn;
+    return;
 }
 
 /*
@@ -1984,6 +1987,11 @@ static Node *funcall(Token *tok) {
         Node *n = assign();
         add_type(n);
         vec_push(node->args, n);
+    }
+
+    Function *fn = find_func(node->fn_name);
+    if (fn == NULL) {
+        error("funcalL() failure: %sは定義されていない関数です", node->fn_name);
     }
 
     if (strcmp(node->fn_name, "va_start") == 0) {

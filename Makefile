@@ -109,7 +109,7 @@ run3: $(GEN3)
 
 ### utils ###
 clean:
-	find . -name "*.o" -o -name "*~" -o -name "tmp*" -o -path "./selfhost/gen[2-3]/*" | xargs rm -f
+	find . -name "*.o" -o -name "*~" -o -name "*.i" -o -name "tmp*" -o -path "./selfhost/gen[2-3]/*" | xargs rm -f
 	rm -f kcc1 kcc2 kcc3 kcc1_clang kcc1_gcc
 
-.PHONY: test1 test1_clang test1_gcc_and_clang test2 test3  diff testall testextra run1 run2 run3 clean
+.PHONY: test1 test1_clang test1_gcc_and_clang test2 test3 diff testall testextra run1 run2 run3 clean

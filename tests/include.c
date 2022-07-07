@@ -1,5 +1,7 @@
-#include <stdio.h>
-
+/* プリプロセスはcppに任せるのでテストしない */
+int main() { return 0; }
+/*
+#include "basic.h"
 #include "tests/empty.h"
 #include "tests/test.h"
 
@@ -31,3 +33,4 @@ int main() {
 
     return 0;
 }
+*/

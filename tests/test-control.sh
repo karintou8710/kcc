@@ -1,6 +1,7 @@
 #!/bin/bash
 
 COMPILER=$1
+DUMMY_LIB_DIR=selfhost/dummy_headers
 SUCCESS=0
 FAILURE=1
 
@@ -17,7 +18,9 @@ fi
 for src in tests/*.c
 do
     debug "$COMPILER start compileing $src"
-    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $src > tmp.s
+    pre=`echo $src | sed -e 's/\.c/\.i/g'`
+    cpp $src > $pre
+    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $pre > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$COMPILER failed to compile"

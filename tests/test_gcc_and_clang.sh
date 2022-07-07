@@ -23,7 +23,9 @@ fi
 for src in tests/*.c
 do
     debug "$KCC_FROM_GCC start compileing $src"
-    ./$KCC_FROM_GCC $src > tmp_gcc.s
+    pre=`echo $src | sed -e 's/\.c/\.i/g'`
+    cpp $src > $pre
+    ./$KCC_FROM_GCC $pre > tmp_gcc.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$KCC_FROM_GCC failed to compile"
@@ -31,7 +33,7 @@ do
     fi
 
 	debug "$KCC_FROM_CLANG start compileing $src"
-    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $src > tmp_clang.s
+    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $pre > tmp_clang.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$KCC_FROM_CLANG failed to compile"

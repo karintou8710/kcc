@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 extern char __va_area__[136];
 
@@ -11,15 +10,6 @@ int ASSERT(int expected, int actual, char *name) {
     printf("expected %d -> actual %d\n", expected, actual);
     exit(1);
 }
-
-// 組み込み変数
-
-typedef struct __builtin_va_list {
-    int gp_offset;
-    int fp_offset;
-    void *overflow_arg_area;
-    void *reg_save_area;
-} va_list[1];
 
 char *variadic1(char *fmt, ...) {
     char buf[100];

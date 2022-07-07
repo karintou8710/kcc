@@ -12,5 +12,6 @@ char *strerror(int errnum);
 char *strstr(char *s1, char *s2);
 char *strchr(char *s, int c);
 long strtol(char *s, char **endptr, int base);
+void *memset(void *buf, int ch, size_t n);
 
 #endif

@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
