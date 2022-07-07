@@ -14,10 +14,10 @@ if [ ! -e "$COMPILER" ]; then
     exit $FAILURE
 fi
 
-for i in tests/*.c
+for src in tests/*.c
 do
-    debug "$COMPILER start compileing $i"
-    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $i > tmp.s
+    debug "$COMPILER start compileing $src"
+    ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $src > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$COMPILER failed to compile"
@@ -29,7 +29,7 @@ do
 
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "$i failed to exec"
+        debug "$src failed to exec"
         exit $FAILURE
     fi
 

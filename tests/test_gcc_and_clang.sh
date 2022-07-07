@@ -20,18 +20,18 @@ if [ ! -e "$KCC_FROM_CLANG" ]; then
     exit $FAILURE
 fi
 
-for i in tests/*.c
+for src in tests/*.c
 do
-    debug "$KCC_FROM_GCC start compileing $i"
-    ./$KCC_FROM_GCC $i > tmp_gcc.s
+    debug "$KCC_FROM_GCC start compileing $src"
+    ./$KCC_FROM_GCC $src > tmp_gcc.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$KCC_FROM_GCC failed to compile"
         exit $FAILURE
     fi
 
-	debug "$KCC_FROM_CLANG start compileing $i"
-    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $i > tmp_clang.s
+	debug "$KCC_FROM_CLANG start compileing $src"
+    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $src > tmp_clang.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$KCC_FROM_CLANG failed to compile"
@@ -41,7 +41,7 @@ do
 	diff tmp_gcc.s tmp_clang.s
     ret=$?
     if [ $ret -ne $SUCCESS ]; then
-        echo "diff tmp_gcc.s tmp_clang.s failed at $i"
+        echo "diff tmp_gcc.s tmp_clang.s failed at $src"
         exit $FAILURE
     fi
 done
