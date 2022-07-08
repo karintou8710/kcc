@@ -88,6 +88,8 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_CAST");  // cast
     else if (kind == ND_STMT_EXPR)
         fprintf(stderr, "ND_STMT_EXPR");  // stmt in expr
+    else if (kind == ND_DO_WHILE)
+        fprintf(stderr, "ND_DO_WHILE");  // do ... while
     else
         error("print_node_kind() failure");
 
@@ -172,6 +174,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_VARIADIC");
     else if (kind == TK_EXTERN)
         fprintf(stderr, "TK_EXTERN");
+    else if (kind == TK_DO)
+        fprintf(stderr, "TK_DO");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

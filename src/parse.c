@@ -1543,6 +1543,7 @@ static Node *compound_stmt() {
  *         | "while" "(" <expr> ")" <stmt>
  *         | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
  *         | "for" "(" <declaration> <expr>? ";" <expr>? ")" <stmt>
+ *         | "do" <stmt> "while" "(" <expr> ")" ";"
  *         | ("continue" | "break")
  *         | <compound_stmt>
  */
@@ -1583,6 +1584,15 @@ static Node *stmt() {
         node->cond = expr();
         expect(')');
         node->body = stmt();
+    } else if (consume(TK_DO)) {
+        node = new_node(ND_DO_WHILE);
+        node->lhs = new_node(ND_WHILE);
+        node->lhs->body = stmt();
+        expect(TK_WHILE);
+        expect('(');
+        node->lhs->cond = expr();
+        expect(')');
+        expect(';');
     } else if (consume(TK_FOR)) {
         start_local_scope();
         node = new_node(ND_FOR);

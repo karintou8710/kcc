@@ -468,6 +468,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "do", 2) == 0 && !is_alnum(p[2])) {
+            cur = new_token(TK_DO, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;

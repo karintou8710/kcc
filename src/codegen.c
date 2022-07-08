@@ -326,6 +326,7 @@ static void gen(Node *node) {
 
         printf("  cmp rax, 0\n");
         printf("  je  .Lloopend%04d\n", loop_count);
+        printf(".Lloopbody%04d:\n", loop_count);  // do-while用
 
         int tmp_label = continue_label;
         continue_label = loop_count;
@@ -338,6 +339,10 @@ static void gen(Node *node) {
         printf("  jmp .Lloopbegin%04d\n", loop_count);
         printf(".Lloopend%04d:\n", loop_count);
         push();  // 数合わせ
+        return;
+    } else if (node->kind == ND_DO_WHILE) {
+        printf("  jmp .Lloopbody%04d\n", loop_count);
+        gen(node->lhs);  // whileを生成
         return;
     } else if (node->kind == ND_FOR) {
         label_loop_count++;

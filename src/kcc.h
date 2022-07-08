@@ -66,6 +66,7 @@ enum TokenKind {
     TK_VARIADIC,     // ...
     TK_INCLUDE,      // include
     TK_EXTERN,       // extern
+    TK_DO,           // do
 };
 
 enum TypeKind {
@@ -122,6 +123,7 @@ enum NodeKind {
     ND_TERNARY,        // 3項演算子
     ND_CAST,           // キャスト
     ND_STMT_EXPR,      // stmt in expr
+    ND_DO_WHILE,       // do ... while
 };
 
 struct Vector {

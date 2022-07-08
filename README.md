@@ -71,6 +71,7 @@ $ make diff
        | "return" <expr>? ";"
        | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
        | "while" "(" <expr> ")" <stmt>
+       | "do" <stmt> "while" "(" <expr> ")" ";"
        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
        | ("continue" | "break")
        | <compound_stmt>

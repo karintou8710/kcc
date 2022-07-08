@@ -275,6 +275,61 @@ int complex_loop1() {
     return res;
 }
 
+int do_while1() {
+    int a = 0;
+    do {
+        a = 10;
+    } while (0);
+    return a;
+}
+
+int do_while2() {
+    int a = 10;
+    do {
+        if (a == 5) break;
+        a--;
+    } while (a > 0);
+    return a;
+}
+
+int do_while3() {
+    int a = 10, res = 0;
+    do {
+        a--;
+        if (a % 2 == 0) continue;
+        res++;
+    } while (a > 0);
+    return res;
+}
+
+int do_while4() {
+    int i = 0;
+    int res = 0;
+    do {
+        int j = 0;
+        do {
+            int sum = 0;
+            while (sum < 10) {
+                sum += 1;
+                if (sum % 5 == 0) break;
+            }
+            res += sum;
+            j++;
+            if (res > 30) break;
+        } while (j < 5);
+        i++;
+        for (int k = 0; k < 10; k++) {
+            res++;
+        }
+        for (int k = 0; k < 10; k++) {
+            res++;
+            if (res > 70) break;
+        }
+        if (res > 100) break;
+    } while (i < 5);
+    return res;
+}
+
 int main() {
     ASSERT(66, for1(), "for1");
     ASSERT(1, while1(), "while1");
@@ -293,6 +348,11 @@ int main() {
     ASSERT(4, continue_while2(), "continue_while2");
 
     ASSERT(9, complex_loop1(), "complex_loop1");
+
+    ASSERT(10, do_while1(), "do_while1");
+    ASSERT(5, do_while2(), "do_while2");
+    ASSERT(5, do_while3(), "do_while3");
+    ASSERT(102, do_while4(), "do_while4");
 
     printf("ALL TEST OF test.c SUCCESS :)\n");
     return 0;
