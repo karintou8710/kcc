@@ -18,6 +18,7 @@ static Node *new_sub(Node *lhs, Node *rhs);
 static Node *new_mul(Node *lhs, Node *rhs);
 static Node *new_div(Node *lhs, Node *rhs);
 static Node *new_mod(Node *lhs, Node *rhs);
+static Node *new_cast(Node *lhs, Type *to_type);
 static Node *new_node_num(long val);
 static Var *new_lvar(Token *tok, Type *type);
 static Var *new_gvar(Token *tok, Type *type);
@@ -588,9 +589,43 @@ static bool is_same_params(Var *params1, Var *params2) {
             return v1 == v2;
         }
 
-        if (!is_same_type(params1->type, params2->type)) {
+        if (!is_same_type(v1->type, v2->type)) {
             return false;
         }
+    }
+}
+
+static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
+    if (args == NULL) error("should_cast_params() failure: args == NULL");
+
+    int args_len = args->len;
+    int params_len = 0;
+    Var *tmp_p = params;
+    while (tmp_p) {
+        params_len++;
+        tmp_p = tmp_p->next;
+    }
+
+    if ((is_variadic && args_len < params_len) ||
+        (!is_variadic && args_len != params_len)) {
+        error("should_cast_params() failure: length error args=%d params=%d is_variadic=%d", args_len, params_len, is_variadic);
+    }
+
+    int i = 0;
+    /* args_len >= params_lenとなる */
+    while (i < params_len) {
+        Node *n = args->body[i];
+        Var *v = params;
+
+        if (!can_type_cast(n->type, v->type->kind)) {
+            error("should_cast_params() failure: cast error %d %d", n->type->kind, v->type->kind);
+        }
+
+        if (!is_same_type(n->type, v->type))
+            args->body[i] = new_cast(n, v->type);
+
+        params = params->next;
+        i++;
     }
 }
 
@@ -799,6 +834,13 @@ static Node *new_assign(Node *lhs, Node *rhs) {
     return node;
 }
 
+static Node *new_cast(Node *lhs, Type *to_type) {
+    Node *node = new_node(ND_CAST);
+    node->lhs = lhs;
+    node->type = to_type;
+    return node;
+}
+
 /* 数値ノードを作成 */
 static Node *new_node_num(long val) {
     Node *node = new_node(ND_NUM);
@@ -898,6 +940,7 @@ void program() {
             }
             declaration(type);
         }
+        current_storage = UNKNOWN;
     }
 }
 
@@ -910,10 +953,8 @@ static Node *declaration(Type *type) {
         if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
             TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
-            current_storage = UNKNOWN;
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
             node->var->is_extern = true;
-            current_storage = UNKNOWN;
         }
         return node;
     }
@@ -1833,10 +1874,7 @@ static Node *cast() {
         Node *node = cast();
         add_type(node);
         if (can_type_cast(node->type, type->kind)) {
-            Node *n = new_node(ND_CAST);
-            n->lhs = node;
-            n->type = type;
-            node = n;
+            node = new_cast(node, type);
         } else {
             error("can_type_cast() failure: 型のキャストに失敗しました");
         }
@@ -1993,6 +2031,7 @@ static Node *funcall(Token *tok) {
     if (fn == NULL) {
         error("funcalL() failure: %sは定義されていない関数です", node->fn_name);
     }
+    should_cast_args(node->args, fn->params, fn->is_variadic);
 
     if (strcmp(node->fn_name, "va_start") == 0) {
         /*

@@ -135,6 +135,10 @@ int cast6() {
     return (c.m1 == 100) && (c.m2 == 200);
 }
 
+int params1(int a[3]) {
+    return a[0];
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -162,6 +166,13 @@ int main() {
 
     ASSERT(1 << 14, short1(), "short1");
     ASSERT(127, short2(), "short2");
+
+    int test1[3] = {1, 2, 3};
+    int *test2 = test1;
+    int test3 = 10;
+    int *test4 = &test3;
+    ASSERT(1, params1(test2), "params1(test2)");
+    ASSERT(10, params1(test4), "params1(test4)");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;
