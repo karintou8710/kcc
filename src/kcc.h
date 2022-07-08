@@ -79,6 +79,7 @@ enum TypeKind {
     TYPE_STRUCT,
     TYPE_UNION,
     TYPE_ENUM,
+    TYPE_BOOL,
 };
 
 enum NodeKind {

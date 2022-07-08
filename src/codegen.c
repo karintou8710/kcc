@@ -172,7 +172,7 @@ static void load(Type *ty) {
         return;
     }
 
-    if (ty->kind == TYPE_CHAR) {
+    if (ty->kind == TYPE_CHAR || ty->kind == TYPE_BOOL) {
         printf("  movsx eax, BYTE PTR [rax]\n");
         return;
     }
@@ -231,13 +231,19 @@ static void gen(Node *node) {
         gen(node->rhs);
         pop_rdi();
         pop();
-        add_type(node->lhs);
+        add_type(node);
         if (node->type->kind == TYPE_STRUCT || node->type->kind == TYPE_UNION) {
             // メモリコピー
             for (int i = 0; i < node->type->size; i++) {
                 printf("  mov r8, [rdi+%d]\n", i);
                 printf("  mov [rax+%d], r8\n", i);
             }
+        } else if (node->type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(node->rhs->type, REG_RDI);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne dil\n");
+            printf("  movzb rdi, dil\n");
+            printf("  mov [rax], dil\n");
         } else {
             printf("  mov [rax], %s\n", proper_register(node->lhs->type, REG_RDI));
         }
@@ -249,6 +255,11 @@ static void gen(Node *node) {
         pop_rdi();
         if (current_fn->ret_type->kind == TYPE_CHAR) {
             printf("  movsx rax, dil\n");
+        } else if (current_fn->ret_type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(current_fn->ret_type, REG_RDI);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
         } else if (current_fn->ret_type->kind != TYPE_VOID) {
             if (current_fn->ret_type->size < 8) {
                 printf("  movsx rax, %s\n", proper_register(current_fn->ret_type, REG_RDI));
@@ -429,6 +440,26 @@ static void gen(Node *node) {
     } else if (node->kind == ND_CAST) {
         gen(node->lhs);
         pop();
+
+        /*
+         * サイズが等しいか判定する前にBOOLかどうかを見る。
+         * char -> boolなどの場合があるため。
+         */
+        if (node->type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(node->type, REG_RAX);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            push();
+            return;
+        }
+
+        if (sizeOfType(node->type) == sizeOfType(node->lhs->type)) {
+            /* 無駄なキャストはしない */
+            push();
+            return;
+        }
+
         if (node->type->size == 8) {
             // キャストの必要なし
         } else if (node->type->size == 4) {

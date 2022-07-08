@@ -4,7 +4,7 @@
 static int tykind_to_size(TypeKind tykind) {
     if (tykind == TYPE_VOID) {
         return 0;
-    } else if (tykind == TYPE_CHAR) {
+    } else if (tykind == TYPE_CHAR || tykind == TYPE_BOOL) {
         return 1;
     } else if (tykind == TYPE_SHORT) {
         return 2;
@@ -134,7 +134,8 @@ bool is_integertype(TypeKind kind) {
         kind == TYPE_SHORT ||
         kind == TYPE_INT ||
         kind == TYPE_LONG ||
-        kind == TYPE_ENUM);
+        kind == TYPE_ENUM ||
+        kind == TYPE_BOOL);
 }
 
 bool is_scalartype(TypeKind kind) {

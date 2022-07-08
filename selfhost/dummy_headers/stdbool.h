@@ -2,11 +2,11 @@
 #define STDBOOL_H
 
 // TODO: _Boolの実装
-typedef char bool;
+typedef _Bool bool;
 
-enum BOOL {
-    false = 0,
-    true = 1,
-};
+#define true 1
+#define false 0
+
+#define __bool_true_false_are_defined 1
 
 #endif

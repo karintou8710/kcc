@@ -139,6 +139,40 @@ int params1(int a[3]) {
     return a[0];
 }
 
+typedef _Bool bool;
+bool true = 1;
+bool false = 0;
+
+bool bool1() {
+    bool a = false, b = true;
+    a = 1000 + 1;
+    b = 10;
+
+    return a + b;
+}
+
+bool bool2() {
+    int a = 10;
+    return (1 * 2 - 2) * a;
+}
+
+int bool3(bool a) {
+    return a;
+}
+
+int bool4() {
+    bool a[3] = {1, 2};
+    return a[0] == true && a[1] == true && a[2] == false;
+}
+
+int bool5() {
+    struct A {
+        bool test;
+    } a;
+    a.test = -1;
+    return a.test;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -159,6 +193,9 @@ int main() {
     ASSERT(100, (char)(256 + 10 * 10), "cast4");
     ASSERT(10, cast5(), "cast5");
     ASSERT(1, cast6(), "cast6");
+    ASSERT(1, (_Bool)1, "cast7");
+    ASSERT(1, (_Bool)1234, "cast8");
+    ASSERT(0, (_Bool)(int *)(_Bool)0, "cast9");
 
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");
@@ -173,6 +210,13 @@ int main() {
     int *test4 = &test3;
     ASSERT(1, params1(test2), "params1(test2)");
     ASSERT(10, params1(test4), "params1(test4)");
+
+    ASSERT(1, bool1(), "bool1()");
+    ASSERT(0, bool2(), "bool2()");
+    ASSERT(1, bool3(10), "bool3(10)");
+    ASSERT(0, bool3(0), "bool3(0)");
+    ASSERT(1, bool4(), "bool4()");
+    ASSERT(1, bool5(), "bool5()");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

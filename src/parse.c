@@ -827,7 +827,8 @@ static Node *new_assign(Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
 
-    Node *node = new_binop(ND_ASSIGN, lhs, rhs);
+    Node *node = new_cast(rhs, lhs->type);
+    node = new_binop(ND_ASSIGN, lhs, node);
     // 代入できるかチェック
     add_type(node);
 
@@ -1131,6 +1132,7 @@ static Type *pointer(Type *type) {
  *                  | <storage_class>? "char"
  *                  | <storage_class>? "void"
  *                  | <storage_class>? "short"
+ *                  | <storage_class>? "_Bool"
  *                  | <storage_class>? "long" "long"? "int"?
  *                  | <storage_class>? ("struct" | "union") <ident>
  *                  | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
@@ -1558,8 +1560,11 @@ static Node *stmt() {
             if (!can_type_cast(node->lhs->type, cur_parse_func->ret_type->kind)) {
                 error("stmt() failure: can_type_cast fail");
             }
+
             if (cur_parse_func->ret_type->kind == TYPE_VOID) {
                 node->lhs = new_node_num(0);  // ダミーで数値ノードを生成。codegenでvoid型かどうかを使って分岐
+            } else {
+                node->lhs = new_cast(node->lhs, cur_parse_func->ret_type);
             }
             expect(';');
         }

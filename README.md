@@ -14,12 +14,12 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - typedef, enum
 - #include "header"
 - 可変長引数
+- \_Bool
 
 ## TODO
 
 - switch
 - 構造体の初期化式
-- \_Bool
 
 ## Build
 
@@ -50,6 +50,7 @@ $ make diff
                  | <storage_class>? "char"
                  | <storage_class>? "void"
                  | <storage_class>? "short"
+                 | <storage_class>? "_Bool"
                  | <storage_class>? "long" "long"? "int"?
                  | <storage_class>? ("struct" | "union") <ident>
                  | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
