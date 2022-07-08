@@ -60,6 +60,14 @@ int fprintf(FILE *stream, char *format, ...);
 int snprintf(char *s, size_t n, char *format, ...);
 int vfprintf(FILE *stream, char *format, va_list args);
 int puts(char *s);
+int fgetc(FILE *stream);
+char *fgets(char *s, int size, FILE *stream);
+int getc(FILE *stream);
+int getchar(void);
+int ungetc(int c, FILE *stream);
+int scanf(char *format, ...);
+int fscanf(FILE *stream, char *format, ...);
+int sscanf(char *str, char *format, ...);
 
 extern FILE *stdin;
 extern FILE *stdout;
