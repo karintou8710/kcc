@@ -1,6 +1,8 @@
 #!/bin/bash
 
 COMPILER=$1
+# SRCのファイルを実行する
+SRC=test_exec.c
 SUCCESS=0
 FAILURE=1
 
@@ -15,8 +17,10 @@ run() {
         exit $FAILURE
     fi
     
-    touch test_exec.c
-    ./$COMPILER test_exec.c > tmp.s
+    touch $SRC
+    pre=`echo $SRC | sed -e 's/\.c/\.i/g'`
+    cpp -I . $SRC > $pre
+    ./$COMPILER $pre > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
         debug "$COMPILER failed to compile"
