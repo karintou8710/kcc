@@ -159,7 +159,12 @@ static void gen_addr(Node *node) {
         gen(node);
         return;
     } else if (node->kind == ND_SUGER || node->kind == ND_STMT_EXPR) {
-        gen(node);
+        /* TODO: (a,b,c) = 1などの不正な構文も通してしまう */
+        for (int i = 0; i < node->stmts->len; i++) {
+            gen_addr(node->stmts->body[i]);
+            pop();
+        }
+        push();
         return;
     }
 
