@@ -195,8 +195,7 @@ static void load(Type *ty) {
 
 static void gen(Node *node) {
     // 入れ子ループに対応するためにローカル変数で深さを持つ
-    int loop_count = label_loop_count;  // 現在のラベルの値を保持
-    int if_count = label_if_count;
+    int local_controle_count = label_controle_count;  // 現在のラベルの値を保持
 
     if (node->kind == ND_NULL) {
         push();
@@ -279,99 +278,99 @@ static void gen(Node *node) {
         // returnは終了なので数合わせなし
         return;
     } else if (node->kind == ND_IF) {
-        label_if_count++;
+        label_controle_count++;
         gen(node->cond);
         pop();
         printf("  cmp rax, 0\n");
         if (node->els) {
-            printf("  je  .Lifelse%04d\n", if_count);
+            printf("  je  .Lifelse%04d\n", local_controle_count);
             gen(node->then);
             pop();
-            printf("  jmp .Lifend%04d\n", if_count);
-            printf(".Lifelse%04d:\n", if_count);
+            printf("  jmp .Lifend%04d\n", local_controle_count);
+            printf(".Lifelse%04d:\n", local_controle_count);
             gen(node->els);
             pop();
-            printf(".Lifend%04d:\n", if_count);
+            printf(".Lifend%04d:\n", local_controle_count);
         } else {
-            printf("  je  .Lifend%04d\n", if_count);
+            printf("  je  .Lifend%04d\n", local_controle_count);
             gen(node->then);
             pop();
-            printf(".Lifend%04d:\n", if_count);
+            printf(".Lifend%04d:\n", local_controle_count);
         }
 
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_TERNARY) {
-        label_if_count++;
+        label_controle_count++;
         gen(node->cond);
         pop();
         printf("  cmp rax, 0\n");
-        printf("  je  .Lifelse%04d\n", if_count);
+        printf("  je  .Lifelse%04d\n", local_controle_count);
         gen(node->then);
         pop();
-        printf("  jmp .Lifend%04d\n", if_count);
-        printf(".Lifelse%04d:\n", if_count);
+        printf("  jmp .Lifend%04d\n", local_controle_count);
+        printf(".Lifelse%04d:\n", local_controle_count);
         gen(node->els);
         pop();
-        printf(".Lifend%04d:\n", if_count);
+        printf(".Lifend%04d:\n", local_controle_count);
         push();  // 数合わせ
 
         return;
     } else if (node->kind == ND_WHILE) {
-        label_loop_count++;
-        printf(".Lloopbegin%04d:\n", loop_count);
+        label_controle_count++;
+        printf(".Lloopbegin%04d:\n", local_controle_count);
 
         gen(node->cond);
         pop();
 
         printf("  cmp rax, 0\n");
-        printf("  je  .Lloopend%04d\n", loop_count);
-        printf(".Lloopbody%04d:\n", loop_count);  // do-while用
+        printf("  je  .Lloopend%04d\n", local_controle_count);
+        printf(".Lloopbody%04d:\n", local_controle_count);  // do-while用
 
         int tmp_label = continue_label;
-        continue_label = loop_count;
+        continue_label = local_controle_count;
         gen(node->body);
         pop();
         continue_label = tmp_label;
 
         // whileには必要ないが、for文との辻褄合わせに入れる
-        printf(".Lloopinc%04d:\n", loop_count);
-        printf("  jmp .Lloopbegin%04d\n", loop_count);
-        printf(".Lloopend%04d:\n", loop_count);
+        printf(".Lloopinc%04d:\n", local_controle_count);
+        printf("  jmp .Lloopbegin%04d\n", local_controle_count);
+        printf(".Lloopend%04d:\n", local_controle_count);
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_DO_WHILE) {
-        printf("  jmp .Lloopbody%04d\n", loop_count);
+        printf("  jmp .Lloopbody%04d\n", local_controle_count);
         gen(node->lhs);  // whileを生成
         return;
     } else if (node->kind == ND_FOR) {
-        label_loop_count++;
+        label_controle_count++;
         if (node->init) {
             gen(node->init);
             pop();
         }
 
-        printf(".Lloopbegin%04d:\n", loop_count);
+        printf(".Lloopbegin%04d:\n", local_controle_count);
         if (node->cond) {
             gen(node->cond);
             pop();
             printf("  cmp rax, 0\n");
-            printf("  je  .Lloopend%04d\n", loop_count);
+            printf("  je  .Lloopend%04d\n", local_controle_count);
         }
 
         int tmp_label = continue_label;
-        continue_label = loop_count;
+        continue_label = local_controle_count;
         gen(node->body);
         pop();
         continue_label = tmp_label;
 
-        printf(".Lloopinc%04d:\n", loop_count);
+        printf(".Lloopinc%04d:\n", local_controle_count);
         if (node->inc) {
             gen(node->inc);
             pop();
         }
-        printf("  jmp .Lloopbegin%04d\n", loop_count);
-        printf(".Lloopend%04d:\n", loop_count);
+        printf("  jmp .Lloopbegin%04d\n", local_controle_count);
+        printf(".Lloopend%04d:\n", local_controle_count);
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_BREAK) {

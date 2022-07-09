@@ -300,10 +300,9 @@ Token *preprocess(Token *tok);
 char *read_file(char *path);
 
 // グローバル変数
-char *user_input;      // 入力プログラム
-char *file_name;       // 入力されたファイル名
-int label_if_count;    // ifのラベル
-int label_loop_count;  // forとwhileのラベル
+char *user_input;          // 入力プログラム
+char *file_name;           // 入力されたファイル名
+int label_controle_count;  // if, for, while, switch, 3項演算子のラベル番号
 Var *globals;
 Token *token;  // tokenは単方向の連結リスト
 Vector *string_literal;
