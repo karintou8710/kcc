@@ -68,6 +68,7 @@ int ungetc(int c, FILE *stream);
 int scanf(char *format, ...);
 int fscanf(FILE *stream, char *format, ...);
 int sscanf(char *str, char *format, ...);
+int sprintf(char *str, char *format, ...);
 
 extern FILE *stdin;
 extern FILE *stdout;

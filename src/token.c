@@ -335,6 +335,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "switch", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_SWITCH, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         if (strncmp(p, "break", 5) == 0 && !is_alnum(p[5])) {
             cur = new_token(TK_BREAK, cur, p, 5);
             p += 5;
@@ -344,6 +350,18 @@ Token *tokenize(char *p) {
         if (strncmp(p, "continue", 8) == 0 && !is_alnum(p[8])) {
             cur = new_token(TK_CONTINUE, cur, p, 8);
             p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "default", 7) == 0 && !is_alnum(p[7])) {
+            cur = new_token(TK_DEFAULT, cur, p, 7);
+            p += 7;
+            continue;
+        }
+
+        if (strncmp(p, "case", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_CASE, cur, p, 4);
+            p += 4;
             continue;
         }
 

@@ -14,6 +14,7 @@ int printf(char *format, ...);
 void exit(int status);
 int strcmp(char *s1, char *s2);
 void *malloc(size_t size);
+void *calloc(size_t n, size_t size);
 void *realloc(void *ptr, size_t size);
 int puts(char *s);
 int vsprintf(char *s, char *format, va_list arg);

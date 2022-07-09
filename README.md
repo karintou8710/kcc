@@ -5,7 +5,7 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 
 ## Implemented
 
-- if, for, 配列, ポインター
+- 制御構文, 配列, ポインター
 - グローバル変数の定義
 - 関数の定義、呼び出し
 - struct, union
@@ -18,8 +18,11 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 
 ## TODO
 
-- switch
 - 構造体の初期化式
+- 名前空間ごとの変数管理
+- 匿名構造体
+- 関数ポインタ
+- 型の入れ子定義
 
 ## Build
 
@@ -73,8 +76,12 @@ $ make diff
        | "while" "(" <expr> ")" <stmt>
        | "do" <stmt> "while" "(" <expr> ")" ";"
        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
+       | "switch" "(" <expression> ")" <statement>
        | ("continue" | "break") ";"
+       | <labeled>
        | <compound_stmt>
+<labeled> = "case" <constant> ":" <statement>
+          | "default" ":" <statement>
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>

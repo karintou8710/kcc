@@ -90,6 +90,12 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_STMT_EXPR");  // stmt in expr
     else if (kind == ND_DO_WHILE)
         fprintf(stderr, "ND_DO_WHILE");  // do ... while
+    else if (kind == ND_SWITCH)
+        fprintf(stderr, "ND_SWITCH");  // switch
+    else if (kind == ND_CASE)
+        fprintf(stderr, "ND_CASE");  // case
+    else if (kind == ND_DEFAULT)
+        fprintf(stderr, "ND_DEFAULT");  // default
     else
         error("print_node_kind() failure");
 
@@ -176,6 +182,12 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_EXTERN");
     else if (kind == TK_DO)
         fprintf(stderr, "TK_DO");
+    else if (kind == TK_SWITCH)
+        fprintf(stderr, "TK_SWITCH");
+    else if (kind == TK_CASE)
+        fprintf(stderr, "TK_CASE");
+    else if (kind == TK_DEFAULT)
+        fprintf(stderr, "TK_DEFAULT");
     else
         fprintf(stderr, "TK_[%c]", kind);
 
@@ -237,6 +249,15 @@ void debug_node(Node *node, char *pos, int depth) {
         for (int i = 0; i < node->stmts->len; i++) {
             debug_node(node->stmts->body[i], "stmt", depth + 1);
         }
+    } else if (node->kind == ND_SWITCH) {
+        debug_node(node->cond, "cond", depth + 1);
+        for (int i = 0; i < node->stmts->len; i++) {
+            debug_node(node->stmts->body[i], "case-default", depth + 1);
+        }
+        debug_node(node->body, "body", depth + 1);
+    } else if (node->kind == ND_CASE || node->kind == ND_DEFAULT) {
+        recursion_line_printf(depth, "label_name -> %s\n", node->label_name);
+        debug_node(node->body, "body", depth + 1);
     } else {
         debug_node(node->lhs, "lhs", depth + 1);
         debug_node(node->rhs, "rhs", depth + 1);

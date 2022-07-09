@@ -23,6 +23,7 @@ static Function *current_fn;
 // continue, breakでどこに飛ぶのか値を保持
 static int continue_label = -1;
 static int logical_label = 0;
+static bool break_in_switch = false;
 
 typedef enum RegKind {
     REG_RAX,
@@ -327,11 +328,11 @@ static void gen(Node *node) {
         printf("  je  .Lloopend%04d\n", local_controle_count);
         printf(".Lloopbody%04d:\n", local_controle_count);  // do-while用
 
-        int tmp_label = continue_label;
-        continue_label = local_controle_count;
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_controle_count, break_in_switch = false;
         gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
         pop();
-        continue_label = tmp_label;
 
         // whileには必要ないが、for文との辻褄合わせに入れる
         printf(".Lloopinc%04d:\n", local_controle_count);
@@ -358,11 +359,11 @@ static void gen(Node *node) {
             printf("  je  .Lloopend%04d\n", local_controle_count);
         }
 
-        int tmp_label = continue_label;
-        continue_label = local_controle_count;
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_controle_count, break_in_switch = false;
         gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
         pop();
-        continue_label = tmp_label;
 
         printf(".Lloopinc%04d:\n", local_controle_count);
         if (node->inc) {
@@ -373,21 +374,66 @@ static void gen(Node *node) {
         printf(".Lloopend%04d:\n", local_controle_count);
         push();  // 数合わせ
         return;
-    } else if (node->kind == ND_BREAK) {
-        // loop_countは次の深さになっているので１を引く
-        if (continue_label < 0) {
-            error("forブロックの中でbreakを使用していません。");
+    } else if (node->kind == ND_SWITCH) {
+        label_controle_count++;
+        gen(node->cond);
+        pop();
+        // defaultは一番最後の条件分岐
+        Node *default_node = NULL;
+        for (int i = 0; i < node->stmts->len; i++) {
+            Node *n = node->stmts->body[i];
+            if (n->kind == ND_CASE) {
+                printf("  cmp rax, %ld\n", n->val);
+                printf("  je  %s\n", n->label_name);
+                continue;
+            } else if (n->kind == ND_DEFAULT) {
+                if (default_node) {
+                    error("gen() failure: defaultが重複定義されています");
+                }
+                default_node = n;
+                continue;
+            }
+            error("gen() failure: switch文の中でcaseまたはlabelが宣言されていません");
         }
+        if (default_node) {
+            printf("  jmp  %s\n", default_node->label_name);
+        }
+
+        // どれにもマッチしなかった場合
+        printf("  jmp .Lswitchend%04d\n", local_controle_count);
+
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_controle_count, break_in_switch = true;
+        gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
+        pop();  // 条件にマッチせずendに飛ぶ場合もあるので、数合わせ
+        printf(".Lswitchend%04d:\n", local_controle_count);
         push();  // 数合わせ
-        printf("  jmp .Lloopend%04d\n", continue_label);
+        return;
+    } else if (node->kind == ND_BREAK) {
+        if (continue_label < 0) {
+            error("for,switchブロックの中でbreakを使用していません。");
+        }
+
+        if (break_in_switch) {
+            push();  // 数合わせ
+            printf("  jmp .Lswitchend%04d\n", continue_label);
+        } else {
+            push();  // 数合わせ
+            printf("  jmp .Lloopend%04d\n", continue_label);
+        }
         return;
     } else if (node->kind == ND_CONTINUE) {
-        // loop_countは次の深さになっているので１を引く
         if (continue_label < 0) {
             error("forブロックの中でcontinueを使用していません。");
         }
         push();  // 数合わせ
         printf("  jmp .Lloopinc%04d\n", continue_label);
+        return;
+    } else if (node->kind == ND_CASE || node->kind == ND_DEFAULT) {
+        // parserでcaseがswitch文の中にある事を保証している
+        printf("%s:\n", node->label_name);
+        gen(node->body);
         return;
     } else if (node->kind == ND_BLOCK || node->kind == ND_STMT_EXPR) {
         for (int i = 0; i < node->stmts->len; i++) {

@@ -8,6 +8,10 @@ static Var *locals;
 static Function *cur_parse_func;
 static Vector *local_scope;
 static bool is_global = true;
+/* cast, defaultの条件をswitchで始めに生成するのでswitchノードに持つ */
+static Node *node_in_switch;
+/* case,defaultのラベル番号 */
+static int switch_label_cnt;
 static StorageClass current_storage = UNKNOWN;
 
 static Type *find_typedef_alias(char *name);
@@ -42,6 +46,7 @@ static void func_define(Type *type);
 Type *struct_declaration(Type *type);
 static Node *compound_stmt();
 static Node *stmt();
+static Node *labeld();
 static Node *expr();
 static Node *assign();
 static Node *conditional();
@@ -520,7 +525,7 @@ static GInitEl *eval(Node *node) {
         return g;
     }
 
-    error("未対応のNodeタイプです");
+    error("eval() failure: %d:未対応のNodeタイプです", node->kind);
 }
 
 /*** other func ***/
@@ -1544,8 +1549,10 @@ static Node *compound_stmt() {
  *         | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
  *         | "for" "(" <declaration> <expr>? ";" <expr>? ")" <stmt>
  *         | "do" <stmt> "while" "(" <expr> ")" ";"
+ *         | "switch" "(" <expression> ")" <statement>
  *         | ("continue" | "break") ";"
  *         | <compound_stmt>
+ *         | <labeled>
  */
 static Node *stmt() {
     Node *node;
@@ -1626,6 +1633,16 @@ static Node *stmt() {
         }
         node->body = stmt();
         end_local_scope();
+    } else if (consume(TK_SWITCH)) {
+        Node *tmp = node_in_switch;
+        node = new_node(ND_SWITCH);
+        node->stmts = new_vec();
+        expect('(');
+        node->cond = expr();
+        expect(')');
+        node_in_switch = node;
+        node->body = stmt();
+        node_in_switch = tmp;
     } else if (consume_nostep('{')) {
         node = compound_stmt();
     } else if (consume(TK_BREAK)) {
@@ -1637,12 +1654,58 @@ static Node *stmt() {
     } else if (consume(';')) {
         node = new_node(ND_BLOCK);
         node->stmts = new_vec();
+    } else if (consume_nostep(TK_CASE) || consume_nostep(TK_DEFAULT)) {
+        node = labeld();
     } else {
         node = expr();
         expect(';');
     }
 
     return node;
+}
+
+/*
+ * <labeled> = "case" <constant> ":" <statement>
+ *           | "default" ":" <statement>
+ */
+static Node *labeld() {
+    if (consume(TK_CASE)) {
+        if (node_in_switch == NULL) {
+            error("labeld() failure: switch文の中でcaseが宣言されていません");
+        }
+        switch_label_cnt++;
+
+        Node *node = new_node(ND_CASE);
+        GInitEl *g = eval(expr());
+        if (g->len > 0) {
+            error("labeld() failure: caseは定数であることが求められます");
+        }
+        node->val = g->val;
+        expect(':');
+
+        char *name = memory_alloc(30);
+        sprintf(name, ".Lswitchlabel%04d", switch_label_cnt);
+        node->label_name = name;
+        node->body = stmt();
+        vec_push(node_in_switch->stmts, node);
+        return node;
+    } else if (consume(TK_DEFAULT)) {
+        if (node_in_switch == NULL) {
+            error("labeld() failure: switch文の中でdefaultが宣言されていません");
+        }
+        switch_label_cnt++;
+        Node *node = new_node(ND_DEFAULT);
+        expect(':');
+
+        char *name = memory_alloc(30);
+        sprintf(name, ".Lswitchlabel%04d", switch_label_cnt);
+        node->label_name = name;
+        node->body = stmt();
+        vec_push(node_in_switch->stmts, node);
+        return node;
+    }
+
+    error("labeld() failure: 不正なトークンです");
 }
 
 /*

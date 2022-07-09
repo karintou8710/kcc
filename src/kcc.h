@@ -67,6 +67,9 @@ enum TokenKind {
     TK_INCLUDE,      // include
     TK_EXTERN,       // extern
     TK_DO,           // do
+    TK_SWITCH,       // switch
+    TK_CASE,         // case
+    TK_DEFAULT,      // default
 };
 
 enum TypeKind {
@@ -124,6 +127,9 @@ enum NodeKind {
     ND_CAST,           // キャスト
     ND_STMT_EXPR,      // stmt in expr
     ND_DO_WHILE,       // do ... while
+    ND_SWITCH,         // switch
+    ND_CASE,           // case
+    ND_DEFAULT,        // default
 };
 
 struct Vector {
@@ -180,6 +186,8 @@ struct Node {
     Var *var;
     char *fn_name;
     char *str_literal;
+    // case, labelで使用
+    char *label_name;
     Vector *args;  // 関数呼び出し時の引数
     Vector *stmts;
     Type *type;
