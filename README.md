@@ -73,7 +73,7 @@ $ make diff
        | "while" "(" <expr> ")" <stmt>
        | "do" <stmt> "while" "(" <expr> ")" ";"
        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
-       | ("continue" | "break")
+       | ("continue" | "break") ";"
        | <compound_stmt>
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?

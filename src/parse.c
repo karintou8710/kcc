@@ -1544,7 +1544,7 @@ static Node *compound_stmt() {
  *         | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
  *         | "for" "(" <declaration> <expr>? ";" <expr>? ")" <stmt>
  *         | "do" <stmt> "while" "(" <expr> ")" ";"
- *         | ("continue" | "break")
+ *         | ("continue" | "break") ";"
  *         | <compound_stmt>
  */
 static Node *stmt() {
