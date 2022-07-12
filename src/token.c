@@ -248,11 +248,57 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // 2進数
+        if (startsWith(p, "0b")) {
+            p += 2;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 2);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な2進数です");
+            }
+
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
+        // 16進数
+        if (startsWith(p, "0x")) {
+            p += 2;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 16);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な16進数です");
+            }
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
+        // 8進数
+        if (startsWith(p, "0")) {
+            p += 1;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 8);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な8進数です");
+            }
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
         if (isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な10進数です");
+            }
             cur->type = new_type(TYPE_INT);
             continue;
         }
