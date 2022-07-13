@@ -60,7 +60,7 @@ $ make diff
                  | <storage_class>? "enum" <ident>
                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
 <type_name> = <type_specifier> <pointer> <type_suffix>
-<type_suffix> = "[" <num>? "]" <type_suffix> | ε
+<type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
 <struct_declaration> = <type_specifier> <pointer> <ident> ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
@@ -80,7 +80,7 @@ $ make diff
        | ("continue" | "break") ";"
        | <labeled>
        | <compound_stmt>
-<labeled> = "case" <constant> ":" <statement>
+<labeled> = "case" <const_expr> ":" <statement>
           | "default" ":" <statement>
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?

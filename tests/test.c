@@ -591,6 +591,11 @@ int array5() {
     }
     return a[2][1];
 }
+int array6() {
+    int a[((1)) * 2][1 * 2 - 1];
+    a[1][0] = 5;
+    return a[1][0];
+}
 
 // MOD
 int mod1_gcd(int a, int b) {
@@ -858,6 +863,7 @@ int main() {
     ASSERT(2, array3(), "array3");
     ASSERT(4, array4(), "array4");
     ASSERT(5, array5(), "array5");
+    ASSERT(5, array6(), "array6");
 
     ASSERT(30, mod1(), "mod1");
     ASSERT(1, mod2(), "mod2");

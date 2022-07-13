@@ -65,6 +65,7 @@ static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
+static long const_expr();
 static GInitEl *eval(Node *node);
 
 /*** parser utils ***/
@@ -1281,7 +1282,7 @@ Type *type_name() {
 
 // is_firstは配列の初期化時のみ使用
 /*
- *  <type_suffix> = "[" <num>? "]" <type_suffix> | ε
+ *  <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
  */
 static Type *type_suffix(Type *type, bool is_first) {
     if (consume('[')) {
@@ -1289,7 +1290,7 @@ static Type *type_suffix(Type *type, bool is_first) {
         if (is_first && consume(']')) {
             array_size = 0;
         } else {
-            array_size = expect_number();
+            array_size = const_expr();
             expect(']');
         }
         type = new_array_type(type_suffix(type, false), array_size);
@@ -1665,7 +1666,7 @@ static Node *stmt() {
 }
 
 /*
- * <labeled> = "case" <constant> ":" <statement>
+ * <labeled> = "case" <const_expr> ":" <statement>
  *           | "default" ":" <statement>
  */
 static Node *labeld() {
@@ -1676,11 +1677,7 @@ static Node *labeld() {
         switch_label_cnt++;
 
         Node *node = new_node(ND_CASE);
-        GInitEl *g = eval(expr());
-        if (g->len > 0) {
-            error("labeld() failure: caseは定数であることが求められます");
-        }
-        node->val = g->val;
+        node->val = const_expr();
         expect(':');
 
         char *name = memory_alloc(30);
@@ -2213,4 +2210,12 @@ static Node *primary() {
         error("primary() failure: 不正なコードです。");
     }
     error_at(token->str, "primary() failure: 不正なトークンです。");
+}
+
+static long const_expr() {
+    GInitEl *g = eval(expr());
+    if (g->len > 0) {
+        error("const_expr() failure: 定数ではありません");
+    }
+    return g->val;
 }
