@@ -272,21 +272,6 @@ static Var *find_params(char *name, Var *params) {
     return find_var(name, params, NULL);
 }
 
-static Type *find_aggregate_type(char *name, Vector *list) {
-    if (name == NULL) return NULL;
-    if (list == NULL) return NULL;
-
-    for (int i = 0; i < list->len; i++) {
-        Type *t = list->body[i];
-        if (t->name == NULL) continue;
-        if (strcmp(t->name, name) == 0) {
-            return t;
-        }
-    }
-
-    return NULL;
-}
-
 static Tag *find_tag(char *name, Vector *list) {
     if (name == NULL) return NULL;
     if (list == NULL) return NULL;
@@ -311,25 +296,25 @@ static Tag *find_gstruct_type(char *name) {
     return find_tag(name, struct_global_lists);
 }
 
-static Type *find_lunion_type(char *name) {
-    return find_aggregate_type(name, union_local_lists);
+static Tag *find_lunion_type(char *name) {
+    return find_tag(name, union_local_lists);
 }
 
-static Type *find_gunion_type(char *name) {
-    return find_aggregate_type(name, union_global_lists);
+static Tag *find_gunion_type(char *name) {
+    return find_tag(name, union_global_lists);
 }
 
-static Type *find_lenum_type(char *name) {
-    return find_aggregate_type(name, enum_local_lists);
+static Tag *find_lenum_type(char *name) {
+    return find_tag(name, enum_local_lists);
 }
 
-static Type *find_genum_type(char *name) {
-    return find_aggregate_type(name, enum_global_lists);
+static Tag *find_genum_type(char *name) {
+    return find_tag(name, enum_global_lists);
 }
 
-static Type *find_enum_type(char *name) {
+static Tag *find_enum_type(char *name) {
     // ローカルで探索
-    Type *t = find_lenum_type(name);
+    Tag *t = find_lenum_type(name);
     if (t) return t;
 
     // グローバルで探索
@@ -341,7 +326,8 @@ static Type *find_enum_type(char *name) {
 static Var *find_lenum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
-        Type *t = enum_local_lists->body[i];
+        Tag *tag = enum_local_lists->body[i];
+        Type *t = tag->base_type;
         Var *v = find_var(name, t->member, NULL);
         if (v) return v;
     }
@@ -352,7 +338,8 @@ static Var *find_lenum_member(char *name) {
 static Var *find_genum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
-        Type *t = enum_global_lists->body[i];
+        Tag *tag = enum_global_lists->body[i];
+        Type *t = tag->base_type;
         Var *v = find_var(name, t->member, NULL);
         if (v) return v;
     }
@@ -547,21 +534,21 @@ static GInitEl *eval(Node *node) {
 
 /*** other func ***/
 
-static Type *is_defined_enum_type(char *name) {
+static Tag *is_defined_enum_type(char *name) {
     if (is_global) {
-        Type *t = find_genum_type(name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_genum_type(name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
-        return t;
+        return tag;
     } else {
-        Type *t = find_lenum_type(name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lenum_type(name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
-        return t;
+        return tag;
     }
 }
 
@@ -685,19 +672,19 @@ static Tag *struct_defined_or_forward(Type *type) {
     }
 }
 
-static Type *union_defined_or_forward(Type *type) {
+static Tag *union_defined_or_forward(Type *type) {
     if (is_global) {
-        Type *t = find_gunion_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_gunion_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_gunion_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     } else {
-        Type *t = find_lunion_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lunion_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lunion_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     }
 }
 
@@ -1216,15 +1203,6 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_UNION && consume('{')) {
-        Type *t = union_defined_or_forward(type);
-        if (t != NULL) type = t;
-
-        if (!type->is_forward) {
-            vec_push(is_global ? union_global_lists : union_local_lists, type);
-        } else {
-            type->is_forward = false;
-        }
-
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}')) {
@@ -1235,22 +1213,41 @@ static Type *type_specifier() {
 
         apply_align_struct(type);
 
+        Tag *tag = union_defined_or_forward(type);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
+        } else {
+            tag = new_tag(type);
+            vec_push(is_global ? union_global_lists : union_local_lists, tag);
+        }
+
         return type;
     }
 
     if (type->kind == TYPE_ENUM && consume('{')) {
-        // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
-        Type *t = is_defined_enum_type(type->name);
-        if (t != NULL) {
-            // 既に前方宣言がされている
-            type = t;
-        }
         enumerator_list(type);
 
-        if (!type->is_forward) {
-            vec_push(is_global ? enum_global_lists : enum_local_lists, type);
+        // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
+        Tag *tag = is_defined_enum_type(type->name);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
         } else {
-            type->is_forward = false;
+            tag = new_tag(type);
+            vec_push(is_global ? enum_global_lists : enum_local_lists, tag);
         }
 
         return type;
@@ -1276,26 +1273,40 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_UNION) {
-        Type *stype = find_lunion_type(type->name);
-        if (stype == NULL) {
-            stype = find_gunion_type(type->name);
-            if (stype == NULL) {
-                type->is_forward = true;
-                stype = type;
-                vec_push(is_global ? union_global_lists : union_local_lists, stype);
+        Tag *stag_local = find_lunion_type(type->name), *stag_global = find_gunion_type(type->name);
+        Tag *stag = stag_local ? stag_local : stag_global;
+        if (stag == NULL) {
+            // 初の前方宣言
+            type->is_forward = true;
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? union_global_lists : union_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
             }
         }
-        type = stype;
     }
 
     if (type->kind == TYPE_ENUM) {
-        Type *etype = find_enum_type(type->name);
-        if (etype == NULL) {
+        Tag *stag = find_enum_type(type->name);
+        if (stag == NULL) {
+            // 初の前方宣言
             type->is_forward = true;
-            etype = type;
-            vec_push(is_global ? struct_global_lists : struct_local_lists, etype);
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? enum_global_lists : enum_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
+            }
         }
-        type = etype;
     }
 
     return type;
