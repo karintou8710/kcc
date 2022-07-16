@@ -73,6 +73,7 @@ enum TokenKind {
     TK_DEFAULT,      // default
     TK_SIGNED,       // signed
     TK_UNSIGNED,     // unsigned (未実装)
+    TK_CONST,        // const
 };
 
 enum TypeKind {
@@ -154,6 +155,7 @@ struct Type {
     bool is_forward;
 
     bool is_unsigned;
+    bool is_constant;
 };
 
 struct Tag {
@@ -196,6 +198,8 @@ struct Node {
     Var *var;
     char *fn_name;
     char *str_literal;
+    // constで使用
+    bool is_initialize;
     // case, labelで使用
     char *label_name;
     Vector *args;  // 関数呼び出し時の引数

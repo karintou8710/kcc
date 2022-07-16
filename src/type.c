@@ -110,6 +110,8 @@ void copy_type(Type *to, Type *from) {
     to->name = from->name;
     to->member = from->member;
     to->is_forward = from->is_forward;
+    to->is_constant = from->is_constant;
+    to->is_unsigned = from->is_unsigned;
     return;
 }
 

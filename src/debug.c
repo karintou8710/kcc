@@ -312,6 +312,7 @@ void debug_type(Type *ty, int depth) {
     } else {
         recursion_line_printf(depth, "size -> %d\n", ty->size);
         recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
+        recursion_line_printf(depth, "is_constant -> %d\n", ty->is_constant);
         debug_type(ty->ptr_to, depth + 1);
     }
 }

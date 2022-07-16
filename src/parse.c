@@ -83,6 +83,7 @@ enum {
     BOOL = 1 << 10,
     SIGNED = 1 << 11,
     UNSIGNED = 1 << 12,  // 未実装
+    CONST = 1 << 13,
 };
 
 /*** parser utils ***/
@@ -114,7 +115,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN, TK_TYPEDEF, TK_SIGNED, TK_UNSIGNED};
+        TK_EXTERN, TK_TYPEDEF, TK_SIGNED, TK_UNSIGNED, TK_CONST};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -927,7 +928,9 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
     if (is_global) {
         vec_push(init->var->ginit, eval(init->expr));
     } else {
-        vec_push(suger, new_assign(node, init->expr));
+        Node *n = new_assign(node, init->expr);
+        n->is_initialize = true;
+        vec_push(suger, n);
     }
 
     return suger;
@@ -1165,11 +1168,14 @@ static void initialize2(Initializer *init) {
 }
 
 /*
- *  <pointer> = "*"*
+ *  <pointer> = ("*" <type_qualifier>?) *
  */
 static Type *pointer(Type *type) {
     while (consume('*')) {
         Type *t = new_ptr_type(type);
+        if (consume(TK_CONST)) {
+            t->is_constant = true;
+        }
         type = t;
     }
     return type;
@@ -1199,8 +1205,13 @@ static Type *declaration_specifier() {
             continue;
         }
 
-        // TODO: constの実装
-        //     : 不正な型の例外処理
+        // type_qualifier
+        if (consume(TK_CONST)) {
+            flag |= CONST;
+            continue;
+        }
+
+        // TODO: 不正な型の例外処理
         Type *t = type_specifier(&flag);
         if (t) type = t;
     }
@@ -1212,6 +1223,12 @@ static Type *declaration_specifier() {
     if (flag & UNSIGNED) {
         // 未実装
         type->is_unsigned = true;
+    }
+
+    if (flag & CONST) {
+        Type *t = type;
+        while (t->kind == TYPE_ARRAY) t = t->ptr_to;
+        t->is_constant = true;
     }
 
     return type;

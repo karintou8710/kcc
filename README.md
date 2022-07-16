@@ -62,7 +62,7 @@ $ make diff
 <type_qualifier> = "const"
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
-<pointer> = "*"*
+<pointer> = ("*" <type_qualifier>?) *
 <type_name> = <declaration_specifier> <pointer> <type_suffix>
 <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
 <struct_declaration> = <declaration_specifier> <pointer> <ident> ";"

@@ -18,6 +18,7 @@ GEN2=kcc2
 GEN3=kcc3
 
 TEST_SCRIPT=tests/test-control.sh
+TEST_ERROR_SCRIPT=tests/test-error.sh
 EXEC_SCRIPT=run.sh
 DIFF_SCRIPT=selfhost/diff.sh
 TEST_GCC_AND_CLANG=tests/test_gcc_and_clang.sh
@@ -78,11 +79,20 @@ selfhost/gen3/%.o: src/%.c $(HEADERS) $(GEN2)
 test1: $(GEN1)
 	sh $(TEST_SCRIPT) $(GEN1)
 
+test1_error: $(GEN1)
+	sh $(TEST_ERROR_SCRIPT) $(GEN1)
+
 test2: $(GEN2)
 	sh $(TEST_SCRIPT) $(GEN2)
 
+test2_error: $(GEN2)
+	sh $(TEST_ERROR_SCRIPT) $(GEN2)
+
 test3: $(GEN3)
 	sh $(TEST_SCRIPT) $(GEN3)
+
+test3_error: $(GEN3)
+	sh $(TEST_ERROR_SCRIPT) $(GEN3)
 
 diff: $(GEN3)
 	sh $(DIFF_SCRIPT)
@@ -93,7 +103,7 @@ test1_clang: $(GEN1_CLANG)
 test1_gcc_and_clang: $(GEN1) $(GEN1_CLANG)
 	sh $(TEST_GCC_AND_CLANG) $(GEN1) $(GEN1_CLANG)
 
-testall: test1 test2 test3 diff
+testall: test1 test1_error test2 test2_error test3 test3_error diff
 
 testextra: test1_clang test1_gcc_and_clang
 
@@ -112,4 +122,4 @@ clean:
 	find . -name "*.o" -o -name "*~" -o -name "*.i" -o -name "tmp*" -o -path "./selfhost/gen[2-3]/*" | xargs rm -f
 	rm -f kcc1 kcc2 kcc3 kcc1_clang kcc1_gcc
 
-.PHONY: test1 test1_clang test1_gcc_and_clang test2 test3 diff testall testextra run1 run2 run3 clean
+.PHONY: test1 test1_clang test1_gcc_and_clang test2 test3 diff testall testextra run1 run2 run3 clean test1_error test2_error test3_error
