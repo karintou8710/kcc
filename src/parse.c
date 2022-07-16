@@ -432,6 +432,10 @@ static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len)
             g->val = gl->val && gr->val;
         } else if (strcmp(op, "||") == 0) {
             g->val = gl->val || gr->val;
+        } else if (strcmp(op, "<<") == 0) {
+            g->val = gl->val << gr->val;
+        } else if (strcmp(op, ">>") == 0) {
+            g->val = gl->val >> gr->val;
         }
     }
 }
@@ -526,6 +530,16 @@ static GInitEl *eval(Node *node) {
             Node *n = node->stmts->body[i];
             g = eval(n);
         }
+        return g;
+    } else if (node->kind == ND_LSHIFT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "<<", 2);
+        return g;
+    } else if (node->kind == ND_RSHIFT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, ">>", 2);
         return g;
     }
 
