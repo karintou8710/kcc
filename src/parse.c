@@ -42,6 +42,8 @@ static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
 static Node *declarator_var(Type *type);
+static void declarator_struct(Type *member_type, Type *struct_type);
+static Type *abstruct_declarator(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static void func_define(Type *type);
@@ -1201,6 +1203,40 @@ static void declarator_struct(Type *member_type, Type *struct_type) {
 }
 
 /*
+ * <abstruct_declarator> = (<abstruct_declarator> | <declarator>)
+ */
+static Var *declarator_param(Type *type, Var *cur) {
+    type = pointer(type);
+
+    Token *tok = token;
+    Var *lvar = memory_alloc(sizeof(Var));
+    lvar->type = type;
+    lvar->offset = cur->offset + sizeOfType(lvar->type);
+    if (consume(TK_IDENT)) {
+        lvar->name = my_strndup(tok->str, tok->len);
+        lvar->len = tok->len;
+    } else {
+        lvar->is_only_type = true;
+    }
+
+    // ポインタとして受け取る
+    // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
+    lvar->type = type_suffix(lvar->type, true);
+    // 新しい型のオフセットにする
+    lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
+    return lvar;
+}
+
+/*
+ * <abstruct_declarator> = <pointer> <type_suffix>
+ */
+static Type *abstruct_declarator(Type *type) {
+    type = pointer(type);
+    type = type_suffix(type, true);
+    return type;
+}
+
+/*
  * <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
  * <storage_class>  = "typedef" | "entern"
  * <type_qualifier> = "const"
@@ -1486,10 +1522,12 @@ static Type *type_specifier(int *flag) {
     return type;
 }
 
+/*
+ * <type_name> = <declaration_specifier> <abstruct_declarator>
+ */
 Type *type_name() {
     Type *type = declaration_specifier();
-    type = pointer(type);
-    type = type_suffix(type, true);
+    type = abstruct_declarator(type);
     return type;
 }
 
@@ -1561,29 +1599,11 @@ static Var *enumerator(Type *type, int *enum_const_num) {
 }
 
 /*
- *  <declaration_param> = <declaration_specifier> <pointer> <ident>? <type_suffix>
+ *  <declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
  */
 static Var *declaration_param(Var *cur) {
     Type *type = declaration_specifier();
-    type = pointer(type);
-    Token *tok = token;
-    Var *lvar = memory_alloc(sizeof(Var));
-    lvar->type = type;
-    lvar->offset = cur->offset + sizeOfType(lvar->type);
-    if (consume(TK_IDENT)) {
-        lvar->name = my_strndup(tok->str, tok->len);
-        lvar->len = tok->len;
-        lvar->is_only_type = false;
-    } else {
-        lvar->is_only_type = true;
-    }
-
-    // ポインタとして受け取る
-    // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
-    lvar->type = type_suffix(lvar->type, true);
-    // 新しい型のオフセットにする
-    lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
-    return lvar;
+    return declarator_param(type, cur);
 }
 
 /*

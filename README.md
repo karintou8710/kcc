@@ -63,14 +63,15 @@ $ make diff
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
 <declarator> = <pointer> <ident> <type_suffix>
+<abstruct_declarator> = <pointer> <type_suffix>
 <pointer> = ("*" <type_qualifier>?) *
-<type_name> = <declaration_specifier> <pointer> <type_suffix>
+<type_name> = <declaration_specifier> <abstruct_declarator>
 <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
 <struct_declaration> = <declaration_specifier> <declarator> ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <conditional>
-<declaration_param> = <declaration_specifier> <pointer> <ident>? <type_suffix>
+<declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
 <func_define> = <declaration_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
                 <compound_stmt>
