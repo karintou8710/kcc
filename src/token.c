@@ -418,11 +418,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long int, long long int
-                p += 3;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 3);
             cur->type = new_type(TYPE_INT);
             p += 3;
@@ -437,11 +432,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "long", 4) == 0 && !is_alnum(p[4])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long と long longは同じ型とみなす
-                p += 4;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 4);
             cur->type = new_type(TYPE_LONG);
             p += 4;

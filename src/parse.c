@@ -32,7 +32,8 @@ static Var *find_gvar(Token *tok);
 static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
-static Type *type_specifier();
+static Type *declaration_specifier();
+static Type *type_specifier(int *flag);
 static Var *enumerator(Type *type, int *enum_const_num);
 static void enumerator_list(Type *type);
 static Node *initialize(Initializer *init, Node *node);
@@ -68,6 +69,20 @@ static Node *primary();
 static long const_expr();
 static GInitEl *eval(Node *node);
 
+enum {
+    VOID = 1 << 0,
+    CHAR = 1 << 1,
+    SHORT = 1 << 2,
+    INT = 1 << 3,
+    LONG = 1 << 4,
+    LONGLONG = 1 << 5,
+    STRUCT = 1 << 6,
+    UNION = 1 << 7,
+    ENUM = 1 << 8,
+    TYPEDEF = 1 << 9,
+    BOOL = 1 << 10,
+};
+
 /*** parser utils ***/
 
 /* 指定された演算子が来る可能性がある */
@@ -97,7 +112,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN};
+        TK_EXTERN, TK_TYPEDEF};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -138,6 +153,12 @@ static long expect_number() {
     long val = token->val;
     next_token();
     return val;
+}
+
+static void expect_no_storage() {
+    if (current_storage != UNKNOWN) {
+        error("expect_no_storage() failure: 記憶子が複数定義されています");
+    }
 }
 
 static bool at_eof() {
@@ -951,7 +972,7 @@ static Node *get_node_ident(Token *tok) {
 void program() {
     local_scope = new_vec();
     while (!at_eof()) {
-        Type *type = type_specifier();
+        Type *type = declaration_specifier();
         if (is_func(token)) {
             is_global = false;
             func_define(type);
@@ -969,7 +990,7 @@ void program() {
 }
 
 /*
- *  <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)* ";"
+ *  <declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
  */
 static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
@@ -1152,31 +1173,62 @@ static Type *pointer(Type *type) {
     return type;
 }
 
-/* <storage_class>  = "typedef" | "entern"
- * <type_specifier> = <storage_class>? "int"
- *                  | <storage_class>? "char"
- *                  | <storage_class>? "void"
- *                  | <storage_class>? "short"
- *                  | <storage_class>? "_Bool"
- *                  | <storage_class>? "long" "long"? "int"?
- *                  | <storage_class>? ("struct" | "union") <ident>
- *                  | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
- *                  | <storage_class>? "enum" <ident>
- *                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
+/*
+ * <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
+ * <storage_class>  = "typedef" | "entern"
+ * <type_qualifier> = "const"
  */
-static Type *type_specifier() {
-    // storage class
-    if (consume(TK_TYPEDEF))
-        current_storage = STORAGE_TYPEDEF;
-    else if (consume(TK_EXTERN)) {
-        current_storage = STORAGE_EXTERN;
+static Type *declaration_specifier() {
+    if (!consume_is_type_nostep(token)) {
+        error("declaration_specifier() failure: expect type");
+    }
+    Type *type = NULL;
+    int flag = 0;
+
+    while (consume_is_type_nostep(token)) {
+        // storage class
+        if (consume(TK_TYPEDEF)) {
+            expect_no_storage();
+            current_storage = STORAGE_TYPEDEF;
+            continue;
+        } else if (consume(TK_EXTERN)) {
+            expect_no_storage();
+            current_storage = STORAGE_EXTERN;
+            continue;
+        }
+
+        // TODO: constの実装
+        //     : 不正な型の例外処理
+        Type *t = type_specifier(&flag);
+        if (t) type = t;
     }
 
+    if (flag & LONG || flag & LONGLONG) {
+        type = new_type(TYPE_LONG);
+    }
+
+    return type;
+}
+
+/*
+ * <type_specifier> = "char"
+ *                  | "short"
+ *                  | "int"
+ *                  | "long"
+ *                  | "void"
+ *                  | "_Bool"
+ *                  | ("struct" | "union") <ident>
+ *                  | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
+ *                  | "enum" <ident>
+ *                  | "enum" <ident>? "{" <enumerator_list> "}"
+ */
+static Type *type_specifier(int *flag) {
     Token *tok = token;
     Type *type;
 
     if (consume(TK_IDENT)) {
         // typedef
+        *flag |= TYPEDEF;
         char *name = my_strndup(tok->str, tok->len);
         Type *t = find_typedef_alias(name);
         if (t == NULL) {
@@ -1204,6 +1256,39 @@ static Type *type_specifier() {
     } else if (consume(TK_TYPE)) {
         // 基礎型
         type = tok->type;
+        switch (tok->type->kind) {
+            case TYPE_VOID:
+                *flag |= VOID;
+                break;
+            case TYPE_CHAR:
+                *flag |= CHAR;
+                break;
+            case TYPE_SHORT:
+                *flag |= SHORT;
+                break;
+            case TYPE_INT:
+                *flag |= INT;
+                break;
+            case TYPE_LONG:
+                if (*flag & LONG) {
+                    *flag |= LONGLONG;
+                } else {
+                    *flag |= LONG;
+                }
+                break;
+            case TYPE_BOOL:
+                *flag |= BOOL;
+                break;
+            case TYPE_STRUCT:
+                *flag |= STRUCT;
+                break;
+            case TYPE_UNION:
+                *flag |= UNION;
+                break;
+            case TYPE_ENUM:
+                *flag |= ENUM;
+                break;
+        }
     } else {
         error("type_specifier() failure: 適切な型ではありません");
     }
@@ -1351,7 +1436,7 @@ static Type *type_specifier() {
 }
 
 Type *type_name() {
-    Type *type = type_specifier();
+    Type *type = declaration_specifier();
     type = pointer(type);
     type = type_suffix(type, true);
     return type;
@@ -1377,10 +1462,10 @@ static Type *type_suffix(Type *type, bool is_first) {
 }
 
 /*
- *  <struct_declaration> = <type_specifier> <pointer> <ident> ";"
+ *  <struct_declaration> = <declaration_specifier> <pointer> <ident> ";"
  */
 Type *struct_declaration(Type *type) {
-    Type *t = type_specifier();
+    Type *t = declaration_specifier();
     t = pointer(t);
     Token *tok = token;
     next_token();
@@ -1429,10 +1514,10 @@ static Var *enumerator(Type *type, int *enum_const_num) {
 }
 
 /*
- *  <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
+ *  <declaration_param> = <declaration_specifier> <pointer> <ident> <type_suffix>
  */
 static Var *declaration_param(Var *cur) {
-    Type *type = type_specifier();
+    Type *type = declaration_specifier();
     type = pointer(type);
     Token *tok = token;
     Var *lvar = memory_alloc(sizeof(Var));
@@ -1457,7 +1542,7 @@ static Var *declaration_param(Var *cur) {
 }
 
 /*
- *  <func_define> = <type_specifier> <pointer> <ident>
+ *  <func_define> = <declaration_specifier> <pointer> <ident>
  *                  "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
  *                  <compound_stmt>
  */
@@ -1595,7 +1680,7 @@ static Node *compound_stmt() {
     while (!consume('}')) {
         Node *n;
         if (consume_is_type_nostep(token)) {
-            Type *type = type_specifier();
+            Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep(';')) {
                 // 構造体か列挙型の作成 or 宣言
@@ -1685,7 +1770,7 @@ static Node *stmt() {
         // init
         if (consume_is_type_nostep(token)) {
             // <declaration>
-            Type *type = type_specifier();
+            Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep('{')) {
                 // 構造体か列挙型の作成

@@ -43,30 +43,32 @@ $ make diff
 
 ```
 <program> = ( <declaration> | <func_define> )*
-<declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)*
+<declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
 <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+<declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
+<storage_class>  = "typedef" | "entern"
+<type_specifier> = "char"
+                 | "short"
+                 | "int"
+                 | "long"
+                 | "void"
+                 | "_Bool"
+                 | ("struct" | "union") <ident>
+                 | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
+                 | "enum" <ident>
+                 | "enum" <ident>? "{" <enumerator_list> "}"
+<type_qualifier> = "const"
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
 <pointer> = "*"*
-<storage_class>  = "typedef" | "entern"
-<type_specifier> = <storage_class>? "int"
-                 | <storage_class>? "char"
-                 | <storage_class>? "void"
-                 | <storage_class>? "short"
-                 | <storage_class>? "_Bool"
-                 | <storage_class>? "long" "long"? "int"?
-                 | <storage_class>? ("struct" | "union") <ident>
-                 | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
-                 | <storage_class>? "enum" <ident>
-                 | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
-<type_name> = <type_specifier> <pointer> <type_suffix>
+<type_name> = <declaration_specifier> <pointer> <type_suffix>
 <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
-<struct_declaration> = <type_specifier> <pointer> <ident> ";"
+<struct_declaration> = <declaration_specifier> <pointer> <ident> ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <conditional>
-<declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
-<func_define> = <type_specifier> <pointer> <ident>
+<declaration_param> = <declaration_specifier> <pointer> <ident> <type_suffix>
+<func_define> = <declaration_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
                 <compound_stmt>
 <compound_stmt> = { <stmt>* }

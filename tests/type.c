@@ -197,6 +197,10 @@ int main() {
     ASSERT(1, (_Bool)1234, "cast8");
     ASSERT(0, (_Bool)(int *)(_Bool)0, "cast9");
 
+    ASSERT(8, sizeof(long int long), "sizeof(long int long)");
+    ASSERT(8, sizeof(long long), "sizeof(long long)");
+    ASSERT(8, sizeof(long), "sizeof(long)");
+
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");
     ASSERT(300000000000000, long3(), "long3");
