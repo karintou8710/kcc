@@ -240,8 +240,8 @@ static void gen(Node *node) {
         if (node->type->kind == TYPE_STRUCT || node->type->kind == TYPE_UNION) {
             // メモリコピー
             for (int i = 0; i < node->type->size; i++) {
-                printf("  mov r8, [rdi+%d]\n", i);
-                printf("  mov [rax+%d], r8\n", i);
+                printf("  mov sil, BYTE PTR [rdi+%d]\n", i);
+                printf("  mov BYTE PTR [rax+%d], sil\n", i);
             }
         } else if (node->type->kind == TYPE_BOOL) {
             char *reg_name = proper_register(node->rhs->type, REG_RDI);

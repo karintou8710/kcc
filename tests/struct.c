@@ -299,6 +299,15 @@ int struct_assign4() {
     return c.m1.m1[5] + c.m2[5];
 }
 
+int struct_assign5() {
+    struct A {
+        char m;
+    } a, b;
+    a.m = 10;
+    b = a;
+    return b.m;
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -321,6 +330,7 @@ int main() {
     ASSERT(1, struct_assign2(), "struct_assign2");
     ASSERT(15, struct_assign3(), "struct_assign3");
     ASSERT(15, struct_assign4(), "struct_assign4");
+    ASSERT(10, struct_assign5(), "struct_assign5");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;
