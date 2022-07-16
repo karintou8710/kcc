@@ -18,6 +18,10 @@ typedef CHAR CHAR2;
 typedef struct STRUCT1 {
     INT3 member;
 } STRUCT1;
+typedef struct STRUCT2 STRUCT2;
+struct STRUCT2 {
+    int member;
+};
 typedef enum ENUM1 {
     A,
     B,
@@ -60,6 +64,12 @@ STRUCT1 *typedef4() {
     return s;
 }
 
+STRUCT2 *typedef5() {
+    STRUCT2 *s = malloc(sizeof(STRUCT2));
+    s->member = 10;
+    return s;
+}
+
 int main() {
     ASSERT(4, sizeof(INT32), "sizeof(INT32)");
     ASSERT(8, sizeof(INT1), "sizeof(INT1)");
@@ -74,6 +84,7 @@ int main() {
     ASSERT(10, **typedef2(), "typedef2");
     ASSERT(285, typedef3(), "typedef3");
     ASSERT(1, typedef4()->member, "typedef4");
+    ASSERT(10, typedef5()->member, "typedef5");
 
     printf("ALL TEST OF enum.c SUCCESS :)\n");
     return 0;

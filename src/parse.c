@@ -961,6 +961,7 @@ static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume(';')) {
         if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            /* typedefの型を使う側でコピーする */
             TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -980,6 +981,7 @@ static Node *declaration(Type *type) {
         Node *tmp_node = n->stmts->body[i];
         // typedefなら型名を記録する
         if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            /* typedefの型を使う側でコピーする */
             TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
             vec_push(typedef_alias, ta);
         } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -1162,9 +1164,28 @@ static Type *type_specifier() {
     if (consume(TK_IDENT)) {
         // typedef
         char *name = my_strndup(tok->str, tok->len);
-        type = find_typedef_alias(name);
-        if (type == NULL) {
+        Type *t = find_typedef_alias(name);
+        if (t == NULL) {
             error("find_typedef_alias() failure: %sは定義されていません", name);
+        }
+        type = memory_alloc(sizeof(Type));
+        copy_type(type, t);
+        if (type->is_forward) {
+            Tag *stag_local, *stag_global;
+            if (type->kind == TYPE_STRUCT) {
+                stag_local = find_lstruct_type(type->name), stag_global = find_gstruct_type(type->name);
+            } else if (type->kind == TYPE_UNION) {
+                stag_local = find_lunion_type(type->name), stag_global = find_gunion_type(type->name);
+            } else if (type->kind == TYPE_ENUM) {
+                stag_local = find_lenum_type(type->name), stag_global = find_genum_type(type->name);
+            } else {
+                error("type_specifier() failure: 不正な前方宣言の型です");
+            }
+            Tag *stag = stag_local ? stag_local : stag_global;
+            if (stag == NULL) {
+                error("find_~_type() failure: 前方宣言の構造体がありません");
+            }
+            vec_push(stag->forward_type, type);
         }
     } else if (consume(TK_TYPE)) {
         // 基礎型
@@ -1190,6 +1211,7 @@ static Type *type_specifier() {
             /* 前方宣言とlistに保存した型に反映する */
             for (int i = 0; i < tag->forward_type->len; i++) {
                 Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
                 copy_type(forward_type, type);
             }
             copy_type(tag->base_type, type);
@@ -1219,6 +1241,7 @@ static Type *type_specifier() {
             /* 前方宣言とlistに保存した型に反映する */
             for (int i = 0; i < tag->forward_type->len; i++) {
                 Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
                 copy_type(forward_type, type);
             }
             copy_type(tag->base_type, type);
@@ -1241,6 +1264,7 @@ static Type *type_specifier() {
             /* 前方宣言とlistに保存した型に反映する */
             for (int i = 0; i < tag->forward_type->len; i++) {
                 Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
                 copy_type(forward_type, type);
             }
             copy_type(tag->base_type, type);
