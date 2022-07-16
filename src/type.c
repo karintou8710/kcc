@@ -97,6 +97,22 @@ bool is_same_type(Type *ty1, Type *ty2) {
     return is_same_type(ty1->ptr_to, ty2->ptr_to);
 }
 
+void copy_type(Type *to, Type *from) {
+    if (from == NULL) {
+        return;
+    }
+    to->kind = from->kind;
+    to->ptr_to = memory_alloc(sizeof(Type));
+    copy_type(to->ptr_to, from->ptr_to);
+    to->size = from->size;
+    to->array_size = from->array_size;
+    to->alignment = from->alignment;
+    to->name = from->name;
+    to->member = from->member;
+    to->is_forward = from->is_forward;
+    return;
+}
+
 /* 基本の型を生成 */
 Type *new_type(TypeKind tykind) {
     Type *ty = memory_alloc(sizeof(Type));
@@ -126,6 +142,15 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     ty->array_size = array_size;
     ty->ptr_to = ptr_to;
     return ty;
+}
+
+/* base_typeは型を独立させるためコピーする */
+Tag *new_tag(Type *type) {
+    Tag *tag = memory_alloc(sizeof(Tag));
+    tag->base_type = memory_alloc(sizeof(Type));
+    copy_type(tag->base_type, type);
+    tag->forward_type = new_vec();
+    return tag;
 }
 
 bool is_integertype(TypeKind kind) {

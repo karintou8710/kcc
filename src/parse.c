@@ -287,12 +287,28 @@ static Type *find_aggregate_type(char *name, Vector *list) {
     return NULL;
 }
 
-static Type *find_lstruct_type(char *name) {
-    return find_aggregate_type(name, struct_local_lists);
+static Tag *find_tag(char *name, Vector *list) {
+    if (name == NULL) return NULL;
+    if (list == NULL) return NULL;
+
+    for (int i = 0; i < list->len; i++) {
+        Tag *tag = list->body[i];
+        Type *t = tag->base_type;
+        if (t->name == NULL) continue;
+        if (strcmp(t->name, name) == 0) {
+            return tag;
+        }
+    }
+
+    return NULL;
 }
 
-static Type *find_gstruct_type(char *name) {
-    return find_aggregate_type(name, struct_global_lists);
+static Tag *find_lstruct_type(char *name) {
+    return find_tag(name, struct_local_lists);
+}
+
+static Tag *find_gstruct_type(char *name) {
+    return find_tag(name, struct_global_lists);
 }
 
 static Type *find_lunion_type(char *name) {
@@ -653,19 +669,19 @@ static Var *reverse_linked_list_var(Var *cur) {
     return reversed->next;
 }
 
-static Type *struct_defined_or_forward(Type *type) {
+static Tag *struct_defined_or_forward(Type *type) {
     if (is_global) {
-        Type *t = find_gstruct_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_gstruct_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     } else {
-        Type *t = find_lstruct_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lstruct_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     }
 }
 
@@ -1171,15 +1187,6 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
-        Type *t = struct_defined_or_forward(type);
-        if (t != NULL) type = t;
-
-        if (!type->is_forward) {
-            vec_push(is_global ? struct_global_lists : struct_local_lists, type);
-        } else {
-            type->is_forward = false;
-        }
-
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}')) {
@@ -1189,6 +1196,21 @@ static Type *type_specifier() {
         type->member = reverse_linked_list_var(type->member);
         // memberのアライメントを考慮したoffsetを決定する
         apply_align_struct(type);
+
+        Tag *tag = struct_defined_or_forward(type);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
+        } else {
+            tag = new_tag(type);
+            vec_push(is_global ? struct_global_lists : struct_local_lists, tag);
+        }
 
         return type;
     }
@@ -1235,16 +1257,22 @@ static Type *type_specifier() {
     }
 
     if (type->kind == TYPE_STRUCT) {
-        Type *stype = find_lstruct_type(type->name);
-        if (stype == NULL) {
-            stype = find_gstruct_type(type->name);
-            if (stype == NULL) {
-                type->is_forward = true;
-                stype = type;
-                vec_push(is_global ? struct_global_lists : struct_local_lists, stype);
+        Tag *stag_local = find_lstruct_type(type->name), *stag_global = find_gstruct_type(type->name);
+        Tag *stag = stag_local ? stag_local : stag_global;
+        if (stag == NULL) {
+            // 初の前方宣言
+            type->is_forward = true;
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? struct_global_lists : struct_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
             }
         }
-        type = stype;
     }
 
     if (type->kind == TYPE_UNION) {
@@ -2121,12 +2149,12 @@ static Node *funcall(Token *tok) {
         }
 
         // __builtin_va_list構造体が定義されているか
-        Type *t = find_gstruct_type("__builtin_va_list");
-        if (t == NULL) {
+        Tag *tag = find_gstruct_type("__builtin_va_list");
+        if (tag == NULL) {
             error("find_gstruct_type() failure: __builtin_va_listが未定義です");
         }
         // struct __builtin_va_list *
-        t = new_ptr_type(t);
+        Type *t = new_ptr_type(tag->base_type);
 
         // lhs -> *ap
         Node *lhs = new_node(ND_DEREF);

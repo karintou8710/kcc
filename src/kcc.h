@@ -9,6 +9,7 @@
 typedef struct Var Var;
 typedef struct Vector Vector;
 typedef struct Type Type;
+typedef struct Tag Tag;
 typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Function Function;
@@ -151,6 +152,11 @@ struct Type {
     bool is_forward;
 };
 
+struct Tag {
+    Type *base_type;  // 変数に使われる型構造体とは確保された領域を独立させる
+    Vector *forward_type;
+};
+
 struct Token {
     TokenKind kind;
     Type *type;
@@ -290,6 +296,8 @@ bool is_relationalnode(NodeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
 bool is_same_type(Type *ty1, Type *ty2);
+Tag *new_tag(Type *type);
+void copy_type(Type *to, Type *from);
 
 // parse.c
 void program();
