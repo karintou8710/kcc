@@ -73,7 +73,7 @@ $ make diff
 <func_define> = <declaration_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
                 <compound_stmt>
-<compound_stmt> = { <stmt>* }
+<compound_stmt> = "{" (<declaration> | <stmt>)* "}"
 <stmt> = <expr>? ";"
        | "return" <expr>? ";"
        | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
