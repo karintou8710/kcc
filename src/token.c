@@ -459,6 +459,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "signed", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_SIGNED, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        if (strncmp(p, "unsigned", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_UNSIGNED, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
         if (strncmp(p, "struct", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_TYPE, cur, p, 6);
             cur->type = new_type(TYPE_STRUCT);

@@ -173,6 +173,11 @@ int bool5() {
     return a.test;
 }
 
+signed int signed1(unsigned int a, int signed b) {
+    long signed int long c = 10;
+    return a + b + c;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -221,6 +226,8 @@ int main() {
     ASSERT(0, bool3(0), "bool3(0)");
     ASSERT(1, bool4(), "bool4()");
     ASSERT(1, bool5(), "bool5()");
+
+    ASSERT(12, signed1(1, 1), "signed1(1,1)");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

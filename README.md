@@ -57,6 +57,8 @@ $ make diff
                  | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
                  | "enum" <ident>
                  | "enum" <ident>? "{" <enumerator_list> "}"
+                 | "signed"
+                 | "unsigned"
 <type_qualifier> = "const"
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"

@@ -81,6 +81,8 @@ enum {
     ENUM = 1 << 8,
     TYPEDEF = 1 << 9,
     BOOL = 1 << 10,
+    SIGNED = 1 << 11,
+    UNSIGNED = 1 << 12,  // 未実装
 };
 
 /*** parser utils ***/
@@ -112,7 +114,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN, TK_TYPEDEF};
+        TK_EXTERN, TK_TYPEDEF, TK_SIGNED, TK_UNSIGNED};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -1207,6 +1209,11 @@ static Type *declaration_specifier() {
         type = new_type(TYPE_LONG);
     }
 
+    if (flag & UNSIGNED) {
+        // 未実装
+        type->is_unsigned = true;
+    }
+
     return type;
 }
 
@@ -1221,6 +1228,8 @@ static Type *declaration_specifier() {
  *                  | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
  *                  | "enum" <ident>
  *                  | "enum" <ident>? "{" <enumerator_list> "}"
+ *                  | "signed"
+ *                  | "unsigned"
  */
 static Type *type_specifier(int *flag) {
     Token *tok = token;
@@ -1289,6 +1298,12 @@ static Type *type_specifier(int *flag) {
                 *flag |= ENUM;
                 break;
         }
+    } else if (consume(TK_SIGNED)) {
+        *flag |= SIGNED;
+        return NULL;
+    } else if (consume(TK_UNSIGNED)) {
+        *flag |= UNSIGNED;
+        return NULL;
     } else {
         error("type_specifier() failure: 適切な型ではありません");
     }

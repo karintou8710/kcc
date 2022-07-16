@@ -71,6 +71,8 @@ enum TokenKind {
     TK_SWITCH,       // switch
     TK_CASE,         // case
     TK_DEFAULT,      // default
+    TK_SIGNED,       // signed
+    TK_UNSIGNED,     // unsigned (未実装)
 };
 
 enum TypeKind {
@@ -150,6 +152,8 @@ struct Type {
     char *name;
     Var *member;
     bool is_forward;
+
+    bool is_unsigned;
 };
 
 struct Tag {
