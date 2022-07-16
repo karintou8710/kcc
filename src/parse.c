@@ -41,6 +41,7 @@ static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
+static Node *declarator_var(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static void func_define(Type *type);
@@ -1035,19 +1036,11 @@ static Node *declaration(Type *type) {
 }
 
 /*
- *  <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+ *  <declaration_var> = <declarator> ("=" <initialize>)?
  */
 static Node *declaration_var(Type *type) {
-    type = pointer(type);
-    Node *node = declear_node_ident(token, type);
-    next_token();
+    Node *node = declarator_var(type);
 
-    if (consume_nostep('[')) {
-        // 配列
-        node->var->type = type_suffix(node->var->type, true);
-        // 新しい型のオフセットにする
-        node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
-    }
     // 変数
     if (consume('=')) {
         if (current_storage == STORAGE_TYPEDEF) {
@@ -1179,6 +1172,32 @@ static Type *pointer(Type *type) {
         type = t;
     }
     return type;
+}
+
+/*
+ * <declarator> = <pointer> <ident> <type_suffix>
+ */
+static Node *declarator_var(Type *type) {
+    type = pointer(type);
+    Node *node = declear_node_ident(token, type);
+    next_token();
+
+    // 配列
+    node->var->type = type_suffix(node->var->type, true);
+    // 新しい型のオフセットにする
+    node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
+    return node;
+}
+
+/*
+ * <declarator> = <pointer> <ident> <type_suffix>
+ */
+static void declarator_struct(Type *member_type, Type *struct_type) {
+    member_type = pointer(member_type);
+    Token *tok = token;
+    next_token();
+    member_type = type_suffix(member_type, false);
+    new_struct_member(tok, member_type, struct_type);
 }
 
 /*
@@ -1494,15 +1513,11 @@ static Type *type_suffix(Type *type, bool is_first) {
 }
 
 /*
- *  <struct_declaration> = <declaration_specifier> <pointer> <ident> ";"
+ *  <struct_declaration> = <declaration_specifier> <declarator> ";"
  */
 Type *struct_declaration(Type *type) {
     Type *t = declaration_specifier();
-    t = pointer(t);
-    Token *tok = token;
-    next_token();
-    t = type_suffix(t, false);
-    new_struct_member(tok, t, type);
+    declarator_struct(t, type);
     expect(';');
     return type;
 }
@@ -1546,7 +1561,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
 }
 
 /*
- *  <declaration_param> = <declaration_specifier> <pointer> <ident> <type_suffix>
+ *  <declaration_param> = <declaration_specifier> <pointer> <ident>? <type_suffix>
  */
 static Var *declaration_param(Var *cur) {
     Type *type = declaration_specifier();
@@ -1563,13 +1578,11 @@ static Var *declaration_param(Var *cur) {
         lvar->is_only_type = true;
     }
 
-    if (consume_nostep('[')) {
-        // ポインタとして受け取る
-        // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
-        lvar->type = type_suffix(lvar->type, true);
-        // 新しい型のオフセットにする
-        lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
-    }
+    // ポインタとして受け取る
+    // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
+    lvar->type = type_suffix(lvar->type, true);
+    // 新しい型のオフセットにする
+    lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
     return lvar;
 }
 

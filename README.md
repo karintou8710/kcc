@@ -44,7 +44,7 @@ $ make diff
 ```
 <program> = ( <declaration> | <func_define> )*
 <declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
-<declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+<declaration_var> = <declarator> ("=" <initialize>)?
 <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
 <storage_class>  = "typedef" | "entern"
 <type_specifier> = "char"
@@ -62,14 +62,15 @@ $ make diff
 <type_qualifier> = "const"
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
+<declarator> = <pointer> <ident> <type_suffix>
 <pointer> = ("*" <type_qualifier>?) *
 <type_name> = <declaration_specifier> <pointer> <type_suffix>
 <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε
-<struct_declaration> = <declaration_specifier> <pointer> <ident> ";"
+<struct_declaration> = <declaration_specifier> <declarator> ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <conditional>
-<declaration_param> = <declaration_specifier> <pointer> <ident> <type_suffix>
+<declaration_param> = <declaration_specifier> <pointer> <ident>? <type_suffix>
 <func_define> = <declaration_specifier> <pointer> <ident>
                 "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
                 <compound_stmt>
