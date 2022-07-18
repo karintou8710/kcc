@@ -5,16 +5,12 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 
 ## Implemented
 
-- 制御構文, 配列, ポインター
-- グローバル変数の定義
-- 関数の定義、呼び出し
-- struct, union
+- struct, union, typedef, enum
 - ブロックスコープ
 - 配列の初期化式
-- typedef, enum
-- #include "header"
 - 可変長引数
 - \_Bool
+- 型の入れ子定義
 
 ## TODO
 
@@ -22,7 +18,6 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - 名前空間ごとの変数管理
 - 匿名構造体
 - 関数ポインタ
-- 型の入れ子定義
 
 ## Build
 
