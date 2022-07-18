@@ -5,7 +5,7 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 
 ## Implemented
 
-- struct, union, typedef, enum
+- struct, union, typedef, enum, const
 - ブロックスコープ
 - 配列の初期化式
 - 可変長引数
