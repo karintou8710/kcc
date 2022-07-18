@@ -210,6 +210,10 @@ int nested_type4() {
     return *b;
 }
 
+int nested_type5(int (*a)[2]) {
+    return (*a)[0] + (*a)[1];
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -237,6 +241,8 @@ int main() {
     ASSERT(8, sizeof(long int long), "sizeof(long int long)");
     ASSERT(8, sizeof(long long), "sizeof(long long)");
     ASSERT(8, sizeof(long), "sizeof(long)");
+    ASSERT(8, sizeof(int(*(*)[20])[10]), "sizeof(int (*(*)[20])[10])");
+    ASSERT(80, sizeof(_Bool(*[10])[]), "sizeof(_Bool(*[10])[])");
 
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");
@@ -267,6 +273,8 @@ int main() {
     ASSERT(80, nested_type2(), "nested_type2()");
     ASSERT(8, nested_type3(), "nested_type3()");
     ASSERT(1, nested_type4(), "nested_type4()");
+    int a[2] = {1, 2};
+    ASSERT(3, nested_type5(&a), "nested_type5(&a)");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

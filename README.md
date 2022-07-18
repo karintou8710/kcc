@@ -65,6 +65,7 @@ $ make diff
 <declarator> = <pointer> <ident> <type_suffix>
              | <pointer> "(" <declarator> ")" <type_suffix>
 <abstruct_declarator> = <pointer> <type_suffix>
+                      | <pointer> "(" <declarator> ")" <type_suffix>
 <pointer> = ("*" <type_qualifier>?) *
 <type_name> = <declaration_specifier> <abstruct_declarator>
 <type_suffix> = "[" <const_expr>? "]" <type_suffix> | ε

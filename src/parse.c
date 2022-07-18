@@ -1182,6 +1182,9 @@ static Type *pointer(Type *type) {
 /*
  * <declarator> = <pointer> <ident> <type_suffix>
  *              | <pointer> "(" <declarator> ")" <type_suffix>
+ * <abstruct_declarator> = <pointer> <type_suffix>
+ *                       | <pointer> "(" <declarator> ")" <type_suffix>
+ * この２つの切り替えはdeclarator関数の呼び出し側でtype->tokenの有無で判定する
  */
 static Type *declarator(Type *type) {
     type = declarator2(type);
@@ -1204,11 +1207,16 @@ static Type *declarator2(Type *type) {
         copy_type_shallow(dummy, type);
         return head;
     } else {
-        expect_nostep(TK_IDENT);
-        Token *tok = token;
-        next_token();
-        type = type_suffix(type, true);
-        type->token = tok;
+        if (consume_nostep(TK_IDENT)) {
+            Token *tok = token;
+            next_token();
+            type = type_suffix(type, true);
+            type->token = tok;
+        } else {
+            type = type_suffix(type, true);
+            type->token = NULL;
+        }
+
         return type;
     }
 }
@@ -1234,27 +1242,22 @@ static void declarator_struct(Type *member_type, Type *struct_type) {
 }
 
 /*
- * <abstruct_declarator> = (<abstruct_declarator> | <declarator>)
+ * <declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
  */
 static Var *declarator_param(Type *type, Var *cur) {
-    type = pointer(type);
+    type = declarator(type);
 
-    Token *tok = token;
     Var *lvar = memory_alloc(sizeof(Var));
     lvar->type = type;
-    lvar->offset = cur->offset + sizeOfType(lvar->type);
-    if (consume(TK_IDENT)) {
-        lvar->name = my_strndup(tok->str, tok->len);
-        lvar->len = tok->len;
-    } else {
+    if (type->token == NULL) {
         lvar->is_only_type = true;
+    } else {
+        lvar->name = my_strndup(type->token->str, type->token->len);
+        lvar->len = type->token->len;
     }
 
-    // ポインタとして受け取る
-    // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
-    lvar->type = type_suffix(lvar->type, true);
     // 新しい型のオフセットにする
-    lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
+    lvar->offset = cur->offset + sizeOfType(lvar->type);
     return lvar;
 }
 
@@ -1262,8 +1265,10 @@ static Var *declarator_param(Type *type, Var *cur) {
  * <abstruct_declarator> = <pointer> <type_suffix>
  */
 static Type *abstruct_declarator(Type *type) {
-    type = pointer(type);
-    type = type_suffix(type, true);
+    type = declarator(type);
+    if (type->token) {
+        error("declarator() failure: type->token has value");
+    }
     return type;
 }
 
