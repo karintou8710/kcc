@@ -63,6 +63,7 @@ $ make diff
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
 <declarator> = <pointer> <ident> <type_suffix>
+             | <pointer> "(" <declarator> ")" <type_suffix>
 <abstruct_declarator> = <pointer> <type_suffix>
 <pointer> = ("*" <type_qualifier>?) *
 <type_name> = <declaration_specifier> <abstruct_declarator>

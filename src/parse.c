@@ -41,6 +41,8 @@ static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
+static Type *declarator(Type *type);
+static Type *declarator2(Type *type);
 static Node *declarator_var(Type *type);
 static void declarator_struct(Type *member_type, Type *struct_type);
 static Type *abstruct_declarator(Type *type);
@@ -410,6 +412,7 @@ Function *find_func(char *name) {
 
     return NULL;
 }
+
 /*** eval ***/
 
 static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
@@ -1178,16 +1181,47 @@ static Type *pointer(Type *type) {
 
 /*
  * <declarator> = <pointer> <ident> <type_suffix>
+ *              | <pointer> "(" <declarator> ")" <type_suffix>
  */
-static Node *declarator_var(Type *type) {
-    type = pointer(type);
-    Node *node = declear_node_ident(token, type);
-    next_token();
+static Type *declarator(Type *type) {
+    type = declarator2(type);
+    calc_type_size(type);
 
-    // 配列
-    node->var->type = type_suffix(node->var->type, true);
+    return type;
+}
+
+static Type *declarator2(Type *type) {
+    type = pointer(type);
+    if (consume('(')) {
+        // ex) int (*a)[10]; | * -> [10] -> int
+        Type *dummy = memory_alloc(sizeof(Type));
+        // ex) * -> dummy
+        Type *head = declarator(dummy);
+        expect(')');
+        // ex) [10] -> int
+        type = type_suffix(type, true);
+        // ex) dummy = [10]
+        copy_type_shallow(dummy, type);
+        return head;
+    } else {
+        expect_nostep(TK_IDENT);
+        Token *tok = token;
+        next_token();
+        type = type_suffix(type, true);
+        type->token = tok;
+        return type;
+    }
+}
+
+static Node *declarator_var(Type *type) {
+    type = declarator(type);
+    if (type->token == NULL) {
+        error("declarator() failure: type->token == NULL");
+    }
+    Node *node = declear_node_ident(type->token, type);
     // 新しい型のオフセットにする
-    node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
+
+    node->var->offset += sizeOfType(node->var->type);
     return node;
 }
 

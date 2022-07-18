@@ -97,6 +97,25 @@ bool is_same_type(Type *ty1, Type *ty2) {
     return is_same_type(ty1->ptr_to, ty2->ptr_to);
 }
 
+/* tokenはコピー対象に含めない */
+void copy_type_shallow(Type *to, Type *from) {
+    if (from == NULL) {
+        return;
+    }
+    to->kind = from->kind;
+    to->ptr_to = memory_alloc(sizeof(Type));
+    to->ptr_to = from->ptr_to;
+    to->size = from->size;
+    to->array_size = from->array_size;
+    to->alignment = from->alignment;
+    to->name = from->name;
+    to->member = from->member;
+    to->is_forward = from->is_forward;
+    to->is_constant = from->is_constant;
+    to->is_unsigned = from->is_unsigned;
+    return;
+}
+
 void copy_type(Type *to, Type *from) {
     if (from == NULL) {
         return;
@@ -113,6 +132,16 @@ void copy_type(Type *to, Type *from) {
     to->is_constant = from->is_constant;
     to->is_unsigned = from->is_unsigned;
     return;
+}
+
+/* ネスト型は最後まで配列型のサイズが決定しないので計算し直す */
+void calc_type_size(Type *type) {
+    if (type == NULL || type->ptr_to == NULL) return;
+
+    calc_type_size(type->ptr_to);
+    if (type->kind == TYPE_ARRAY) {
+        type->size = type->array_size * type->ptr_to->size;
+    }
 }
 
 /* 基本の型を生成 */

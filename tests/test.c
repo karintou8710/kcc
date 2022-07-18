@@ -556,7 +556,7 @@ int array2() {
     *(a + 1) = 2;
     *(a + 2) = 3;
     int i;
-    int sum;
+    int sum = 0;
     for (i = 0; i < 3; i += 1) {
         sum += *(a + i);
     }

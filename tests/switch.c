@@ -56,13 +56,12 @@ int switch3(int x) {
                 res++;
                 if (i == 5) break;
             }
+        case 10:
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
-                    if (res > 10) break;
+                    if (i + j > 5) break;
                     res++;
                 }
-                case 10:
-                    res++;
             }
             break;
             res = -1;
@@ -112,8 +111,8 @@ int main() {
     ASSERT(1, switch2(0), "switch2(0)");
     ASSERT(2, switch2(1), "switch2(1)");
     ASSERT(0, switch2(2), "switch2(2)");
-    ASSERT(21, switch3(0), "switch3(0)");
-    ASSERT(1, switch3(10), "switch3(10)");
+    ASSERT(27, switch3(0), "switch3(0)");
+    ASSERT(21, switch3(10), "switch3(10)");
     ASSERT(0, switch4(), "switch4()");
 
     printf("ALL TEST OF switch.c SUCCESS :)\n");

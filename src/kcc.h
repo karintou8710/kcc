@@ -156,6 +156,9 @@ struct Type {
 
     bool is_unsigned;
     bool is_constant;
+
+    // nested type
+    Token *token;
 };
 
 struct Tag {
@@ -306,6 +309,8 @@ bool can_type_cast(Type *ty, TypeKind to);
 bool is_same_type(Type *ty1, Type *ty2);
 Tag *new_tag(Type *type);
 void copy_type(Type *to, Type *from);
+void copy_type_shallow(Type *to, Type *from);
+void calc_type_size(Type *type);
 
 // parse.c
 void program();

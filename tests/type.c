@@ -178,6 +178,38 @@ signed int signed1(unsigned int a, int signed b) {
     return a + b + c;
 }
 
+int nest = 10;
+int((*nest2)) = &nest;
+
+int nested_type1() {
+    int(*a)[5][10];
+    int b[5][10];
+    a = &b;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 10; j++) {
+            b[i][j] = i + j;
+        }
+    }
+
+    return (*a)[1][2];
+}
+
+int nested_type2() {
+    int(*a[10])[20];
+    return sizeof(a);
+}
+
+int nested_type3() {
+    int(*(*(*(*a))[10]))[3];
+    return sizeof(a);
+}
+
+int nested_type4() {
+    int a = 1;
+    int(*(b)) = &a;
+    return *b;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -228,6 +260,13 @@ int main() {
     ASSERT(1, bool5(), "bool5()");
 
     ASSERT(12, signed1(1, 1), "signed1(1,1)");
+
+    ASSERT(10, *nest2, "*nest2");
+
+    ASSERT(3, nested_type1(), "nested_type1()");
+    ASSERT(80, nested_type2(), "nested_type2()");
+    ASSERT(8, nested_type3(), "nested_type3()");
+    ASSERT(1, nested_type4(), "nested_type4()");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;
