@@ -418,11 +418,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long int, long long int
-                p += 3;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 3);
             cur->type = new_type(TYPE_INT);
             p += 3;
@@ -437,11 +432,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "long", 4) == 0 && !is_alnum(p[4])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long と long longは同じ型とみなす
-                p += 4;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 4);
             cur->type = new_type(TYPE_LONG);
             p += 4;
@@ -465,6 +455,24 @@ Token *tokenize(char *p) {
         if (strncmp(p, "_Bool", 5) == 0 && !is_alnum(p[5])) {
             cur = new_token(TK_TYPE, cur, p, 5);
             cur->type = new_type(TYPE_BOOL);
+            p += 5;
+            continue;
+        }
+
+        if (strncmp(p, "signed", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_SIGNED, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        if (strncmp(p, "unsigned", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_UNSIGNED, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "const", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_CONST, cur, p, 5);
             p += 5;
             continue;
         }

@@ -9,6 +9,7 @@
 typedef struct Var Var;
 typedef struct Vector Vector;
 typedef struct Type Type;
+typedef struct Tag Tag;
 typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Function Function;
@@ -70,6 +71,9 @@ enum TokenKind {
     TK_SWITCH,       // switch
     TK_CASE,         // case
     TK_DEFAULT,      // default
+    TK_SIGNED,       // signed
+    TK_UNSIGNED,     // unsigned (未実装)
+    TK_CONST,        // const
 };
 
 enum TypeKind {
@@ -149,6 +153,17 @@ struct Type {
     char *name;
     Var *member;
     bool is_forward;
+
+    bool is_unsigned;
+    bool is_constant;
+
+    // nested type
+    Token *token;
+};
+
+struct Tag {
+    Type *base_type;  // 変数に使われる型構造体とは確保された領域を独立させる
+    Vector *forward_type;
 };
 
 struct Token {
@@ -186,6 +201,8 @@ struct Node {
     Var *var;
     char *fn_name;
     char *str_literal;
+    // constで使用
+    bool is_initialize;
     // case, labelで使用
     char *label_name;
     Vector *args;  // 関数呼び出し時の引数
@@ -290,6 +307,10 @@ bool is_relationalnode(NodeKind kind);
 TypeKind large_numtype(Type *t1, Type *t2);
 bool can_type_cast(Type *ty, TypeKind to);
 bool is_same_type(Type *ty1, Type *ty2);
+Tag *new_tag(Type *type);
+void copy_type(Type *to, Type *from);
+void copy_type_shallow(Type *to, Type *from);
+void calc_type_size(Type *type);
 
 // parse.c
 void program();

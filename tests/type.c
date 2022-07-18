@@ -173,6 +173,47 @@ int bool5() {
     return a.test;
 }
 
+signed int signed1(unsigned int a, int signed b) {
+    long signed int long c = 10;
+    return a + b + c;
+}
+
+int nest = 10;
+int((*nest2)) = &nest;
+
+int nested_type1() {
+    int(*a)[5][10];
+    int b[5][10];
+    a = &b;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 10; j++) {
+            b[i][j] = i + j;
+        }
+    }
+
+    return (*a)[1][2];
+}
+
+int nested_type2() {
+    int(*a[10])[20];
+    return sizeof(a);
+}
+
+int nested_type3() {
+    int(*(*(*(*a))[10]))[3];
+    return sizeof(a);
+}
+
+int nested_type4() {
+    int a = 1;
+    int(*(b)) = &a;
+    return *b;
+}
+
+int nested_type5(int (*a)[2]) {
+    return (*a)[0] + (*a)[1];
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -197,6 +238,12 @@ int main() {
     ASSERT(1, (_Bool)1234, "cast8");
     ASSERT(0, (_Bool)(int *)(_Bool)0, "cast9");
 
+    ASSERT(8, sizeof(long int long), "sizeof(long int long)");
+    ASSERT(8, sizeof(long long), "sizeof(long long)");
+    ASSERT(8, sizeof(long), "sizeof(long)");
+    ASSERT(8, sizeof(int(*(*)[20])[10]), "sizeof(int (*(*)[20])[10])");
+    ASSERT(80, sizeof(_Bool(*[10])[]), "sizeof(_Bool(*[10])[])");
+
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");
     ASSERT(300000000000000, long3(), "long3");
@@ -217,6 +264,17 @@ int main() {
     ASSERT(0, bool3(0), "bool3(0)");
     ASSERT(1, bool4(), "bool4()");
     ASSERT(1, bool5(), "bool5()");
+
+    ASSERT(12, signed1(1, 1), "signed1(1,1)");
+
+    ASSERT(10, *nest2, "*nest2");
+
+    ASSERT(3, nested_type1(), "nested_type1()");
+    ASSERT(80, nested_type2(), "nested_type2()");
+    ASSERT(8, nested_type3(), "nested_type3()");
+    ASSERT(1, nested_type4(), "nested_type4()");
+    int a[2] = {1, 2};
+    ASSERT(3, nested_type5(&a), "nested_type5(&a)");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;

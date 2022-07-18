@@ -32,7 +32,8 @@ static Var *find_gvar(Token *tok);
 static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
-static Type *type_specifier();
+static Type *declaration_specifier();
+static Type *type_specifier(int *flag);
 static Var *enumerator(Type *type, int *enum_const_num);
 static void enumerator_list(Type *type);
 static Node *initialize(Initializer *init, Node *node);
@@ -40,6 +41,11 @@ static void initialize2(Initializer *init);
 static Node *declaration_global(Type *type);
 static Node *declaration_var(Type *type);
 static Node *declaration(Type *type);
+static Type *declarator(Type *type);
+static Type *declarator2(Type *type);
+static Node *declarator_var(Type *type);
+static void declarator_struct(Type *member_type, Type *struct_type);
+static Type *abstruct_declarator(Type *type);
 static Var *declaration_param(Var *cur);
 static Type *pointer(Type *type);
 static void func_define(Type *type);
@@ -67,6 +73,23 @@ static Type *type_suffix(Type *type, bool is_first);
 static Node *primary();
 static long const_expr();
 static GInitEl *eval(Node *node);
+
+enum {
+    VOID = 1 << 0,
+    CHAR = 1 << 1,
+    SHORT = 1 << 2,
+    INT = 1 << 3,
+    LONG = 1 << 4,
+    LONGLONG = 1 << 5,
+    STRUCT = 1 << 6,
+    UNION = 1 << 7,
+    ENUM = 1 << 8,
+    TYPEDEF = 1 << 9,
+    BOOL = 1 << 10,
+    SIGNED = 1 << 11,
+    UNSIGNED = 1 << 12,  // 未実装
+    CONST = 1 << 13,
+};
 
 /*** parser utils ***/
 
@@ -97,7 +120,7 @@ static bool consume_is_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN};
+        TK_EXTERN, TK_TYPEDEF, TK_SIGNED, TK_UNSIGNED, TK_CONST};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -138,6 +161,12 @@ static long expect_number() {
     long val = token->val;
     next_token();
     return val;
+}
+
+static void expect_no_storage() {
+    if (current_storage != UNKNOWN) {
+        error("expect_no_storage() failure: 記憶子が複数定義されています");
+    }
 }
 
 static bool at_eof() {
@@ -272,48 +301,49 @@ static Var *find_params(char *name, Var *params) {
     return find_var(name, params, NULL);
 }
 
-static Type *find_aggregate_type(char *name, Vector *list) {
+static Tag *find_tag(char *name, Vector *list) {
     if (name == NULL) return NULL;
     if (list == NULL) return NULL;
 
     for (int i = 0; i < list->len; i++) {
-        Type *t = list->body[i];
+        Tag *tag = list->body[i];
+        Type *t = tag->base_type;
         if (t->name == NULL) continue;
         if (strcmp(t->name, name) == 0) {
-            return t;
+            return tag;
         }
     }
 
     return NULL;
 }
 
-static Type *find_lstruct_type(char *name) {
-    return find_aggregate_type(name, struct_local_lists);
+static Tag *find_lstruct_type(char *name) {
+    return find_tag(name, struct_local_lists);
 }
 
-static Type *find_gstruct_type(char *name) {
-    return find_aggregate_type(name, struct_global_lists);
+static Tag *find_gstruct_type(char *name) {
+    return find_tag(name, struct_global_lists);
 }
 
-static Type *find_lunion_type(char *name) {
-    return find_aggregate_type(name, union_local_lists);
+static Tag *find_lunion_type(char *name) {
+    return find_tag(name, union_local_lists);
 }
 
-static Type *find_gunion_type(char *name) {
-    return find_aggregate_type(name, union_global_lists);
+static Tag *find_gunion_type(char *name) {
+    return find_tag(name, union_global_lists);
 }
 
-static Type *find_lenum_type(char *name) {
-    return find_aggregate_type(name, enum_local_lists);
+static Tag *find_lenum_type(char *name) {
+    return find_tag(name, enum_local_lists);
 }
 
-static Type *find_genum_type(char *name) {
-    return find_aggregate_type(name, enum_global_lists);
+static Tag *find_genum_type(char *name) {
+    return find_tag(name, enum_global_lists);
 }
 
-static Type *find_enum_type(char *name) {
+static Tag *find_enum_type(char *name) {
     // ローカルで探索
-    Type *t = find_lenum_type(name);
+    Tag *t = find_lenum_type(name);
     if (t) return t;
 
     // グローバルで探索
@@ -325,7 +355,8 @@ static Type *find_enum_type(char *name) {
 static Var *find_lenum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
-        Type *t = enum_local_lists->body[i];
+        Tag *tag = enum_local_lists->body[i];
+        Type *t = tag->base_type;
         Var *v = find_var(name, t->member, NULL);
         if (v) return v;
     }
@@ -336,7 +367,8 @@ static Var *find_lenum_member(char *name) {
 static Var *find_genum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
-        Type *t = enum_global_lists->body[i];
+        Tag *tag = enum_global_lists->body[i];
+        Type *t = tag->base_type;
         Var *v = find_var(name, t->member, NULL);
         if (v) return v;
     }
@@ -380,6 +412,7 @@ Function *find_func(char *name) {
 
     return NULL;
 }
+
 /*** eval ***/
 
 static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
@@ -429,6 +462,10 @@ static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len)
             g->val = gl->val && gr->val;
         } else if (strcmp(op, "||") == 0) {
             g->val = gl->val || gr->val;
+        } else if (strcmp(op, "<<") == 0) {
+            g->val = gl->val << gr->val;
+        } else if (strcmp(op, ">>") == 0) {
+            g->val = gl->val >> gr->val;
         }
     }
 }
@@ -524,6 +561,16 @@ static GInitEl *eval(Node *node) {
             g = eval(n);
         }
         return g;
+    } else if (node->kind == ND_LSHIFT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, "<<", 2);
+        return g;
+    } else if (node->kind == ND_RSHIFT) {
+        GInitEl *gl = eval(node->lhs);
+        GInitEl *gr = eval(node->rhs);
+        eval_concat(g, gl, gr, ">>", 2);
+        return g;
     }
 
     error("eval() failure: %d:未対応のNodeタイプです", node->kind);
@@ -531,21 +578,21 @@ static GInitEl *eval(Node *node) {
 
 /*** other func ***/
 
-static Type *is_defined_enum_type(char *name) {
+static Tag *is_defined_enum_type(char *name) {
     if (is_global) {
-        Type *t = find_genum_type(name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_genum_type(name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
-        return t;
+        return tag;
     } else {
-        Type *t = find_lenum_type(name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lenum_type(name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
-        return t;
+        return tag;
     }
 }
 
@@ -653,35 +700,35 @@ static Var *reverse_linked_list_var(Var *cur) {
     return reversed->next;
 }
 
-static Type *struct_defined_or_forward(Type *type) {
+static Tag *struct_defined_or_forward(Type *type) {
     if (is_global) {
-        Type *t = find_gstruct_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_gstruct_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     } else {
-        Type *t = find_lstruct_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lstruct_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     }
 }
 
-static Type *union_defined_or_forward(Type *type) {
+static Tag *union_defined_or_forward(Type *type) {
     if (is_global) {
-        Type *t = find_gunion_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_gunion_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_gunion_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     } else {
-        Type *t = find_lunion_type(type->name);
-        if (t != NULL && !t->is_forward) {
+        Tag *tag = find_lunion_type(type->name);
+        if (tag && tag->forward_type->len == 0) {
             error("find_lunion_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
-        return t;
+        return tag;
     }
 }
 
@@ -887,7 +934,9 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
     if (is_global) {
         vec_push(init->var->ginit, eval(init->expr));
     } else {
-        vec_push(suger, new_assign(node, init->expr));
+        Node *n = new_assign(node, init->expr);
+        n->is_initialize = true;
+        vec_push(suger, n);
     }
 
     return suger;
@@ -934,7 +983,7 @@ static Node *get_node_ident(Token *tok) {
 void program() {
     local_scope = new_vec();
     while (!at_eof()) {
-        Type *type = type_specifier();
+        Type *type = declaration_specifier();
         if (is_func(token)) {
             is_global = false;
             func_define(type);
@@ -952,12 +1001,13 @@ void program() {
 }
 
 /*
- *  <declaration> = <type_specifier> <declaration_var> ("," <declaration_var>)* ";"
+ *  <declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
  */
 static Node *declaration(Type *type) {
     Node *node = declaration_var(type);
     if (consume(';')) {
         if (node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            /* typedefの型を使う側でコピーする */
             TypedefAlias *ta = new_typedef_alias(node->var->name, node->var->type);
             vec_push(typedef_alias, ta);
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -977,6 +1027,7 @@ static Node *declaration(Type *type) {
         Node *tmp_node = n->stmts->body[i];
         // typedefなら型名を記録する
         if (tmp_node->kind == ND_VAR && current_storage == STORAGE_TYPEDEF) {
+            /* typedefの型を使う側でコピーする */
             TypedefAlias *ta = new_typedef_alias(tmp_node->var->name, tmp_node->var->type);
             vec_push(typedef_alias, ta);
         } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
@@ -990,19 +1041,11 @@ static Node *declaration(Type *type) {
 }
 
 /*
- *  <declaration_var> = <pointer> <ident> <type_suffix> ("=" <initialize>)?
+ *  <declaration_var> = <declarator> ("=" <initialize>)?
  */
 static Node *declaration_var(Type *type) {
-    type = pointer(type);
-    Node *node = declear_node_ident(token, type);
-    next_token();
+    Node *node = declarator_var(type);
 
-    if (consume_nostep('[')) {
-        // 配列
-        node->var->type = type_suffix(node->var->type, true);
-        // 新しい型のオフセットにする
-        node->var->offset += sizeOfType(node->var->type) - sizeOfType(type);
-    }
     // 変数
     if (consume('=')) {
         if (current_storage == STORAGE_TYPEDEF) {
@@ -1123,63 +1166,257 @@ static void initialize2(Initializer *init) {
 }
 
 /*
- *  <pointer> = "*"*
+ *  <pointer> = ("*" <type_qualifier>?) *
  */
 static Type *pointer(Type *type) {
     while (consume('*')) {
         Type *t = new_ptr_type(type);
+        if (consume(TK_CONST)) {
+            t->is_constant = true;
+        }
         type = t;
     }
     return type;
 }
 
-/* <storage_class>  = "typedef" | "entern"
- * <type_specifier> = <storage_class>? "int"
- *                  | <storage_class>? "char"
- *                  | <storage_class>? "void"
- *                  | <storage_class>? "short"
- *                  | <storage_class>? "_Bool"
- *                  | <storage_class>? "long" "long"? "int"?
- *                  | <storage_class>? ("struct" | "union") <ident>
- *                  | <storage_class>? ("struct" | "union") <ident> "{" <struct_declaration>* "}"
- *                  | <storage_class>? "enum" <ident>
- *                  | <storage_class>? "enum" <ident>? "{" <enumerator_list> "}"
+/*
+ * <declarator> = <pointer> <ident> <type_suffix>
+ *              | <pointer> "(" <declarator> ")" <type_suffix>
+ * <abstruct_declarator> = <pointer> <type_suffix>
+ *                       | <pointer> "(" <declarator> ")" <type_suffix>
+ * この２つの切り替えはdeclarator関数の呼び出し側でtype->tokenの有無で判定する
  */
-static Type *type_specifier() {
-    // storage class
-    if (consume(TK_TYPEDEF))
-        current_storage = STORAGE_TYPEDEF;
-    else if (consume(TK_EXTERN)) {
-        current_storage = STORAGE_EXTERN;
+static Type *declarator(Type *type) {
+    type = declarator2(type);
+    calc_type_size(type);
+
+    return type;
+}
+
+static Type *declarator2(Type *type) {
+    type = pointer(type);
+    if (consume('(')) {
+        // ex) int (*a)[10]; | * -> [10] -> int
+        Type *dummy = memory_alloc(sizeof(Type));
+        // ex) * -> dummy
+        Type *head = declarator(dummy);
+        expect(')');
+        // ex) [10] -> int
+        type = type_suffix(type, true);
+        // ex) dummy = [10]
+        copy_type_shallow(dummy, type);
+        return head;
+    } else {
+        if (consume_nostep(TK_IDENT)) {
+            Token *tok = token;
+            next_token();
+            type = type_suffix(type, true);
+            type->token = tok;
+        } else {
+            type = type_suffix(type, true);
+            type->token = NULL;
+        }
+
+        return type;
+    }
+}
+
+static Node *declarator_var(Type *type) {
+    type = declarator(type);
+    if (type->token == NULL) {
+        error("declarator() failure: type->token == NULL");
+    }
+    Node *node = declear_node_ident(type->token, type);
+    // 新しい型のオフセットにする
+
+    node->var->offset += sizeOfType(node->var->type);
+    return node;
+}
+
+static void declarator_struct(Type *member_type, Type *struct_type) {
+    member_type = declarator(member_type);
+    if (member_type->token == NULL) {
+        error("declarator() failure: member_type->token == NULL");
+    }
+    new_struct_member(member_type->token, member_type, struct_type);
+}
+
+/*
+ * <declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
+ */
+static Var *declarator_param(Type *type, Var *cur) {
+    type = declarator(type);
+
+    Var *lvar = memory_alloc(sizeof(Var));
+    lvar->type = type;
+    if (type->token == NULL) {
+        lvar->is_only_type = true;
+    } else {
+        lvar->name = my_strndup(type->token->str, type->token->len);
+        lvar->len = type->token->len;
     }
 
+    // 新しい型のオフセットにする
+    lvar->offset = cur->offset + sizeOfType(lvar->type);
+    return lvar;
+}
+
+/*
+ * <abstruct_declarator> = <pointer> <type_suffix>
+ */
+static Type *abstruct_declarator(Type *type) {
+    type = declarator(type);
+    if (type->token) {
+        error("declarator() failure: type->token has value");
+    }
+    return type;
+}
+
+/*
+ * <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
+ * <storage_class>  = "typedef" | "entern"
+ * <type_qualifier> = "const"
+ */
+static Type *declaration_specifier() {
+    if (!consume_is_type_nostep(token)) {
+        error("declaration_specifier() failure: expect type");
+    }
+    Type *type = NULL;
+    int flag = 0;
+
+    while (consume_is_type_nostep(token)) {
+        // storage class
+        if (consume(TK_TYPEDEF)) {
+            expect_no_storage();
+            current_storage = STORAGE_TYPEDEF;
+            continue;
+        } else if (consume(TK_EXTERN)) {
+            expect_no_storage();
+            current_storage = STORAGE_EXTERN;
+            continue;
+        }
+
+        // type_qualifier
+        if (consume(TK_CONST)) {
+            flag |= CONST;
+            continue;
+        }
+
+        // TODO: 不正な型の例外処理
+        Type *t = type_specifier(&flag);
+        if (t) type = t;
+    }
+
+    if (flag & LONG || flag & LONGLONG) {
+        type = new_type(TYPE_LONG);
+    }
+
+    if (flag & UNSIGNED) {
+        // 未実装
+        type->is_unsigned = true;
+    }
+
+    if (flag & CONST) {
+        Type *t = type;
+        while (t->kind == TYPE_ARRAY) t = t->ptr_to;
+        t->is_constant = true;
+    }
+
+    return type;
+}
+
+/*
+ * <type_specifier> = "char"
+ *                  | "short"
+ *                  | "int"
+ *                  | "long"
+ *                  | "void"
+ *                  | "_Bool"
+ *                  | ("struct" | "union") <ident>
+ *                  | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
+ *                  | "enum" <ident>
+ *                  | "enum" <ident>? "{" <enumerator_list> "}"
+ *                  | "signed"
+ *                  | "unsigned"
+ */
+static Type *type_specifier(int *flag) {
     Token *tok = token;
     Type *type;
 
     if (consume(TK_IDENT)) {
         // typedef
+        *flag |= TYPEDEF;
         char *name = my_strndup(tok->str, tok->len);
-        type = find_typedef_alias(name);
-        if (type == NULL) {
+        Type *t = find_typedef_alias(name);
+        if (t == NULL) {
             error("find_typedef_alias() failure: %sは定義されていません", name);
+        }
+        type = memory_alloc(sizeof(Type));
+        copy_type(type, t);
+        if (type->is_forward) {
+            Tag *stag_local, *stag_global;
+            if (type->kind == TYPE_STRUCT) {
+                stag_local = find_lstruct_type(type->name), stag_global = find_gstruct_type(type->name);
+            } else if (type->kind == TYPE_UNION) {
+                stag_local = find_lunion_type(type->name), stag_global = find_gunion_type(type->name);
+            } else if (type->kind == TYPE_ENUM) {
+                stag_local = find_lenum_type(type->name), stag_global = find_genum_type(type->name);
+            } else {
+                error("type_specifier() failure: 不正な前方宣言の型です");
+            }
+            Tag *stag = stag_local ? stag_local : stag_global;
+            if (stag == NULL) {
+                error("find_~_type() failure: 前方宣言の構造体がありません");
+            }
+            vec_push(stag->forward_type, type);
         }
     } else if (consume(TK_TYPE)) {
         // 基礎型
         type = tok->type;
+        switch (tok->type->kind) {
+            case TYPE_VOID:
+                *flag |= VOID;
+                break;
+            case TYPE_CHAR:
+                *flag |= CHAR;
+                break;
+            case TYPE_SHORT:
+                *flag |= SHORT;
+                break;
+            case TYPE_INT:
+                *flag |= INT;
+                break;
+            case TYPE_LONG:
+                if (*flag & LONG) {
+                    *flag |= LONGLONG;
+                } else {
+                    *flag |= LONG;
+                }
+                break;
+            case TYPE_BOOL:
+                *flag |= BOOL;
+                break;
+            case TYPE_STRUCT:
+                *flag |= STRUCT;
+                break;
+            case TYPE_UNION:
+                *flag |= UNION;
+                break;
+            case TYPE_ENUM:
+                *flag |= ENUM;
+                break;
+        }
+    } else if (consume(TK_SIGNED)) {
+        *flag |= SIGNED;
+        return NULL;
+    } else if (consume(TK_UNSIGNED)) {
+        *flag |= UNSIGNED;
+        return NULL;
     } else {
         error("type_specifier() failure: 適切な型ではありません");
     }
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
-        Type *t = struct_defined_or_forward(type);
-        if (t != NULL) type = t;
-
-        if (!type->is_forward) {
-            vec_push(is_global ? struct_global_lists : struct_local_lists, type);
-        } else {
-            type->is_forward = false;
-        }
-
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}')) {
@@ -1190,19 +1427,26 @@ static Type *type_specifier() {
         // memberのアライメントを考慮したoffsetを決定する
         apply_align_struct(type);
 
+        Tag *tag = struct_defined_or_forward(type);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
+        } else {
+            tag = new_tag(type);
+            vec_push(is_global ? struct_global_lists : struct_local_lists, tag);
+        }
+
         return type;
     }
 
     if (type->kind == TYPE_UNION && consume('{')) {
-        Type *t = union_defined_or_forward(type);
-        if (t != NULL) type = t;
-
-        if (!type->is_forward) {
-            vec_push(is_global ? union_global_lists : union_local_lists, type);
-        } else {
-            type->is_forward = false;
-        }
-
         // 構造体のメンバーの宣言
         type->member = memory_alloc(sizeof(Var));
         while (!consume('}')) {
@@ -1213,70 +1457,113 @@ static Type *type_specifier() {
 
         apply_align_struct(type);
 
+        Tag *tag = union_defined_or_forward(type);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
+        } else {
+            tag = new_tag(type);
+            vec_push(is_global ? union_global_lists : union_local_lists, tag);
+        }
+
         return type;
     }
 
     if (type->kind == TYPE_ENUM && consume('{')) {
-        // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
-        Type *t = is_defined_enum_type(type->name);
-        if (t != NULL) {
-            // 既に前方宣言がされている
-            type = t;
-        }
         enumerator_list(type);
 
-        if (!type->is_forward) {
-            vec_push(is_global ? enum_global_lists : enum_local_lists, type);
+        // is_defined_enum_typeは列挙型が既に定義されていたら、強制終了する
+        Tag *tag = is_defined_enum_type(type->name);
+
+        if (tag) {
+            /* 前方宣言とlistに保存した型に反映する */
+            for (int i = 0; i < tag->forward_type->len; i++) {
+                Type *forward_type = tag->forward_type->body[i];
+                forward_type->is_forward = false;
+                copy_type(forward_type, type);
+            }
+            copy_type(tag->base_type, type);
+            tag->forward_type = new_vec();  // 全て削除
         } else {
-            type->is_forward = false;
+            tag = new_tag(type);
+            vec_push(is_global ? enum_global_lists : enum_local_lists, tag);
         }
 
         return type;
     }
 
     if (type->kind == TYPE_STRUCT) {
-        Type *stype = find_lstruct_type(type->name);
-        if (stype == NULL) {
-            stype = find_gstruct_type(type->name);
-            if (stype == NULL) {
-                type->is_forward = true;
-                stype = type;
-                vec_push(is_global ? struct_global_lists : struct_local_lists, stype);
+        Tag *stag_local = find_lstruct_type(type->name), *stag_global = find_gstruct_type(type->name);
+        Tag *stag = stag_local ? stag_local : stag_global;
+        if (stag == NULL) {
+            // 初の前方宣言
+            type->is_forward = true;
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? struct_global_lists : struct_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
             }
         }
-        type = stype;
     }
 
     if (type->kind == TYPE_UNION) {
-        Type *stype = find_lunion_type(type->name);
-        if (stype == NULL) {
-            stype = find_gunion_type(type->name);
-            if (stype == NULL) {
-                type->is_forward = true;
-                stype = type;
-                vec_push(is_global ? union_global_lists : union_local_lists, stype);
+        Tag *stag_local = find_lunion_type(type->name), *stag_global = find_gunion_type(type->name);
+        Tag *stag = stag_local ? stag_local : stag_global;
+        if (stag == NULL) {
+            // 初の前方宣言
+            type->is_forward = true;
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? union_global_lists : union_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
             }
         }
-        type = stype;
     }
 
     if (type->kind == TYPE_ENUM) {
-        Type *etype = find_enum_type(type->name);
-        if (etype == NULL) {
+        Tag *stag = find_enum_type(type->name);
+        if (stag == NULL) {
+            // 初の前方宣言
             type->is_forward = true;
-            etype = type;
-            vec_push(is_global ? struct_global_lists : struct_local_lists, etype);
+            stag = new_tag(type);
+            vec_push(stag->forward_type, type);
+            vec_push(is_global ? enum_global_lists : enum_local_lists, stag);
+        } else {
+            if (stag->forward_type->len > 0) {
+                // 前方宣言・宣言済み
+                vec_push(stag->forward_type, type);
+            } else {
+                copy_type(type, stag->base_type);  // base_typeに変更が反映されないようコピーする
+            }
         }
-        type = etype;
     }
 
     return type;
 }
 
+/*
+ * <type_name> = <declaration_specifier> <abstruct_declarator>
+ */
 Type *type_name() {
-    Type *type = type_specifier();
-    type = pointer(type);
-    type = type_suffix(type, true);
+    Type *type = declaration_specifier();
+    type = abstruct_declarator(type);
     return type;
 }
 
@@ -1300,15 +1587,11 @@ static Type *type_suffix(Type *type, bool is_first) {
 }
 
 /*
- *  <struct_declaration> = <type_specifier> <pointer> <ident> ";"
+ *  <struct_declaration> = <declaration_specifier> <declarator> ";"
  */
 Type *struct_declaration(Type *type) {
-    Type *t = type_specifier();
-    t = pointer(t);
-    Token *tok = token;
-    next_token();
-    t = type_suffix(t, false);
-    new_struct_member(tok, t, type);
+    Type *t = declaration_specifier();
+    declarator_struct(t, type);
     expect(';');
     return type;
 }
@@ -1352,35 +1635,15 @@ static Var *enumerator(Type *type, int *enum_const_num) {
 }
 
 /*
- *  <declaration_param> = <type_specifier> <pointer> <ident> <type_suffix>
+ *  <declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
  */
 static Var *declaration_param(Var *cur) {
-    Type *type = type_specifier();
-    type = pointer(type);
-    Token *tok = token;
-    Var *lvar = memory_alloc(sizeof(Var));
-    lvar->type = type;
-    lvar->offset = cur->offset + sizeOfType(lvar->type);
-    if (consume(TK_IDENT)) {
-        lvar->name = my_strndup(tok->str, tok->len);
-        lvar->len = tok->len;
-        lvar->is_only_type = false;
-    } else {
-        lvar->is_only_type = true;
-    }
-
-    if (consume_nostep('[')) {
-        // ポインタとして受け取る
-        // 最初の添え字を省略した配列は、ポインター型として扱うので処理の分岐は必要ない
-        lvar->type = type_suffix(lvar->type, true);
-        // 新しい型のオフセットにする
-        lvar->offset += sizeOfType(lvar->type) - sizeOfType(type);
-    }
-    return lvar;
+    Type *type = declaration_specifier();
+    return declarator_param(type, cur);
 }
 
 /*
- *  <func_define> = <type_specifier> <pointer> <ident>
+ *  <func_define> = <declaration_specifier> <pointer> <ident>
  *                  "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
  *                  <compound_stmt>
  */
@@ -1518,7 +1781,7 @@ static Node *compound_stmt() {
     while (!consume('}')) {
         Node *n;
         if (consume_is_type_nostep(token)) {
-            Type *type = type_specifier();
+            Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep(';')) {
                 // 構造体か列挙型の作成 or 宣言
@@ -1608,7 +1871,7 @@ static Node *stmt() {
         // init
         if (consume_is_type_nostep(token)) {
             // <declaration>
-            Type *type = type_specifier();
+            Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep('{')) {
                 // 構造体か列挙型の作成
@@ -2121,12 +2384,12 @@ static Node *funcall(Token *tok) {
         }
 
         // __builtin_va_list構造体が定義されているか
-        Type *t = find_gstruct_type("__builtin_va_list");
-        if (t == NULL) {
+        Tag *tag = find_gstruct_type("__builtin_va_list");
+        if (tag == NULL) {
             error("find_gstruct_type() failure: __builtin_va_listが未定義です");
         }
         // struct __builtin_va_list *
-        t = new_ptr_type(t);
+        Type *t = new_ptr_type(tag->base_type);
 
         // lhs -> *ap
         Node *lhs = new_node(ND_DEREF);
