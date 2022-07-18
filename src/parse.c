@@ -1225,15 +1225,12 @@ static Node *declarator_var(Type *type) {
     return node;
 }
 
-/*
- * <declarator> = <pointer> <ident> <type_suffix>
- */
 static void declarator_struct(Type *member_type, Type *struct_type) {
-    member_type = pointer(member_type);
-    Token *tok = token;
-    next_token();
-    member_type = type_suffix(member_type, false);
-    new_struct_member(tok, member_type, struct_type);
+    member_type = declarator(member_type);
+    if (member_type->token == NULL) {
+        error("declarator() failure: member_type->token == NULL");
+    }
+    new_struct_member(member_type->token, member_type, struct_type);
 }
 
 /*
