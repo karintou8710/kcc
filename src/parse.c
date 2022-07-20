@@ -1132,12 +1132,16 @@ static void initialize_array(Initializer *init) {
         init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
         init->len = ty->array_size;
 
-        expect('{');
+        // 初期化子がない場合は無視する
+        if (!init->is_empty) expect('{');
+
         for (int i = 0; i < init->len; i++) {
             (init->children + i)->var = init->var;
-            if (consume_nostep('}')) {
-                // TODO: 配列の0初期化を適切に
-                (init->children + i)->expr = new_node_num(0);
+            if (init->is_empty || consume_nostep('}')) {
+                // 初期化子が省略
+                (init->children + i)->is_empty = true;
+                (init->children + i)->type = ty->ptr_to;
+                initialize2(init->children + i);
                 continue;
             }
 
@@ -1145,7 +1149,8 @@ static void initialize_array(Initializer *init) {
             (init->children + i)->type = ty->ptr_to;
             initialize2(init->children + i);
         }
-        expect('}');
+        // 初期化子がない場合は無視する
+        if (!init->is_empty) expect('}');
     }
 }
 
@@ -1164,8 +1169,11 @@ static void initialize_string(Initializer *init) {
     }
     for (int i = 0; i < init->len; i++) {
         (init->children + i)->var = init->var;
-        if (token->len <= i) {
-            (init->children + i)->expr = new_node_num(0);
+        if (init->is_empty || token->len <= i) {
+            // 初期化子が省略
+            (init->children + i)->is_empty = true;
+            (init->children + i)->type = ty->ptr_to;
+            initialize2(init->children + i);
             continue;
         }
         (init->children + i)->type = ty->ptr_to;
@@ -1185,15 +1193,18 @@ static void initialize_struct(Initializer *init) {
     init->children = memory_alloc(sizeof(Initializer) * member_num);
     init->len = member_num;
 
-    expect('{');
+    // 初期化子がない場合は無視する
+    if (!init->is_empty) expect('{');
 
     int i = 0;
     Var *v = ty->member;
     while (i < init->len) {
         (init->children + i)->var = init->var;
-        if (consume_nostep('}')) {
-            // TODO: 配列の0初期化を適切に
-            (init->children + i)->expr = new_node_num(0);
+        if (init->is_empty || consume_nostep('}')) {
+            // 初期化子が省略
+            (init->children + i)->is_empty = true;
+            (init->children + i)->type = v->type;
+            initialize2(init->children + i);
             i++;
             v = v->next;
             continue;
@@ -1206,7 +1217,8 @@ static void initialize_struct(Initializer *init) {
         i++;
         v = v->next;
     }
-    expect('}');
+    // 初期化子がない場合は無視する
+    if (!init->is_empty) expect('}');
 }
 
 static void initialize2(Initializer *init) {
@@ -1227,7 +1239,11 @@ static void initialize2(Initializer *init) {
         return;
     }
 
-    init->expr = assign();
+    if (init->is_empty) {
+        init->expr = new_node_num(0);
+    } else {
+        init->expr = assign();
+    }
 }
 
 /*

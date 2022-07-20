@@ -93,6 +93,12 @@ int init_array12() {
     return a[0][0] + a[1][1] + a[2][2];
 }
 
+int init_array13() {
+    char a[3][4] = {};
+    char b[3][3] = {{0}};
+    return a[2][2] == 0 && b[2][2] == 0;
+}
+
 int init_struct1() {
     struct A {
         int member;
@@ -177,6 +183,15 @@ int init_struct8() {
     return b[0].a_struct[0].member == 1 && b[1].a_struct[1].member == 4;
 }
 
+int init_struct9() {
+    struct A {
+        int a;
+        int b;
+        int c;
+    } a = {};
+    return a.a == 0 && a.b == 0 && a.c == 0;
+}
+
 int test1 = 10;
 int test2_1 = 1 + 2 - (3 * 4) / 5, test2_2 = 1;
 int *test3_1 = 1, test3_2 = 2;
@@ -211,6 +226,7 @@ int main() {
     ASSERT(195, init_array10(), "init_array10");
     ASSERT(330, init_array11(), "init_array11");
     ASSERT(330, init_array12(), "init_array12");
+    ASSERT(1, init_array13(), "init_array13");
 
     ASSERT(10, test1, "test1");
     ASSERT(1, test2_1, "test2_1");
@@ -240,6 +256,7 @@ int main() {
     ASSERT(1, init_struct6(), "init_struct6");
     ASSERT(1, init_struct7(), "init_struct7");
     ASSERT(1, init_struct8(), "init_struct8");
+    ASSERT(1, init_struct9(), "init_struct9");
 
     printf("ALL TEST OF init.c SUCCESS :)\n");
     return 0;

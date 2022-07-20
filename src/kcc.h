@@ -241,6 +241,8 @@ struct Initializer {
     Node *expr;
     Initializer *children;  // 配列として領域確保する
     int len;                // 配列長
+
+    bool is_empty;  // 初期化子が足りていない場合
 };
 
 /* グローバル変数のコンパイル時計算用 */
