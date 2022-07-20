@@ -788,7 +788,7 @@ static Node *new_add(Node *lhs, Node *rhs) {
         return node;
     }
 
-    error("new_add() failure: 実行できない型による演算です");
+    error("new_add() failure: (lhs=%d rhs=%d) 実行できない型による演算です", lhs->type->kind, rhs->type->kind);
 }
 
 static Node *new_sub(Node *lhs, Node *rhs) {
@@ -920,14 +920,29 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
     Vector *suger = new_vec();
 
     if (init->children) {
-        for (int i = 0; i < init->len; i++) {
-            Node *deref = new_node(ND_DEREF);
-            deref->lhs = new_add(node, new_node_num(i));
-            add_type(deref->lhs);
-            add_type(deref);
-            Vector *v = new_node_init2(init->children + i, deref);
-            vec_concat(suger, v);
+        if (init->type->kind == TYPE_STRUCT) {
+            int i = 0;
+            for (Var *member = init->type->member; member; member = member->next) {
+                Node *n = new_node(ND_STRUCT_MEMBER);
+                n->lhs = node;
+                n->val = member->offset;
+                n->type = member->type;
+                Vector *v = new_node_init2(init->children + i, n);
+                vec_concat(suger, v);
+                i++;
+            }
+        } else {
+            // array, string
+            for (int i = 0; i < init->len; i++) {
+                Node *deref = new_node(ND_DEREF);
+                deref->lhs = new_add(node, new_node_num(i));
+                add_type(deref->lhs);
+                add_type(deref);
+                Vector *v = new_node_init2(init->children + i, deref);
+                vec_concat(suger, v);
+            }
         }
+
         return suger;
     }
 
@@ -969,6 +984,15 @@ static Node *get_node_ident(Token *tok) {
 
     node->var = var;
     return node;
+}
+
+static int count_var(Var *v) {
+    int cnt = 0;
+    while (v) {
+        cnt++;
+        v = v->next;
+    }
+    return cnt;
 }
 
 /*************************************/
@@ -1112,6 +1136,7 @@ static void initialize_array(Initializer *init) {
         for (int i = 0; i < init->len; i++) {
             (init->children + i)->var = init->var;
             if (consume_nostep('}')) {
+                // TODO: 配列の0初期化を適切に
                 (init->children + i)->expr = new_node_num(0);
                 continue;
             }
@@ -1149,6 +1174,41 @@ static void initialize_string(Initializer *init) {
     next_token();
 }
 
+static void initialize_struct(Initializer *init) {
+    Type *ty = init->type;
+
+    if (ty->member == NULL) {
+        error("initialize_struct() failure: 未定義の構造体です");
+    }
+
+    int member_num = count_var(ty->member);
+    init->children = memory_alloc(sizeof(Initializer) * member_num);
+    init->len = member_num;
+
+    expect('{');
+
+    int i = 0;
+    Var *v = ty->member;
+    while (i < init->len) {
+        (init->children + i)->var = init->var;
+        if (consume_nostep('}')) {
+            // TODO: 配列の0初期化を適切に
+            (init->children + i)->expr = new_node_num(0);
+            i++;
+            v = v->next;
+            continue;
+        }
+
+        if (i > 0) expect(',');
+        (init->children + i)->type = v->type;
+        initialize2(init->children + i);
+
+        i++;
+        v = v->next;
+    }
+    expect('}');
+}
+
 static void initialize2(Initializer *init) {
     if (init->type->kind == TYPE_ARRAY) {
         // string
@@ -1159,6 +1219,11 @@ static void initialize2(Initializer *init) {
 
         // array
         initialize_array(init);
+        return;
+    }
+
+    if (init->type->kind == TYPE_STRUCT && consume_nostep('{')) {
+        initialize_struct(init);
         return;
     }
 
