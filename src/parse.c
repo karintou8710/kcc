@@ -2310,7 +2310,8 @@ static Node *cast() {
  *          | "sizeof" "(" <type_name> ")"
  *          | ("++" | "--") <postfix>
  *          | <unary> ("++" | "--")
- ?          | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
+ *          | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
+ *          | new "(" <type_name> ")"
  */
 static Node *unary() {
     if (consume('+')) {
@@ -2355,6 +2356,21 @@ static Node *unary() {
     } else if (consume(TK_DEC)) {
         Node *node = unary();
         return new_assign(node, new_sub(node, new_node_num(1)));
+    } else if (consume(TK_NEW)) {
+        /* calloc(1, sizeof(type))に変換する */
+        expect('(');
+        Type *t = type_name();
+        Node *num_node = new_node_num(sizeOfType(t));
+        expect(')');
+
+        Node *call_node = new_node(ND_CALL);
+        call_node->fn_name = "calloc";
+        call_node->args = new_vec();
+        vec_push(call_node->args, new_node_num(1));
+        vec_push(call_node->args, num_node);
+        call_node->type = new_ptr_type(new_type(TYPE_VOID));
+
+        return call_node;
     }
 
     Node *node = postfix();

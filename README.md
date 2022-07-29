@@ -12,6 +12,10 @@ Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイ
 - \_Bool
 - 型の入れ子定義
 
+## extension
+
+- new による領域確保
+
 ## TODO
 
 - 名前空間ごとの変数管理
@@ -106,6 +110,7 @@ $ make diff
         | ("++" | "--") <postfix>
         | <unary> ("++" | "--")
         | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
+        | new "(" <type_name> ")"
 <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
 <funcall> = "(" (<assign> ("," <assign>)*)? ")"
 <primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?

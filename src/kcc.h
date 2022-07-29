@@ -74,6 +74,8 @@ enum TokenKind {
     TK_SIGNED,       // signed
     TK_UNSIGNED,     // unsigned (未実装)
     TK_CONST,        // const
+
+    TK_NEW,  // new
 };
 
 enum TypeKind {
