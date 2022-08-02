@@ -327,6 +327,29 @@ int struct_assign5() {
     return b.m;
 }
 
+int struct_anonymous1() {
+    struct {
+        int a;
+    } b, c = {
+             10};
+    b.a = 10;
+    return b.a + c.a;
+}
+
+int struct_anonymous2() {
+    struct {
+        struct {
+            int a;
+        } member1;
+        struct {
+            int a;
+        } member2;
+    } test = {
+        {10},
+        {20}};
+    return test.member1.a + test.member2.a;
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -353,6 +376,9 @@ int main() {
 
     ASSERT(16, struct_nested_type1(), "struct_nested_type1()");
     ASSERT(16, struct_nested_type2(), "struct_nested_type2()");
+
+    ASSERT(20, struct_anonymous1(), "struct_anonymous1()");
+    ASSERT(30, struct_anonymous2(), "struct_anonymous2()");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;

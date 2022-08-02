@@ -48,7 +48,7 @@ $ make diff
                  | "void"
                  | "_Bool"
                  | ("struct" | "union") <ident>
-                 | ("struct" | "union") <ident> "{" <struct_declaration>* "}"
+                 | ("struct" | "union") <ident>? "{" <struct_declaration>* "}"
                  | "enum" <ident>
                  | "enum" <ident>? "{" <enumerator_list> "}"
                  | "signed"
