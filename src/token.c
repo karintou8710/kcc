@@ -508,8 +508,8 @@ Token *tokenize(char *p) {
                 cur->type->name = my_strndup(q, p - q);
                 continue;
             } else {
-                /* TODO: 無名共用体 */
-                error_at(p, "tokenize() failure: unionの型名が存在しません。");
+                /* 匿名共用体 */
+                continue;
             }
         }
 

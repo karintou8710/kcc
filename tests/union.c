@@ -98,6 +98,31 @@ int union8() {
     return test.member;
 }
 
+int anonymous_union1() {
+    union {
+        int a;
+        long b;
+    } test;
+    test.b = 10;
+    return test.b;
+}
+
+int anonymous_union2() {
+    union {
+        struct {
+            int a;
+        } FOR;
+        struct {
+            char a;
+        } IF;
+        struct {
+            long a;
+        } STMT;
+    } node;
+    node.STMT.a = 10;
+    return node.STMT.a;
+}
+
 int main() {
     ASSERT(4, sizeof(union A1), "sizeof(union A1)");
     ASSERT(16, sizeof(union A2), "sizeof(union A2)");
@@ -111,6 +136,9 @@ int main() {
     ASSERT(1, union6(), "union6()");
     ASSERT(1, union7(), "union7()");
     ASSERT(1, union8(), "union8()");
+
+    ASSERT(10, anonymous_union1(), "anonymous_union1()");
+    ASSERT(10, anonymous_union2(), "anonymous_union2)");
 
     printf("ALL TEST OF union.c SUCCESS :)\n");
     return 0;
