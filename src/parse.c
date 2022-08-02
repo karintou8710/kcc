@@ -297,6 +297,17 @@ static Var *find_gvar(Token *tok) {
     return find_var(name, globals, NULL);
 }
 
+static Var *find_allscope_var(Token *tok) {
+    Var *var = find_lvar(tok);  // ローカル変数を取得
+    if (!var) {
+        var = find_gvar(tok);  // グローバル変数から取得
+        if (!var) {
+            return NULL;
+        }
+    }
+    return var;
+}
+
 static Var *find_params(char *name, Var *params) {
     return find_var(name, params, NULL);
 }
@@ -971,18 +982,12 @@ static Node *declear_node_ident(Token *tok, Type *type) {
 }
 
 // 変数のノードを取得
-static Node *get_node_ident(Token *tok) {
+static Node *should_new_node_var(Token *tok) {
     Node *node = new_node(ND_VAR);
-    Var *var;
-    var = find_lvar(tok);  // ローカル変数を取得
-    if (!var) {
-        var = find_gvar(tok);  // グローバル変数から取得
-        if (!var) {
-            error_at(tok->str, "get_node_ident() failure: 宣言されていません");
-        }
+    node->var = find_allscope_var(tok);
+    if (node->var == NULL) {
+        error("");
     }
-
-    node->var = var;
     return node;
 }
 
@@ -2483,10 +2488,7 @@ static Node *funcall(Token *tok) {
         tok->str = "__va_area__";
         tok->len = strlen(tok->str);
 
-        Node *rhs_ident = get_node_ident(tok);
-        if (rhs_ident == NULL) {
-            error("get_node_ident() failure: __va_area__が未定義です");
-        }
+        Node *rhs_ident = should_new_node_var(tok);
 
         Node *rhs = new_node(ND_DEREF);
         rhs->lhs = new_node(ND_CAST);
@@ -2529,7 +2531,7 @@ static Node *primary() {
         if (consume_nostep('(')) {
             node = funcall(tok);
         } else {
-            node = get_node_ident(tok);
+            node = should_new_node_var(tok);
         }
         return node;
     }
