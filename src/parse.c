@@ -643,7 +643,7 @@ static void create_lvar_from_params(Var *params) {
 
 static bool is_already_defined_global_obj(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
-    return find_gvar(tok) || find_func(name);
+    return find_gvar(tok) != NULL;
 }
 
 static bool is_same_params(Var *params1, Var *params2) {
@@ -1669,6 +1669,13 @@ static Type *type_suffix(Type *type, bool is_first) {
         type = new_array_type(type_suffix(type, false), array_size);
     }
 
+    if (consume('(')) {
+        Type *type_func = new_type(TYPE_FUNC);
+        type_func->ptr_to = type;
+        type = type_func;
+        expect(')');
+    }
+
     return type;
 }
 
@@ -1832,6 +1839,10 @@ static void func_define(Type *type) {
 
     /* 再帰関数用に先に登録する */
     vec_push(funcs, fn);
+
+    /* 関数をグローバル変数として登録する */
+    Type *fn_type = new_func_type(fn);
+    new_gvar(tok, fn_type);
 
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
@@ -2440,7 +2451,7 @@ static Node *postfix() {
 static Node *funcall(Token *tok) {
     expect('(');
     Node *node = new_node(ND_CALL);
-    node->fn_name = my_strndup(tok->str, tok->len);
+
     node->args = new_vec();
     while (!consume(')')) {
         if (node->args->len != 0) {
@@ -2451,11 +2462,23 @@ static Node *funcall(Token *tok) {
         vec_push(node->args, n);
     }
 
-    Function *fn = find_func(node->fn_name);
-    if (fn == NULL) {
-        error("funcalL() failure: %sは定義されていない関数です", node->fn_name);
+    char *name = my_strndup(tok->str, tok->len);
+    Function *fn = find_func(name);
+
+    if (fn) {
+        /* 定義された関数 */
+        node->fn_name = name;
+        should_cast_args(node->args, fn->params, fn->is_variadic);
+    } else {
+        /* 関数ポインター */
+        Var *v = find_allscope_var(tok);
+        if (v) {
+            node->fn_name = "";
+            node->lhs = should_new_node_var(tok);
+        } else {
+            error("funcalL() failure: %sは定義されていない関数・変数です", name);
+        }
     }
-    should_cast_args(node->args, fn->params, fn->is_variadic);
 
     if (strcmp(node->fn_name, "va_start") == 0) {
         /*

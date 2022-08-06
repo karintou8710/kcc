@@ -173,7 +173,7 @@ static void gen_addr(Node *node) {
 }
 
 static void load(Type *ty) {
-    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION) {
+    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION || ty->kind == TYPE_FUNC) {
         // アドレスのまま読みこむようにする
         return;
     }
@@ -471,12 +471,24 @@ static void gen(Node *node) {
             Var *l = node->args->body[i];
             printf("  pop %s\n", argreg64[i]);
         }
+
+        if (node->lhs) {
+            // 関数ポインターのロード
+            gen(node->lhs);
+            printf("  pop r10\n");
+        }
+
         // rspを16の倍数にアライメントしてからコールする
         printf("  mov rax, 0\n");
         printf("  push rbp\n");
         printf("  mov rbp, rsp\n");
         printf("  and rsp, -16\n");
-        printf("  call %s\n", node->fn_name);
+        if (node->lhs) {
+            // 関数ポインターの呼びだし
+            printf("  call r10\n");
+        } else {
+            printf("  call %s\n", node->fn_name);
+        }
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         push();  // 数合わせ
@@ -650,6 +662,8 @@ void codegen() {
     for (Var *var = globals; var != NULL; var = var->next) {
         // 外部ファイルで定義されるので何も出力しない
         if (var->is_extern) continue;
+        // 関数型の変数はFunctionとVarをうまく管理するために生成しているだけ
+        if (var->type->kind == TYPE_FUNC) continue;
 
         printf("  .globl %s\n", var->name);
 

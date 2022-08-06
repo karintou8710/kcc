@@ -16,6 +16,8 @@ static int tykind_to_size(TypeKind tykind) {
         return 0;  // parser側でsizeを決める
     } else if (tykind == TYPE_ENUM) {
         return 4;  // INT型と同じサイズ
+    } else if (tykind == TYPE_FUNC) {
+        return 0;  // 関数型にサイズは存在しない
     }
 
     error("存在しないまたは固定長ではない型です");
@@ -173,6 +175,12 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     ty->array_size = array_size;
     ty->ptr_to = ptr_to;
     return ty;
+}
+
+Type *new_func_type(Function *fn) {
+    Type *type = new_type(TYPE_FUNC);
+    type->fn = fn;
+    return type;
 }
 
 /* base_typeは型を独立させるためコピーする */

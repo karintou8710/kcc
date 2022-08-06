@@ -54,4 +54,7 @@ run "int main() {const union A{int member;} a, b; b = a;}"
 run "typedef int a = 1; int main() {}"
 run "extern int a = 1; int main() {}"
 
+run "int test;int test(){} int main() {return 0;}"
+run "int test(){} int test; int main() {return 0;}"
+
 echo "test-error.sh success!"

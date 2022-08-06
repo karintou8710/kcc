@@ -88,6 +88,7 @@ enum TypeKind {
     TYPE_UNION,
     TYPE_ENUM,
     TYPE_BOOL,
+    TYPE_FUNC,
 };
 
 enum NodeKind {
@@ -159,6 +160,8 @@ struct Type {
 
     // nested type
     Token *token;
+
+    Function *fn;
 };
 
 struct Tag {
@@ -313,6 +316,7 @@ Tag *new_tag(Type *type);
 void copy_type(Type *to, Type *from);
 void copy_type_shallow(Type *to, Type *from);
 void calc_type_size(Type *type);
+Type *new_func_type(Function *fn);
 
 // parse.c
 void program();

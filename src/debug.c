@@ -218,6 +218,8 @@ void print_type_kind(TypeKind kind) {
         fprintf(stderr, "TYPE_ENUM");
     else if (kind == TYPE_BOOL)
         fprintf(stderr, "TYPE_BOOL");
+    else if (kind == TYPE_FUNC)
+        fprintf(stderr, "TYPE_FUNC");
     else
         error("print_type_kind() failure: unexpected type %d", kind);
 
