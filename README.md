@@ -70,9 +70,8 @@ $ make diff
 <enumerator> = <ident>
              | <ident> "=" <conditional>
 <declaration_param> = <declaration_specifier> (<abstruct_declarator> | <declarator>)
-<func_define> = <declaration_specifier> <pointer> <ident>
-                "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
-                <compound_stmt>
+<declaration_params> = "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
+<func_define> = <declaration_specifier> <pointer> <ident> <declaration_params> <compound_stmt>
 <compound_stmt> = "{" (<declaration> | <stmt>)* "}"
 <stmt> = <expr>? ";"
        | "return" <expr>? ";"

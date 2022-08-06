@@ -47,6 +47,7 @@ static Node *declarator_var(Type *type);
 static void declarator_struct(Type *member_type, Type *struct_type);
 static Type *abstruct_declarator(Type *type);
 static Var *declaration_param(Var *cur);
+static Var *declaration_params(bool *is_variadic);
 static Type *pointer(Type *type);
 static void func_define(Type *type);
 Type *struct_declaration(Type *type);
@@ -1736,27 +1737,9 @@ static Var *declaration_param(Var *cur) {
 }
 
 /*
- *  <func_define> = <declaration_specifier> <pointer> <ident>
- *                  "(" (<declaration_param> ("," <declaration_param>)* | "void" | ε)  ")"
- *                  <compound_stmt>
+ * <declaration_params> = "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")"
  */
-static void func_define(Type *type) {
-    type = pointer(type);
-    Function *fn = memory_alloc(sizeof(Function));
-    cur_parse_func = fn;
-    Token *tok = token;
-    Var head;
-    memset(&head, 0, sizeof(Var));
-
-    Var *cur = &head;  // 引数の単方向連結リスト
-    bool is_variadic = false;
-
-    expect(TK_IDENT);
-    fn->name = my_strndup(tok->str, tok->len);
-    if (find_gvar(tok)) {
-        error("func_define() failure: 既に%sは定義されています", fn->name);
-    }
-    fn->ret_type = type;
+static Var *declaration_params(bool *is_variadic) {
     expect('(');
 
     // (void)の場合
@@ -1766,6 +1749,9 @@ static void func_define(Type *type) {
         expect(TK_TYPE);
     }
 
+    Var head = {};
+    Var *cur = &head;  // 引数の単方向連結リスト
+
     while (!consume(')')) {
         if (cur != &head) {
             expect(',');
@@ -1773,10 +1759,10 @@ static void func_define(Type *type) {
 
         if (consume(TK_VARIADIC)) {
             if (cur == &head) {
-                error("func_define() failure: ...は第一引数に設定できません");
+                error("declaration_params() failure: ...は第一引数に設定できません");
             }
 
-            is_variadic = true;
+            *is_variadic = true;
             expect(')');
             break;
         }
@@ -1800,7 +1786,28 @@ static void func_define(Type *type) {
         cur = cur->next = p;
     }
 
-    fn->params = head.next;  // 前から見ていく
+    return head.next;
+}
+
+/*
+ *  <func_define> = <declaration_specifier> <pointer> <ident> <declaration_params> <compound_stmt>
+ */
+static void func_define(Type *type) {
+    type = pointer(type);
+    Function *fn = memory_alloc(sizeof(Function));
+    cur_parse_func = fn;
+
+    Token *tok = token;
+    bool is_variadic = false;
+
+    expect(TK_IDENT);
+    fn->name = my_strndup(tok->str, tok->len);
+    if (find_gvar(tok)) {
+        error("func_define() failure: 既に%sは定義されています", fn->name);
+    }
+    fn->ret_type = type;
+
+    fn->params = declaration_params(&is_variadic);  // 前から見ていく
     fn->is_variadic = is_variadic;
 
     Function *entry = find_func(fn->name);
