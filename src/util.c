@@ -76,7 +76,7 @@ void next_token() {
     token = token->next;
 }
 
-Token *get_nafter_token(int n) {
+Token *get_nth_token(int n) {
     Token *t = token;
     for (int i = 0; i < n; i++) {
         t = t->next;
@@ -105,7 +105,7 @@ void swap(void **p, void **q) {
     *q = tmp;
 }
 
-void *memory_alloc(size_t size) {
+void *try_memory_allocation(size_t size) {
     void *p = calloc(1, size);
     if (p == NULL) {
         error("calloc() failure: %s", strerror(errno));

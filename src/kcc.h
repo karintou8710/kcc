@@ -185,6 +185,7 @@ struct Token {
     bool is_standard;  // 標準ヘッダーファイルのインクルード
 };
 
+/* TODO: next_offsetはoffsetの最大値さえあれば必要なさそう？ */
 struct Var {
     Var *next;            // 次の変数かNULL
     char *name;           // 変数の名前
@@ -208,13 +209,15 @@ struct Node {
     Var *var;
     char *fn_name;
     char *str_literal;
-    // constで使用
-    bool is_initialize;
-    // case, labelで使用
-    char *label_name;
+    Type *type;
     Vector *args;  // 関数呼び出し時の引数
     Vector *stmts;
-    Type *type;
+
+    // constで使用
+    bool is_initialization;
+
+    // case, labelで使用
+    char *label_name;
 
     // if (cond) then els
     // while (cond) body
@@ -234,8 +237,7 @@ struct Function {
     Var *locals;
     Var *va_area;  // 可変長引数のメモリ配置
     int stack_size;
-
-    Type *ret_type;  // return_type
+    Type *ret_type;
 
     bool is_prototype;
     bool is_variadic;  // 可変長引数を引数に持つか
@@ -271,13 +273,13 @@ int is_alpha(char c);
 int is_alnum(char c);
 void str_advance(char **p);
 void next_token();
-Token *get_nafter_token(int n);
+Token *get_nth_token(int n);
 bool starts_with(char *p, char *q);
 void error_at(char *loc, char *msg);
 void error(char *fmt, ...);
 char *my_strndup(char *s, size_t n);
 void swap(void **p, void **q);
-void *memory_alloc(size_t size);
+void *try_memory_allocation(size_t size);
 void copy_func(Function *to, Function *from);
 
 // debug.c

@@ -185,7 +185,7 @@ static bool is_func(Type *type) {
 
 /*** new objects ***/
 static Var *new_lvar(Token *tok, Type *type) {
-    Var *lvar = memory_alloc(sizeof(Var));
+    Var *lvar = try_memory_allocation(sizeof(Var));
     lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
     lvar->type = type;
@@ -208,7 +208,7 @@ static Var *new_lvar(Token *tok, Type *type) {
 }
 
 static Var *new_gvar(Token *tok, Type *type) {
-    Var *gvar = memory_alloc(sizeof(Var));
+    Var *gvar = try_memory_allocation(sizeof(Var));
     gvar->name = my_strndup(tok->str, tok->len);
     gvar->len = tok->len;
     gvar->type = type;
@@ -228,7 +228,7 @@ static Var *new_gvar(Token *tok, Type *type) {
 }
 
 static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) {
-    Var *member = memory_alloc(sizeof(Var));
+    Var *member = try_memory_allocation(sizeof(Var));
     member->next = struct_type->member;
     member->name = my_strndup(tok->str, tok->len);
     member->len = tok->len;
@@ -240,7 +240,7 @@ static void new_struct_member(Token *tok, Type *member_type, Type *struct_type) 
 }
 
 static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
-    Var *var = memory_alloc(sizeof(Var));
+    Var *var = try_memory_allocation(sizeof(Var));
     var->name = my_strndup(tok->str, tok->len);
     var->len = tok->len;
     var->val = enum_const_num;
@@ -249,14 +249,14 @@ static Var *new_enum_member(Token *tok, Type *type, int enum_const_num) {
 }
 
 static TypedefAlias *new_typedef_alias(char *name, Type *type) {
-    TypedefAlias *ta = memory_alloc(sizeof(TypedefAlias));
+    TypedefAlias *ta = try_memory_allocation(sizeof(TypedefAlias));
     ta->name = name;
     ta->type = type;
     return ta;
 }
 
 static Initializer *new_initializer(Var *var) {
-    Initializer *init = memory_alloc(sizeof(Initializer));
+    Initializer *init = try_memory_allocation(sizeof(Initializer));
     init->type = var->type;
     init->var = var;
     return init;
@@ -433,7 +433,7 @@ static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *
             error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = gl->len + max_digit + len + 1;
-        char *buf = memory_alloc(sizeof(char) * buf_size);
+        char *buf = try_memory_allocation(sizeof(char) * buf_size);
         buf_size = snprintf(buf, buf_size, "%s %s %ld", gl->str, op, gr->val);
         g->str = buf;
         g->len = buf_size;
@@ -442,7 +442,7 @@ static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *
             error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = max_digit + gr->len + len + 1;
-        char *buf = memory_alloc(sizeof(char) * buf_size);
+        char *buf = try_memory_allocation(sizeof(char) * buf_size);
         buf_size = snprintf(buf, buf_size, "%ld %s %s", gl->val, op, gr->str);
         g->str = buf;
         g->len = buf_size;
@@ -481,7 +481,7 @@ static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *
 
 /* TODO: 四則演算以外にも対応 */
 static GlobalInit *eval(Node *node) {
-    GlobalInit *g = memory_alloc(sizeof(GlobalInit));
+    GlobalInit *g = try_memory_allocation(sizeof(GlobalInit));
     add_type(node);
 
     if (node->kind == ND_NUM) {
@@ -535,7 +535,7 @@ static GlobalInit *eval(Node *node) {
         return g;
     } else if (node->kind == ND_LOGICAL_NOT) {
         GlobalInit *gl = eval(node->lhs);
-        GlobalInit *gr = memory_alloc(sizeof(GlobalInit));
+        GlobalInit *gr = try_memory_allocation(sizeof(GlobalInit));
         eval_binary_op(g, gl, gr, "!", 2);
         return g;
     } else if (node->kind == ND_LOGICAL_AND) {
@@ -550,7 +550,7 @@ static GlobalInit *eval(Node *node) {
         return g;
     } else if (node->kind == ND_STRING) {
         int buf_size = 50;  // 仮の値を決める
-        char *buf = memory_alloc(sizeof(char) * buf_size);
+        char *buf = try_memory_allocation(sizeof(char) * buf_size);
         buf_size = snprintf(buf, buf_size, ".LC%ld", node->val);
         g->str = buf;
         g->len = buf_size;
@@ -627,7 +627,7 @@ static void create_lvar_from_params(Var *params) {
     if (!params)
         return;
 
-    Var *lvar = memory_alloc(sizeof(Var));
+    Var *lvar = try_memory_allocation(sizeof(Var));
     lvar->name = params->name;
     lvar->len = params->len;
     lvar->type = params->type;
@@ -742,7 +742,7 @@ static Tag *union_defined_or_forward(Type *type) {
 
 // ノード作成
 static Node *new_node(NodeKind kind) {
-    Node *node = memory_alloc(sizeof(Node));
+    Node *node = try_memory_allocation(sizeof(Node));
     node->kind = kind;
     return node;
 }
@@ -751,7 +751,7 @@ static Node *new_node(NodeKind kind) {
 static Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
-    Node *node = memory_alloc(sizeof(Node));
+    Node *node = try_memory_allocation(sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
@@ -952,7 +952,7 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
         vec_push(init->var->global_init, eval(init->expr));
     } else {
         Node *n = new_assign(node, init->expr);
-        n->is_initialize = true;
+        n->is_initialization = true;
         vec_push(suger, n);
     }
 
@@ -1108,13 +1108,13 @@ static void initialize_array(Initializer *init) {
         // 最初の添え字が省略されている
         // TODO: Vectorで実装していない理由の調査
         int children_cap = 2;
-        init->children = memory_alloc(sizeof(Initializer) * children_cap);
+        init->children = try_memory_allocation(sizeof(Initializer) * children_cap);
         expect('{');
         int i = 0;
         while (!consume('}')) {
             if (i == children_cap) {
                 // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
-                Initializer *new_p = memory_alloc(sizeof(Initializer) * children_cap * 2);
+                Initializer *new_p = try_memory_allocation(sizeof(Initializer) * children_cap * 2);
                 memcpy(new_p, init->children, sizeof(Initializer) * children_cap);
                 children_cap *= 2;
                 init->children = new_p;
@@ -1130,7 +1130,7 @@ static void initialize_array(Initializer *init) {
         init->len = ty->array_size = i;
         ty->size = ty->array_size * ty->ptr_to->size;
     } else {
-        init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+        init->children = try_memory_allocation(sizeof(Initializer) * ty->array_size);
         init->len = ty->array_size;
 
         // 初期化子がない場合は無視する
@@ -1163,7 +1163,7 @@ static void initialize_string(Initializer *init) {
         ty->array_size = token->len + 1;
         ty->size = ty->array_size * ty->ptr_to->size;
     }
-    init->children = memory_alloc(sizeof(Initializer) * ty->array_size);
+    init->children = try_memory_allocation(sizeof(Initializer) * ty->array_size);
     init->len = ty->array_size;
     if (init->len < token->len) {
         error("initialize_string() failure: 文字列が長すぎます");
@@ -1191,7 +1191,7 @@ static void initialize_struct(Initializer *init) {
     }
 
     int member_num = count_var(ty->member);
-    init->children = memory_alloc(sizeof(Initializer) * member_num);
+    init->children = try_memory_allocation(sizeof(Initializer) * member_num);
     init->len = member_num;
 
     // 初期化子がない場合は無視する
@@ -1279,7 +1279,7 @@ static Type *declarator2(Type *type) {
     type = pointer(type);
     if (consume('(')) {
         // ex) int (*a)[10]; | * -> [10] -> int
-        Type *dummy = memory_alloc(sizeof(Type));
+        Type *dummy = try_memory_allocation(sizeof(Type));
         // ex) * -> dummy
         Type *head = declarator(dummy);
         expect(')');
@@ -1329,7 +1329,7 @@ static void declarator_struct(Type *member_type, Type *struct_type) {
 static Var *declarator_param(Type *type, Var *cur) {
     type = declarator(type);
 
-    Var *lvar = memory_alloc(sizeof(Var));
+    Var *lvar = try_memory_allocation(sizeof(Var));
     lvar->type = type;
     if (type->token == NULL) {
         lvar->is_only_type = true;
@@ -1433,7 +1433,7 @@ static Type *type_specifier(int *flag) {
         if (t == NULL) {
             error("find_typedef_alias() failure: %sは定義されていません", name);
         }
-        type = memory_alloc(sizeof(Type));
+        type = try_memory_allocation(sizeof(Type));
         copy_type(type, t);
         if (type->is_forward) {
             Tag *stag_local, *stag_global;
@@ -1500,7 +1500,7 @@ static Type *type_specifier(int *flag) {
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
         // 構造体のメンバーの宣言
-        type->member = memory_alloc(sizeof(Var));
+        type->member = try_memory_allocation(sizeof(Var));
         while (!consume('}')) {
             type = struct_declaration(type);
         }
@@ -1530,7 +1530,7 @@ static Type *type_specifier(int *flag) {
 
     if (type->kind == TYPE_UNION && consume('{')) {
         // 構造体のメンバーの宣言
-        type->member = memory_alloc(sizeof(Var));
+        type->member = try_memory_allocation(sizeof(Var));
         while (!consume('}')) {
             type = struct_declaration(type);
         }
@@ -1739,7 +1739,7 @@ static Var *declaration_params(bool *is_variadic) {
     // (void)の場合
     if (token->kind == TK_TYPE &&
         token->type->kind == TYPE_VOID &&
-        get_nafter_token(1)->kind == ')') {
+        get_nth_token(1)->kind == ')') {
         expect(TK_TYPE);
     }
 
@@ -1788,7 +1788,7 @@ static Var *declaration_params(bool *is_variadic) {
  */
 static void func_define(Type *type) {
     type = declarator(type);
-    Function *fn = memory_alloc(sizeof(Function));
+    Function *fn = try_memory_allocation(sizeof(Function));
     cur_parse_func = fn;
     Token *tok = type->token;
 
@@ -1853,7 +1853,7 @@ static void func_define(Type *type) {
         v->type->is_forward = false;
     }
 
-    locals = memory_alloc(sizeof(Var));
+    locals = try_memory_allocation(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
     union_local_lists = new_vec();
     enum_local_lists = new_vec();
@@ -1863,7 +1863,7 @@ static void func_define(Type *type) {
 
     // 可変長引数
     if (fn->is_variadic) {
-        Token *t = memory_alloc(sizeof(Token));
+        Token *t = try_memory_allocation(sizeof(Token));
         t->str = "__va_area__";
         t->len = strlen(t->str);
         fn->va_area = new_lvar(t, new_array_type(new_type(TYPE_CHAR), 136));
@@ -2049,7 +2049,7 @@ static Node *labeld() {
         node->val = const_expr();
         expect(':');
 
-        char *name = memory_alloc(30);
+        char *name = try_memory_allocation(30);
         sprintf(name, ".Lswitchlabel%04d", switch_label_cnt);
         node->label_name = name;
         node->body = stmt();
@@ -2063,7 +2063,7 @@ static Node *labeld() {
         Node *node = new_node(ND_DEFAULT);
         expect(':');
 
-        char *name = memory_alloc(30);
+        char *name = try_memory_allocation(30);
         sprintf(name, ".Lswitchlabel%04d", switch_label_cnt);
         node->label_name = name;
         node->body = stmt();
@@ -2310,7 +2310,7 @@ static Node *mul() {
  *        | <unary>
  */
 static Node *cast() {
-    Token *t1 = get_nafter_token(1);
+    Token *t1 = get_nth_token(1);
     if (consume_nostep('(') && consume_is_type_nostep(t1)) {
         expect('(');
         Type *type = type_name();
@@ -2364,7 +2364,7 @@ static Node *unary() {
         add_type(node->lhs);
         return node;
     } else if (consume(TK_SIZEOF)) {
-        Token *tok = get_nafter_token(1);
+        Token *tok = get_nth_token(1);
         if (consume_is_type_nostep(tok)) {
             expect('(');
             Type *t = type_name();
@@ -2522,7 +2522,7 @@ static Node *funcall(Node *node) {
         add_type(lhs);
 
         // rhs -> *(struct __builtin_va_list *)__va_area__
-        Token *tok = memory_alloc(sizeof(Token));
+        Token *tok = try_memory_allocation(sizeof(Token));
         tok->str = "__va_area__";
         tok->len = strlen(tok->str);
 

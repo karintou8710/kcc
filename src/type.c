@@ -105,7 +105,7 @@ void copy_type_shallow(Type *to, Type *from) {
         return;
     }
     to->kind = from->kind;
-    to->ptr_to = memory_alloc(sizeof(Type));
+    to->ptr_to = try_memory_allocation(sizeof(Type));
     to->ptr_to = from->ptr_to;
     to->size = from->size;
     to->array_size = from->array_size;
@@ -123,7 +123,7 @@ void copy_type(Type *to, Type *from) {
         return;
     }
     to->kind = from->kind;
-    to->ptr_to = memory_alloc(sizeof(Type));
+    to->ptr_to = try_memory_allocation(sizeof(Type));
     copy_type(to->ptr_to, from->ptr_to);
     to->size = from->size;
     to->array_size = from->array_size;
@@ -148,7 +148,7 @@ void calc_type_size(Type *type) {
 
 /* 基本の型を生成 */
 Type *new_type(TypeKind tykind) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = tykind;
     ty->size = tykind_to_size(tykind);
     ty->alignment = ty->size;  // 基本型のアライメントはサイズと等しい
@@ -157,7 +157,7 @@ Type *new_type(TypeKind tykind) {
 
 /* ポインター型を生成 */
 Type *new_ptr_type(Type *ptr_to) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = TYPE_PTR;
     ty->size = tykind_to_size(TYPE_PTR);
     ty->alignment = ty->size;
@@ -168,7 +168,7 @@ Type *new_ptr_type(Type *ptr_to) {
 // TODO: baseの型(例えばint[2][3]ならint型)を全ての配列型で持つべき?
 /* 配列型を生成 */
 Type *new_array_type(Type *ptr_to, int array_size) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = TYPE_ARRAY;
     ty->size = ptr_to->size * array_size;
     ty->alignment = ptr_to->alignment;
@@ -190,8 +190,8 @@ Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic, char *name) 
 
 /* base_typeは型を独立させるためコピーする */
 Tag *new_tag(Type *type) {
-    Tag *tag = memory_alloc(sizeof(Tag));
-    tag->base_type = memory_alloc(sizeof(Type));
+    Tag *tag = try_memory_allocation(sizeof(Tag));
+    tag->base_type = try_memory_allocation(sizeof(Type));
     copy_type(tag->base_type, type);
     tag->forward_type = new_vec();
     return tag;

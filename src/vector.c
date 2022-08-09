@@ -1,8 +1,8 @@
 #include "kcc.h"
 
 Vector *new_vec() {
-    Vector *v = memory_alloc(sizeof(Vector));
-    v->body = memory_alloc(16 * sizeof(void *));
+    Vector *v = try_memory_allocation(sizeof(Vector));
+    v->body = try_memory_allocation(16 * sizeof(void *));
     v->capacity = 16;
     v->len = 0;
     return v;
@@ -11,7 +11,7 @@ Vector *new_vec() {
 void vec_push(Vector *v, void *elem) {
     if (v->len == v->capacity) {
         // cannot use realloc() here, since the memory has to be zero-cleared in order for this compiler to work
-        void *new_p = memory_alloc(sizeof(void *) * v->capacity * 2);
+        void *new_p = try_memory_allocation(sizeof(void *) * v->capacity * 2);
         memcpy(new_p, v->body, sizeof(void *) * v->capacity);
         v->body = new_p;
         v->capacity *= 2;

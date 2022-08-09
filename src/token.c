@@ -16,7 +16,7 @@ static char escape_letters[][2] = {
     {'?', 63}};
 
 static Token *new_token(int kind, Token *cur, char *str, int len) {
-    Token *tok = memory_alloc(sizeof(Token));
+    Token *tok = try_memory_allocation(sizeof(Token));
     tok->kind = kind;
     tok->str = str;
     tok->len = len;

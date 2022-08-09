@@ -1,7 +1,7 @@
 #include "kcc.h"
 
 Token *preprocess(Token *tok) {
-    Token *bef, *head = memory_alloc(sizeof(Token));
+    Token *bef, *head = try_memory_allocation(sizeof(Token));
     head->next = tok;
     bef = head;
 

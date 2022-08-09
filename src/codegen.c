@@ -232,7 +232,7 @@ static void gen(Node *node) {
         push();
         return;
     } else if (node->kind == ND_ASSIGN) {
-        if (!node->is_initialize && node->lhs->type->is_constant) {
+        if (!node->is_initialization && node->lhs->type->is_constant) {
             error("gen() failure: 定数に代入はできません");
         }
         gen_addr(node->lhs);
