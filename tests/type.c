@@ -228,9 +228,8 @@ int _test_func2(int a, int b) {
 int func_pointer2() {
     int (*a)(int, int) = _test_func2;
     int (**b)(int, int) = &a;
-    // TODO: func_call
-    // int res = (*b)(1, 2);
-    // return res;
+    int res = (*b)(1, 2);
+    return res;
 }
 
 bool _test_func3(bool a) {
@@ -334,8 +333,7 @@ int main() {
     ASSERT(3, nested_type5(&a), "nested_type5(&a)");
 
     ASSERT(3, func_pointer1(), "func_pointer1()");
-    // TODO: func_call
-    // ASSERT(3, func_pointer2(), "func_pointer2()");
+    ASSERT(3, func_pointer2(), "func_pointer2()");
     ASSERT(1, func_pointer3(), "func_pointer3()");
     ASSERT(3, func_pointer4(), "func_pointer4()");
     ASSERT(1, func_pointer5(), "func_pointer5()");
