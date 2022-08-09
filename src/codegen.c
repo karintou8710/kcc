@@ -463,6 +463,13 @@ static void gen(Node *node) {
             return;
         }
 
+        /* レジスタが上書きされないよう、仮引数の生成より先にする。 */
+        if (node->lhs) {
+            // 関数ポインターのロード
+            gen(node->lhs);
+            printf("  pop r10\n");
+        }
+
         int nargs = node->args->len;
         for (int i = 0; i < nargs; i++) {
             gen(node->args->body[i]);
@@ -470,12 +477,6 @@ static void gen(Node *node) {
         for (int i = nargs - 1; i >= 0; i--) {
             Var *l = node->args->body[i];
             printf("  pop %s\n", argreg64[i]);
-        }
-
-        if (node->lhs) {
-            // 関数ポインターのロード
-            gen(node->lhs);
-            printf("  pop r10\n");
         }
 
         // rspを16の倍数にアライメントしてからコールする

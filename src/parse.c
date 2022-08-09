@@ -563,7 +563,7 @@ static GInitEl *eval(Node *node) {
         g->str = my_strndup(node->lhs->var->name, node->lhs->var->len);
         g->len = node->lhs->var->len;
         return g;
-    } else if (node->kind == ND_VAR && node->type->kind == TYPE_ARRAY) {
+    } else if (node->kind == ND_VAR && (node->type->kind == TYPE_ARRAY || node->type->kind == TYPE_FUNC)) {
         // 配列はポインター型として扱う
         g->str = my_strndup(node->var->name, node->var->len);
         g->len = node->var->len;

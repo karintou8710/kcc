@@ -166,6 +166,31 @@ int global_enum1(int index) {
         return C;
 }
 
+int _global_func_pointer1(int a, int b) {
+    return a + b;
+}
+
+int _global_func_pointer2(int a, int b) {
+    return a - b;
+}
+
+int (*f)(int, int) = _global_func_pointer1;
+
+int global_func_pointer1() {
+    int t = f(1, 2);
+    return t;
+}
+
+int (*f2[2])(int, int) = {
+    _global_func_pointer1,
+    _global_func_pointer2};
+
+int global_func_pointer2() {
+    int t = f2[0](1, 2);
+    int t2 = f2[1](1, 2);
+    return t == 3 && t2 == -1;
+}
+
 int main() {
     ASSERT(3, globaltest1(), "globaltest1");
     ASSERT(2, globaltest2(), "globaltest2");
@@ -186,6 +211,9 @@ int main() {
     ASSERT(1, global_enum1(0), "global_enum1(0)");
     ASSERT(2, global_enum1(1), "global_enum1(1)");
     ASSERT(3, global_enum1(2), "global_enum1(2)");
+
+    ASSERT(3, global_func_pointer1(), "global_func_pointer1");
+    ASSERT(1, global_func_pointer2(), "global_func_pointer2");
 
     printf("ALL TEST OF global.c SUCCESS :)\n");
 
