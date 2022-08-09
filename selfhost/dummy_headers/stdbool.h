@@ -1,7 +1,6 @@
 #ifndef STDBOOL_H
 #define STDBOOL_H
 
-// TODO: _Boolの実装
 typedef _Bool bool;
 
 #define true 1

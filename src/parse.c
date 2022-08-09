@@ -479,7 +479,6 @@ static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *
     }
 }
 
-/* TODO: 四則演算以外にも対応 */
 static GlobalInit *eval(Node *node) {
     GlobalInit *g = try_memory_allocation(sizeof(GlobalInit));
     add_type(node);
@@ -621,7 +620,6 @@ static void end_local_scope() {
     locals = var;
 }
 
-// TODO: 引数に適切な型をつけるようにする
 /* 引数からローカル変数を作成する(前から見ていく) */
 static void create_local_var_from_params(Var *params) {
     if (!params)
@@ -1106,7 +1104,6 @@ static void initialize_array(Initializer *init) {
 
     if (ty->array_size == 0) {
         // 最初の添え字が省略されている
-        // TODO: Vectorで実装していない理由の調査
         int children_cap = 2;
         init->children = try_memory_allocation(sizeof(Initializer) * children_cap);
         expect('{');
@@ -1910,7 +1907,6 @@ static Node *compound_stmt() {
     return node;
 }
 
-// TODO: do~while,switch,else if
 /*
  *  <stmt> = <expr>? ";"
  *         | "return" <expr>? ";"
@@ -2089,7 +2085,6 @@ static Node *expr() {
     return node;
 }
 
-// TODO: ?:, <<=, >>=, &=, ^=, |=
 /*
  *  <assign> = <conditional> ("=" <assign>)?
  *           | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>

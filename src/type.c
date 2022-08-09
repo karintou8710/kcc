@@ -165,7 +165,6 @@ Type *new_ptr_type(Type *ptr_to) {
     return ty;
 }
 
-// TODO: baseの型(例えばint[2][3]ならint型)を全ての配列型で持つべき?
 /* 配列型を生成 */
 Type *new_array_type(Type *ptr_to, int array_size) {
     Type *ty = try_memory_allocation(sizeof(Type));
