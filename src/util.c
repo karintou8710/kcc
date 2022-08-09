@@ -45,7 +45,7 @@ void error_at(char *loc, char *msg) {
     exit(EXIT_FAILURE);
 }
 
-bool startsWith(char *p, char *q) {
+bool starts_with(char *p, char *q) {
     return memcmp(p, q, strlen(q)) == 0;
 }
 
@@ -63,7 +63,7 @@ int is_alnum(char c) {
 }
 
 // 変数の文字列分ポインタを進める
-void str_advanve(char **p) {
+void str_advance(char **p) {
     while (is_alnum(**p)) {
         *p += 1;
     }

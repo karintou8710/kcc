@@ -32,11 +32,11 @@ int array_base_type_size(Type *ty) {
 }
 
 // sizeofの実装
-int sizeOfType(Type *ty) {
+int sizeof_type(Type *ty) {
     return ty->size;
 }
 
-size_t alignOfType(Type *ty) {
+size_t alignof_type(Type *ty) {
     return ty->alignment;
 }
 
@@ -62,22 +62,22 @@ void apply_align_struct(Type *ty) {
     while (v->next) {
         if (ty->kind == TYPE_UNION) {
             v->next->offset = 0;
-            if (struct_size < sizeOfType(v->type)) struct_size = sizeOfType(v->type);
+            if (struct_size < sizeof_type(v->type)) struct_size = sizeof_type(v->type);
         } else {
             // struct
-            v->next->offset = v->offset + sizeOfType(v->type);
+            v->next->offset = v->offset + sizeof_type(v->type);
             // 負の割り算は未実装
-            int padding = (alignOfType(v->next->type) - v->next->offset % alignOfType(v->next->type)) % alignOfType(v->next->type);
+            int padding = (alignof_type(v->next->type) - v->next->offset % alignof_type(v->next->type)) % alignof_type(v->next->type);
             v->next->offset += padding;
-            struct_size += sizeOfType(v->type) + padding;
+            struct_size += sizeof_type(v->type) + padding;
         }
         v = v->next;
     }
     // 最後の一つのメンバーのサイズを足す
     if (ty->kind == TYPE_UNION) {
-        if (struct_size < sizeOfType(v->type)) struct_size = sizeOfType(v->type);
+        if (struct_size < sizeof_type(v->type)) struct_size = sizeof_type(v->type);
     } else {
-        struct_size += sizeOfType(v->type);
+        struct_size += sizeof_type(v->type);
     }
 
     // max_alignmentの倍数に構造体のサイズを揃える
@@ -470,7 +470,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
+        error("%d %d不正な型です(MOD)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_LOGICAL_NOT || node->kind == ND_LOGICAL_AND || node->kind == ND_LOGICAL_OR) {

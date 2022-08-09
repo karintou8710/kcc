@@ -14,7 +14,7 @@ typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Function Function;
 typedef struct Initializer Initializer;
-typedef struct GInitEl GInitEl;
+typedef struct GlobalInit GlobalInit;
 typedef struct TypedefAlias TypedefAlias;
 typedef enum TypeKind TypeKind;
 typedef enum NodeKind NodeKind;
@@ -22,7 +22,7 @@ typedef enum TokenKind TokenKind;
 typedef enum StorageClass StorageClass;
 
 enum StorageClass {
-    UNKNOWN,  // NULL枠
+    UNKNOWN,  // NULL。callcでzero初期化するために使う
     STORAGE_TYPEDEF,
     STORAGE_EXTERN,
 };
@@ -153,8 +153,9 @@ struct Type {
     // struct, enum
     char *name;
     Var *member;
-    bool is_forward;
+    bool is_forward;  // 前方宣言
 
+    // unsigned const
     bool is_unsigned;
     bool is_constant;
 
@@ -166,6 +167,7 @@ struct Type {
     bool is_variadic;
 };
 
+/* TODO: 何故使うかコメント */
 struct Tag {
     Type *base_type;  // 変数に使われる型構造体とは確保された領域を独立させる
     Vector *forward_type;
@@ -177,21 +179,21 @@ struct Token {
     Token *next;
     long val;
     char *str;
-    int len;
+    int len;                // 文字列の長さ
     int str_literal_index;  // 文字列リテラルの固有番号
 
     bool is_standard;  // 標準ヘッダーファイルのインクルード
 };
 
 struct Var {
-    Var *next;        // 次の変数かNULL
-    char *name;       // 変数の名前
-    int len;          // 名前の長さ
-    int offset;       // RBPからのオフセット
-    int next_offset;  // ローカルスコープでのオフセットを管理
-    Type *type;       // 型情報
-    long val;         // 定数の場合は値を持つ
-    Vector *ginit;    // GInitElのVector
+    Var *next;            // 次の変数かNULL
+    char *name;           // 変数の名前
+    int len;              // 変数名の長さ
+    int offset;           // RBPからのオフセット
+    int next_offset;      // ローカルスコープでのオフセットを管理
+    Type *type;           // 型情報
+    long val;             // 定数の場合は値を持つ
+    Vector *global_init;  // GlobalInitのVector
 
     bool is_global;
     bool is_only_type;  // プロトタイプ宣言で使用
@@ -251,7 +253,7 @@ struct Initializer {
 };
 
 /* グローバル変数のコンパイル時計算用 */
-struct GInitEl {
+struct GlobalInit {
     long val;
     char *str;  // ポインタの加減算
     int len;
@@ -267,10 +269,10 @@ struct TypedefAlias {
 void assert(int n);
 int is_alpha(char c);
 int is_alnum(char c);
-void str_advanve(char **p);
+void str_advance(char **p);
 void next_token();
 Token *get_nafter_token(int n);
-bool startsWith(char *p, char *q);
+bool starts_with(char *p, char *q);
 void error_at(char *loc, char *msg);
 void error(char *fmt, ...);
 char *my_strndup(char *s, size_t n);
@@ -304,8 +306,8 @@ Type *new_type(TypeKind tykind);
 Type *new_ptr_type(Type *ptr_to);
 Type *new_array_type(Type *ptr_to, int size);
 void add_type(Node *node);
-int sizeOfType(Type *ty);
-size_t alignOfType(Type *ty);
+int sizeof_type(Type *ty);
+size_t alignof_type(Type *ty);
 int array_base_type_size(Type *ty);
 void apply_align_struct(Type *ty);
 bool is_integertype(TypeKind kind);
@@ -337,9 +339,9 @@ Token *preprocess(Token *tok);
 char *read_file(char *path);
 
 // グローバル変数
-char *user_input;          // 入力プログラム
-char *file_name;           // 入力されたファイル名
-int label_controle_count;  // if, for, while, switch, 3項演算子のラベル番号
+char *user_input;         // 入力プログラム
+char *file_name;          // 入力されたファイル名
+int label_control_count;  // if, for, while, switch, 3項演算子のラベル番号
 Var *globals;
 Token *token;  // tokenは単方向の連結リスト
 Vector *string_literal;

@@ -85,7 +85,7 @@ Token *tokenize(char *p) {
         }
 
         // プリプロセッサーが出力するメタ情報を削除
-        if (startsWith(p, "#") && (user_input == p || *(p - 1) == '\n')) {
+        if (starts_with(p, "#") && (user_input == p || *(p - 1) == '\n')) {
             while (*p != '\n') p++;
             continue;
         }
@@ -110,133 +110,133 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (startsWith(p, "...")) {
+        if (starts_with(p, "...")) {
             cur = new_token(TK_VARIADIC, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, "<<=")) {
+        if (starts_with(p, "<<=")) {
             cur = new_token(TK_LSHIFT_EQ, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, ">>=")) {
+        if (starts_with(p, ">>=")) {
             cur = new_token(TK_RSHIFT_EQ, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, "==")) {
+        if (starts_with(p, "==")) {
             cur = new_token(TK_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "!=")) {
+        if (starts_with(p, "!=")) {
             cur = new_token(TK_NE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "<=")) {
+        if (starts_with(p, "<=")) {
             cur = new_token(TK_LE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, ">=")) {
+        if (starts_with(p, ">=")) {
             cur = new_token(TK_GE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, ">>")) {
+        if (starts_with(p, ">>")) {
             cur = new_token(TK_RSHIFT, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "<<")) {
+        if (starts_with(p, "<<")) {
             cur = new_token(TK_LSHIFT, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "+=")) {
+        if (starts_with(p, "+=")) {
             cur = new_token(TK_ADD_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "-=")) {
+        if (starts_with(p, "-=")) {
             cur = new_token(TK_SUB_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "*=")) {
+        if (starts_with(p, "*=")) {
             cur = new_token(TK_MUL_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "/=")) {
+        if (starts_with(p, "/=")) {
             cur = new_token(TK_DIV_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "%=")) {
+        if (starts_with(p, "%=")) {
             cur = new_token(TK_MOD_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "&=")) {
+        if (starts_with(p, "&=")) {
             cur = new_token(TK_AND_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "|=")) {
+        if (starts_with(p, "|=")) {
             cur = new_token(TK_OR_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "^=")) {
+        if (starts_with(p, "^=")) {
             cur = new_token(TK_XOR_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "++")) {
+        if (starts_with(p, "++")) {
             cur = new_token(TK_INC, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "--")) {
+        if (starts_with(p, "--")) {
             cur = new_token(TK_DEC, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "&&")) {
+        if (starts_with(p, "&&")) {
             cur = new_token(TK_LOGICAL_AND, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "||")) {
+        if (starts_with(p, "||")) {
             cur = new_token(TK_LOGICAL_OR, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "->")) {
+        if (starts_with(p, "->")) {
             cur = new_token(TK_ARROW, cur, p, 2);
             p += 2;
             continue;
@@ -249,7 +249,7 @@ Token *tokenize(char *p) {
         }
 
         // 2進数
-        if (startsWith(p, "0b")) {
+        if (starts_with(p, "0b")) {
             p += 2;
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
@@ -264,7 +264,7 @@ Token *tokenize(char *p) {
         }
 
         // 16進数
-        if (startsWith(p, "0x")) {
+        if (starts_with(p, "0x")) {
             p += 2;
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
@@ -278,7 +278,7 @@ Token *tokenize(char *p) {
         }
 
         // 8進数
-        if (startsWith(p, "0")) {
+        if (starts_with(p, "0")) {
             p += 1;
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
@@ -486,7 +486,7 @@ Token *tokenize(char *p) {
 
             if (is_alpha(*p)) {
                 char *q = p;
-                str_advanve(&p);
+                str_advance(&p);
                 cur->type->name = my_strndup(q, p - q);
                 continue;
             } else {
@@ -504,7 +504,7 @@ Token *tokenize(char *p) {
 
             if (is_alpha(*p)) {
                 char *q = p;
-                str_advanve(&p);
+                str_advance(&p);
                 cur->type->name = my_strndup(q, p - q);
                 continue;
             } else {
@@ -522,7 +522,7 @@ Token *tokenize(char *p) {
 
             if (is_alpha(*p)) {
                 char *q = p;
-                str_advanve(&p);
+                str_advance(&p);
                 cur->type->name = my_strndup(q, p - q);
             }
             continue;
@@ -549,7 +549,7 @@ Token *tokenize(char *p) {
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;
-            str_advanve(&p);
+            str_advance(&p);
             cur->len = p - q;
             continue;
         }

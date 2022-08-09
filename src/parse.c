@@ -27,8 +27,8 @@ static Node *new_node_num(long val);
 static Var *new_lvar(Token *tok, Type *type);
 static Var *new_gvar(Token *tok, Type *type);
 static void create_lvar_from_params(Var *params);
-static Var *find_lvar(Token *tok);
-static Var *find_gvar(Token *tok);
+static Var *find_local_var(Token *tok);
+static Var *find_global_var(Token *tok);
 static Vector *new_node_init2(Initializer *init, Node *node);
 
 /* AST */
@@ -74,7 +74,7 @@ static Type *type_suffix(Type *type, bool is_first);
 static Node *funcall(Node *n);
 static Node *primary();
 static long const_expr();
-static GInitEl *eval(Node *node);
+static GlobalInit *eval(Node *node);
 
 enum {
     VOID = 1 << 0,
@@ -190,9 +190,9 @@ static Var *new_lvar(Token *tok, Type *type) {
     lvar->len = tok->len;
     lvar->type = type;
     if (locals->next_offset > 0) {
-        lvar->offset = locals->next_offset + sizeOfType(type);
+        lvar->offset = locals->next_offset + sizeof_type(type);
     } else {
-        lvar->offset = locals->offset + sizeOfType(type);
+        lvar->offset = locals->offset + sizeof_type(type);
     }
 
     /*
@@ -213,7 +213,7 @@ static Var *new_gvar(Token *tok, Type *type) {
     gvar->len = tok->len;
     gvar->type = type;
     gvar->is_global = true;
-    gvar->ginit = new_vec();
+    gvar->global_init = new_vec();
 
     /*
      * typedefはグローバル変数を生成しない
@@ -278,7 +278,7 @@ static Var *find_var(char *name, Var *vars, Var *end) {
 }
 
 /* ローカル変数取得時に使用 */
-static Var *find_lvar(Token *tok) {
+static Var *find_local_var(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
     return find_var(name, locals, NULL);
 }
@@ -290,15 +290,15 @@ static Var *find_scope_lvar(Token *tok) {
 }
 
 /* 既に定義されたグローバル変数を検索 */
-static Var *find_gvar(Token *tok) {
+static Var *find_global_var(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
     return find_var(name, globals, NULL);
 }
 
 static Var *find_allscope_var(Token *tok) {
-    Var *var = find_lvar(tok);  // ローカル変数を取得
+    Var *var = find_local_var(tok);  // ローカル変数を取得
     if (!var) {
-        var = find_gvar(tok);  // グローバル変数から取得
+        var = find_global_var(tok);  // グローバル変数から取得
         if (!var) {
             return NULL;
         }
@@ -326,11 +326,11 @@ static Tag *find_tag(char *name, Vector *list) {
     return NULL;
 }
 
-static Tag *find_lstruct_type(char *name) {
+static Tag *find_local_struct_type(char *name) {
     return find_tag(name, struct_local_lists);
 }
 
-static Tag *find_gstruct_type(char *name) {
+static Tag *find_global_struct_type(char *name) {
     return find_tag(name, struct_global_lists);
 }
 
@@ -424,13 +424,13 @@ Function *find_func(char *name) {
 
 /*** eval ***/
 
-static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len) {
+static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *op, int len) {
     int max_digit = 50;
     if (gl->str && gr->str) {
-        error("eval_concat() failure: オペランドが不適切です [%s]", op);
+        error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
     } else if (gl->str && !gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
-            error("eval_concat() failure: オペランドが不適切です [%s]", op);
+            error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = gl->len + max_digit + len + 1;
         char *buf = memory_alloc(sizeof(char) * buf_size);
@@ -439,7 +439,7 @@ static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len)
         g->len = buf_size;
     } else if (!gl->str && gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
-            error("eval_concat() failure: オペランドが不適切です [%s]", op);
+            error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = max_digit + gr->len + len + 1;
         char *buf = memory_alloc(sizeof(char) * buf_size);
@@ -480,73 +480,73 @@ static void eval_concat(GInitEl *g, GInitEl *gl, GInitEl *gr, char *op, int len)
 }
 
 /* TODO: 四則演算以外にも対応 */
-static GInitEl *eval(Node *node) {
-    GInitEl *g = memory_alloc(sizeof(GInitEl));
+static GlobalInit *eval(Node *node) {
+    GlobalInit *g = memory_alloc(sizeof(GlobalInit));
     add_type(node);
 
     if (node->kind == ND_NUM) {
         g->val = node->val;
         return g;
     } else if (node->kind == ND_ADD) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "+", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "+", 2);
         return g;
     } else if (node->kind == ND_SUB) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
         g->val = gl->val - gr->val;
-        eval_concat(g, gl, gr, "-", 2);
+        eval_binary_op(g, gl, gr, "-", 2);
         return g;
     } else if (node->kind == ND_MUL) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "*", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "*", 2);
         return g;
     } else if (node->kind == ND_DIV) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "/", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "/", 2);
         return g;
     } else if (node->kind == ND_MOD) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "%", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "%", 2);
         return g;
     } else if (node->kind == ND_EQ) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "==", 3);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "==", 3);
         return g;
     } else if (node->kind == ND_NE) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "!=", 3);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "!=", 3);
         return g;
     } else if (node->kind == ND_LT) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "<", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "<", 2);
         return g;
     } else if (node->kind == ND_LE) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "<=", 3);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "<=", 3);
         return g;
     } else if (node->kind == ND_LOGICAL_NOT) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = memory_alloc(sizeof(GInitEl));
-        eval_concat(g, gl, gr, "!", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = memory_alloc(sizeof(GlobalInit));
+        eval_binary_op(g, gl, gr, "!", 2);
         return g;
     } else if (node->kind == ND_LOGICAL_AND) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "&&", 3);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "&&", 3);
         return g;
     } else if (node->kind == ND_LOGICAL_OR) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "||", 3);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "||", 3);
         return g;
     } else if (node->kind == ND_STRING) {
         int buf_size = 50;  // 仮の値を決める
@@ -571,14 +571,14 @@ static GInitEl *eval(Node *node) {
         }
         return g;
     } else if (node->kind == ND_LSHIFT) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, "<<", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, "<<", 2);
         return g;
     } else if (node->kind == ND_RSHIFT) {
-        GInitEl *gl = eval(node->lhs);
-        GInitEl *gr = eval(node->rhs);
-        eval_concat(g, gl, gr, ">>", 2);
+        GlobalInit *gl = eval(node->lhs);
+        GlobalInit *gr = eval(node->rhs);
+        eval_binary_op(g, gl, gr, ">>", 2);
         return g;
     }
 
@@ -608,7 +608,7 @@ static Tag *is_defined_enum_type(char *name) {
 /* ノードを引数にもつsizeofの実装 */
 static int sizeOfNode(Node *node) {
     add_type(node);
-    return sizeOfType(node->type);
+    return sizeof_type(node->type);
 }
 
 static void start_local_scope() {
@@ -632,7 +632,7 @@ static void create_lvar_from_params(Var *params) {
     lvar->len = params->len;
     lvar->type = params->type;
     // 引数はトップのローカルスコープになるのでnext_offsetで条件分岐が必要ない
-    lvar->offset = locals->offset + sizeOfType(lvar->type);
+    lvar->offset = locals->offset + sizeof_type(lvar->type);
     lvar->next = locals;
 
     locals = lvar;
@@ -641,7 +641,7 @@ static void create_lvar_from_params(Var *params) {
 
 static bool is_already_defined_global_obj(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
-    return find_gvar(tok) != NULL;
+    return find_global_var(tok) != NULL;
 }
 
 static bool is_same_params(Var *params1, Var *params2) {
@@ -691,13 +691,6 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
     }
 }
 
-static bool has_lvar_in_all_params(Var *params) {
-    for (Var *v = params; v; v = v->next) {
-        if (v->is_only_type) return false;
-    }
-    return true;
-}
-
 static Var *reverse_linked_list_var(Var *cur) {
     Var *reversed = NULL;
     while (cur) {
@@ -711,15 +704,15 @@ static Var *reverse_linked_list_var(Var *cur) {
 
 static Tag *struct_defined_or_forward(Type *type) {
     if (is_global) {
-        Tag *tag = find_gstruct_type(type->name);
+        Tag *tag = find_global_struct_type(type->name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_gstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+            error("find_global_struct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
         return tag;
     } else {
-        Tag *tag = find_lstruct_type(type->name);
+        Tag *tag = find_local_struct_type(type->name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_lstruct_type() failure: %s構造体は既に宣言済みです。", type->name);
+            error("find_local_struct_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
         return tag;
     }
@@ -956,7 +949,7 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
     }
 
     if (is_global) {
-        vec_push(init->var->ginit, eval(init->expr));
+        vec_push(init->var->global_init, eval(init->expr));
     } else {
         Node *n = new_assign(node, init->expr);
         n->is_initialize = true;
@@ -1023,7 +1016,7 @@ void program() {
         } else {
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume(';')) {
-                // 構造体・列強型の作成 or 宣言
+                // 構造体・列挙型型の作成 or 宣言
                 continue;
             }
             declaration(type);
@@ -1090,7 +1083,7 @@ static Node *declaration_var(Type *type) {
         return initialize(init, node);
     }
 
-    if (node->var->type->kind == TYPE_ARRAY && sizeOfType(node->var->type) == 0) {
+    if (node->var->type->kind == TYPE_ARRAY && sizeof_type(node->var->type) == 0) {
         error("declaration_var() failure: 宣言で配列の添え字は省略できません");
     }
 
@@ -1104,7 +1097,7 @@ static Node *declaration_var(Type *type) {
 static Node *initialize(Initializer *init, Node *node) {
     bool is_index_omitted = node->var->type->kind == TYPE_ARRAY && node->var->type->array_size == 0;
     initialize2(init);
-    if (is_index_omitted) node->var->offset += sizeOfType(node->var->type);
+    if (is_index_omitted) node->var->offset += sizeof_type(node->var->type);
     return new_node_init(init, node);
 }
 
@@ -1318,7 +1311,7 @@ static Node *declarator_var(Type *type) {
     Node *node = declear_node_ident(type->token, type);
     // 新しい型のオフセットにする
 
-    node->var->offset += sizeOfType(node->var->type);
+    node->var->offset += sizeof_type(node->var->type);
     return node;
 }
 
@@ -1346,7 +1339,7 @@ static Var *declarator_param(Type *type, Var *cur) {
     }
 
     // 新しい型のオフセットにする
-    lvar->offset = cur->offset + sizeOfType(lvar->type);
+    lvar->offset = cur->offset + sizeof_type(lvar->type);
     return lvar;
 }
 
@@ -1445,7 +1438,7 @@ static Type *type_specifier(int *flag) {
         if (type->is_forward) {
             Tag *stag_local, *stag_global;
             if (type->kind == TYPE_STRUCT) {
-                stag_local = find_lstruct_type(type->name), stag_global = find_gstruct_type(type->name);
+                stag_local = find_local_struct_type(type->name), stag_global = find_global_struct_type(type->name);
             } else if (type->kind == TYPE_UNION) {
                 stag_local = find_lunion_type(type->name), stag_global = find_gunion_type(type->name);
             } else if (type->kind == TYPE_ENUM) {
@@ -1589,7 +1582,7 @@ static Type *type_specifier(int *flag) {
     }
 
     if (type->kind == TYPE_STRUCT) {
-        Tag *stag_local = find_lstruct_type(type->name), *stag_global = find_gstruct_type(type->name);
+        Tag *stag_local = find_local_struct_type(type->name), *stag_global = find_global_struct_type(type->name);
         Tag *stag = stag_local ? stag_local : stag_global;
         if (stag == NULL) {
             // 初の前方宣言
@@ -1719,7 +1712,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     *enum_const_num += 1;
 
     if (consume('=')) {
-        GInitEl *el = eval(conditional());
+        GlobalInit *el = eval(conditional());
         if (el->str) {
             error("enumerator() failure: 数値型の定数ではありません");
         }
@@ -1773,7 +1766,7 @@ static Var *declaration_params(bool *is_variadic) {
         if (p->type->kind == TYPE_ARRAY) {
             Type *t = p->type;
             p->type = new_ptr_type(t->ptr_to);
-            p->offset += sizeOfType(p->type) - sizeOfType(t);
+            p->offset += sizeof_type(p->type) - sizeof_type(t);
         }
 
         // 変数名の重複チェック
@@ -1800,7 +1793,7 @@ static void func_define(Type *type) {
     Token *tok = type->token;
 
     // プロトタイプ宣言は複数定義を許可する
-    Var *v = find_gvar(tok);
+    Var *v = find_global_var(tok);
     if (v && !v->type->is_forward) {
         error("func_define() failure: 既に%sは定義されています", fn->name);
     }
@@ -1844,8 +1837,9 @@ static void func_define(Type *type) {
     }
 
     // 定義では型だけの引数を許容しない
-    if (!has_lvar_in_all_params(fn->params)) {
-        error("has_lvar_in_all_params() failure: 引数の定義には変数名が必要です");
+    for (Var *v = fn->params; v; v = v->next) {
+        if (v->is_only_type)
+            error("func_define() failure: 引数の定義には変数名が必要です");
     }
 
     /* 再帰関数用に先に登録する */
@@ -2374,7 +2368,7 @@ static Node *unary() {
         if (consume_is_type_nostep(tok)) {
             expect('(');
             Type *t = type_name();
-            Node *node = new_node_num(sizeOfType(t));
+            Node *node = new_node_num(sizeof_type(t));
             expect(')');
             return node;
         } else {
@@ -2514,9 +2508,9 @@ static Node *funcall(Node *node) {
         }
 
         // __builtin_va_list構造体が定義されているか
-        Tag *tag = find_gstruct_type("__builtin_va_list");
+        Tag *tag = find_global_struct_type("__builtin_va_list");
         if (tag == NULL) {
-            error("find_gstruct_type() failure: __builtin_va_listが未定義です");
+            error("find_global_struct_type() failure: __builtin_va_listが未定義です");
         }
         // struct __builtin_va_list *
         Type *t = new_ptr_type(tag->base_type);
@@ -2600,7 +2594,7 @@ static Node *primary() {
 }
 
 static long const_expr() {
-    GInitEl *g = eval(expr());
+    GlobalInit *g = eval(expr());
     if (g->len > 0) {
         error("const_expr() failure: 定数ではありません");
     }
