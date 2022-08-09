@@ -175,16 +175,12 @@ static bool at_eof() {
     return token->kind == TK_EOF;
 }
 
-// ポインターを読み進めて関数かグローバル変数か判断
-static bool is_func(Token *tok) {
-    while (tok->kind == '*') {
-        tok = tok->next;
-    }
-
-    if (tok->kind != TK_IDENT)
-        return false;
-    tok = tok->next;
-    return tok->kind == '(';
+static bool is_func(Type *type) {
+    Token *tok = token;
+    type = declarator(type);
+    bool is_func_flag = (type->kind == TYPE_FUNC);
+    token = tok;
+    return is_func_flag;
 }
 
 /*** new objects ***/
@@ -662,7 +658,7 @@ static bool is_same_params(Var *params1, Var *params2) {
 }
 
 static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
-    if (args == NULL) error("should_cast_params() failure: args == NULL");
+    if (args == NULL) error("should_cast_args() failure: args == NULL");
 
     int args_len = args->len;
     int params_len = 0;
@@ -674,7 +670,7 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
 
     if ((is_variadic && args_len < params_len) ||
         (!is_variadic && args_len != params_len)) {
-        error("should_cast_params() failure: length error args=%d params=%d is_variadic=%d", args_len, params_len, is_variadic);
+        error("should_cast_args() failure: length error args=%d params=%d is_variadic=%d", args_len, params_len, is_variadic);
     }
 
     int i = 0;
@@ -684,7 +680,7 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
         Var *v = params;
 
         if (!can_type_cast(n->type, v->type->kind)) {
-            error("should_cast_params() failure: cast error %d %d", n->type->kind, v->type->kind);
+            error("should_cast_args() failure: cast error %d %d", n->type->kind, v->type->kind);
         }
 
         if (!is_same_type(n->type, v->type))
@@ -1020,7 +1016,7 @@ void program() {
     local_scope = new_vec();
     while (!at_eof()) {
         Type *type = declaration_specifier();
-        if (is_func(token)) {
+        if (is_func(type)) {
             is_global = false;
             func_define(type);
             is_global = true;
@@ -1795,28 +1791,24 @@ static Var *declaration_params(bool *is_variadic) {
 }
 
 /*
- *  <func_define> = <declaration_specifier> <pointer> <ident> <declaration_params> <compound_stmt>
+ *  <func_define> = <declaration_specifier> <declarator> <compound_stmt>
  */
 static void func_define(Type *type) {
-    type = pointer(type);
+    type = declarator(type);
     Function *fn = memory_alloc(sizeof(Function));
     cur_parse_func = fn;
-
-    Token *tok = token;
-    bool is_variadic = false;
-
-    expect(TK_IDENT);
-    fn->name = my_strndup(tok->str, tok->len);
+    Token *tok = type->token;
 
     // プロトタイプ宣言は複数定義を許可する
     Var *v = find_gvar(tok);
     if (v && !v->type->is_forward) {
         error("func_define() failure: 既に%sは定義されています", fn->name);
     }
-    fn->ret_type = type;
 
-    fn->params = declaration_params(&is_variadic);  // 前から見ていく
-    fn->is_variadic = is_variadic;
+    fn->name = my_strndup(tok->str, tok->len);
+    fn->ret_type = type->ptr_to;
+    fn->params = type->params;  // 前から見ていく
+    fn->is_variadic = type->is_variadic;
 
     Function *entry = find_func(fn->name);
     if (consume(';')) {

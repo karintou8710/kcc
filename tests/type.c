@@ -270,6 +270,14 @@ int func_pointer5() {
     return strcmp("t10", p("t%d", a)) == 0;
 }
 
+int (*_test_func6())(int, long) {
+    return _test_func4_2;
+}
+
+int func_pointer6() {
+    return _test_func6()(1, 2);
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -337,6 +345,7 @@ int main() {
     ASSERT(1, func_pointer3(), "func_pointer3()");
     ASSERT(3, func_pointer4(), "func_pointer4()");
     ASSERT(1, func_pointer5(), "func_pointer5()");
+    ASSERT(3, func_pointer6(), "func_pointer6()");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;
