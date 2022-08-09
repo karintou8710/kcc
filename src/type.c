@@ -177,11 +177,14 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     return ty;
 }
 
-Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic) {
+Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic, char *name) {
+    // strcmp()を使用するので、nameをNULLにしない
+    if (name == NULL) name = "";
     Type *type = new_type(TYPE_FUNC);
     type->ptr_to = ret_type;
     type->params = params;
     type->is_variadic = is_variadic;
+    type->name = name;
     return type;
 }
 

@@ -71,6 +71,7 @@ static Node *cast();
 static Node *unary();
 static Node *postfix();
 static Type *type_suffix(Type *type, bool is_first);
+static Node *funcall(Node *n);
 static Node *primary();
 static long const_expr();
 static GInitEl *eval(Node *node);
@@ -987,7 +988,7 @@ static Node *should_new_node_var(Token *tok) {
     Node *node = new_node(ND_VAR);
     node->var = find_allscope_var(tok);
     if (node->var == NULL) {
-        error("");
+        error("should_new_node_var() failure: %sは宣言されていません", my_strndup(tok->str, tok->len));
     }
     return node;
 }
@@ -999,6 +1000,11 @@ static int count_var(Var *v) {
         v = v->next;
     }
     return cnt;
+}
+
+static bool is_callable(Type *type) {
+    return (type->kind == TYPE_PTR && type->ptr_to->kind == TYPE_FUNC) ||
+           type->kind == TYPE_FUNC;
 }
 
 /*************************************/
@@ -1673,7 +1679,7 @@ static Type *type_suffix(Type *type, bool is_first) {
     if (consume_nostep('(')) {
         bool is_variadic = false;
         Var *params = declaration_params(&is_variadic);
-        type = new_func_type(type, params, &is_variadic);
+        type = new_func_type(type, params, &is_variadic, "");
     }
 
     return type;
@@ -1801,7 +1807,10 @@ static void func_define(Type *type) {
 
     expect(TK_IDENT);
     fn->name = my_strndup(tok->str, tok->len);
-    if (find_gvar(tok)) {
+
+    // プロトタイプ宣言は複数定義を許可する
+    Var *v = find_gvar(tok);
+    if (v && !v->type->is_forward) {
         error("func_define() failure: 既に%sは定義されています", fn->name);
     }
     fn->ret_type = type;
@@ -1815,6 +1824,10 @@ static void func_define(Type *type) {
         fn->is_prototype = true;
         if (entry == NULL) {
             vec_push(funcs, fn);
+            /* プロトタイプ宣言の関数をグローバル変数として登録する */
+            Type *fn_type = new_func_type(fn->ret_type, fn->params, &(fn->is_variadic), fn->name);
+            fn_type->is_forward = true;
+            new_gvar(tok, fn_type);
             return;
         }
 
@@ -1847,8 +1860,12 @@ static void func_define(Type *type) {
     vec_push(funcs, fn);
 
     /* 関数をグローバル変数として登録する */
-    Type *fn_type = new_func_type(fn->ret_type, fn->params, &fn->is_variadic);
-    new_gvar(tok, fn_type);
+    if (v == NULL) {
+        Type *fn_type = new_func_type(fn->ret_type, fn->params, &(fn->is_variadic), fn->name);
+        new_gvar(tok, fn_type);
+    } else {
+        v->type->is_forward = false;
+    }
 
     locals = memory_alloc(sizeof(Var));
     struct_local_lists = new_vec();  // 関数毎に構造体を初期化
@@ -2392,7 +2409,7 @@ static Node *unary() {
 }
 
 /*
- *  <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
+ *  <postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" | <funcall> ) *
  */
 static Node *postfix() {
     Node *node = primary();
@@ -2445,6 +2462,11 @@ static Node *postfix() {
             continue;
         }
 
+        if (consume('(')) {
+            node = funcall(node);
+            continue;
+        }
+
         break;
     }
 
@@ -2454,44 +2476,40 @@ static Node *postfix() {
 /*
  *  <funcall> = "(" (<assign> ("," <assign>)*)? ")"
  */
-static Node *funcall(Token *tok) {
-    expect('(');
-    Node *node = new_node(ND_CALL);
+static Node *funcall(Node *node) {
+    add_type(node);
+    if (!is_callable(node->type)) {
+        error("funcalL() failure: 関数ポインター・関数以外を呼びだそうとしています。");
+    }
 
-    node->args = new_vec();
+    Node *node_call = new_node(ND_CALL);
+
+    node_call->args = new_vec();
     while (!consume(')')) {
-        if (node->args->len != 0) {
+        if (node_call->args->len != 0) {
             expect(',');
         }
         Node *n = assign();
         add_type(n);
-        vec_push(node->args, n);
+        vec_push(node_call->args, n);
     }
 
-    char *name = my_strndup(tok->str, tok->len);
-    Function *fn = find_func(name);
-
-    if (fn) {
-        /* 定義された関数 */
-        node->fn_name = name;
-        should_cast_args(node->args, fn->params, fn->is_variadic);
-    } else {
-        /* 関数ポインター */
-        Var *v = find_allscope_var(tok);
-        if (v) {
-            if ((v->type->kind == TYPE_PTR && v->type->ptr_to->kind == TYPE_FUNC) ||
-                v->type->kind == TYPE_FUNC) {
-                node->fn_name = "";
-                node->lhs = should_new_node_var(tok);
-            } else {
-                error("funcalL() failure: 変数%sは関数ポインターではありません", name);
-            }
-        } else {
-            error("funcalL() failure: %sは定義されていない関数・変数です", name);
+    if (node->type->kind == TYPE_FUNC) {
+        char *name = node->type->name;
+        Function *fn = find_func(name);
+        if (fn) {
+            /* 定義された関数 */
+            node_call->fn_name = name;
+            should_cast_args(node_call->args, fn->params, fn->is_variadic);
         }
+    } else if (node->type->kind == TYPE_PTR && node->type->ptr_to->kind == TYPE_FUNC) {
+        node_call->fn_name = "";
+        node_call->lhs = node;
+    } else {
+        error("funcall() failure: unreachable");
     }
 
-    if (strcmp(node->fn_name, "va_start") == 0) {
+    if (strcmp(node_call->fn_name, "va_start") == 0) {
         /*
          * va_startをマクロとして実装できないので、内部で va_start(ap, fmt)を
          * *ap = *(struct __builtin_va_list *)__va_area__
@@ -2499,7 +2517,7 @@ static Node *funcall(Token *tok) {
          */
 
         // 仮引数のサイズ
-        if (node->args->len != 2) {
+        if (node_call->args->len != 2) {
             error("funcall() failure: va_start args len != 2");
         }
 
@@ -2513,7 +2531,7 @@ static Node *funcall(Token *tok) {
 
         // lhs -> *ap
         Node *lhs = new_node(ND_DEREF);
-        lhs->lhs = node->args->body[0];
+        lhs->lhs = node_call->args->body[0];
         add_type(lhs->lhs);
         add_type(lhs);
 
@@ -2528,13 +2546,13 @@ static Node *funcall(Token *tok) {
         rhs->lhs = new_node(ND_CAST);
         rhs->lhs->lhs = rhs_ident;
         rhs->lhs->type = t;
-        node = new_assign(lhs, rhs);
+        node_call = new_assign(lhs, rhs);
     }
-    return node;
+    return node_call;
 }
 
 /*
- *  <primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?
+ *  <primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident>
  */
 static Node *primary() {
     if (consume('(')) {
@@ -2562,11 +2580,8 @@ static Node *primary() {
             return new_node_num(v->val);
         }
 
-        if (consume_nostep('(')) {
-            node = funcall(tok);
-        } else {
-            node = should_new_node_var(tok);
-        }
+        node = should_new_node_var(tok);
+
         return node;
     }
 

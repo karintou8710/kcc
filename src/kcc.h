@@ -318,7 +318,7 @@ Tag *new_tag(Type *type);
 void copy_type(Type *to, Type *from);
 void copy_type_shallow(Type *to, Type *from);
 void calc_type_size(Type *type);
-Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic);
+Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic, char *name);
 
 // parse.c
 void program();

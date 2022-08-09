@@ -107,7 +107,7 @@ $ make diff
         | ("++" | "--") <postfix>
         | <unary> ("++" | "--")
         | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
-<postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" ) *
+<postfix> = <primary>  ( ("[" <expr> "]") | "." | "->" | <funcall> ) *
 <funcall> = "(" (<assign> ("," <assign>)*)? ")"
-<primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident> <funcall>?
+<primary> = "(" <expr> ")" | "(" <compound_stmt> ")" | <num> | <string> | <ident>
 ```
