@@ -581,7 +581,7 @@ static GlobalInit *eval(Node *node) {
         return g;
     }
 
-    error("eval() failure: %d:未対応のNodeタイプです", node->kind);
+    error("eval() failure: %d 未対応のNodeタイプです", node->kind);
 }
 
 /*** other func ***/
@@ -656,7 +656,7 @@ static bool is_same_params(Var *params1, Var *params2) {
 }
 
 static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
-    if (args == NULL) error("should_cast_args() failure: args == NULL");
+    if (args == NULL) error("should_cast_args() failure: argsは設定されていません");
 
     int args_len = args->len;
     int params_len = 0;
@@ -668,7 +668,7 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
 
     if ((is_variadic && args_len < params_len) ||
         (!is_variadic && args_len != params_len)) {
-        error("should_cast_args() failure: length error args=%d params=%d is_variadic=%d", args_len, params_len, is_variadic);
+        error("should_cast_args() failure: 長さが合っていません  args=%d params=%d is_variadic=%d", args_len, params_len, is_variadic);
     }
 
     int i = 0;
@@ -678,7 +678,7 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
         Var *v = params;
 
         if (!can_cast_type(n->type, v->type->kind)) {
-            error("should_cast_args() failure: cast error %d %d", n->type->kind, v->type->kind);
+            error("should_cast_args() failure: キャストに失敗しました %d -> %d", n->type->kind, v->type->kind);
         }
 
         if (!is_same_type(n->type, v->type))
@@ -1346,7 +1346,7 @@ static Var *declarator_param(Type *type, Var *cur) {
 static Type *abstruct_declarator(Type *type) {
     type = declarator(type);
     if (type->token) {
-        error("declarator() failure: type->token has value");
+        error("declarator() failure: 型のみ定義する構文で変数名が定義されています");
     }
     return type;
 }
@@ -1358,7 +1358,7 @@ static Type *abstruct_declarator(Type *type) {
  */
 static Type *declaration_specifier() {
     if (!consume_type_nostep(token)) {
-        error("declaration_specifier() failure: expect type");
+        error("declaration_specifier() failure: 型キーワードではありません");
     }
     Type *type = NULL;
     int flag = 0;

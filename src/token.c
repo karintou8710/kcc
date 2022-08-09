@@ -79,7 +79,7 @@ Token *tokenize(char *p) {
 
                 p++;
             } else {
-                error("tokenize() failure: #includeに失敗しました");
+                error("tokenize() failure: \", <で始まっていません");
             }
             continue;
         }
@@ -554,7 +554,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        error_at(p, "tokenize() failure: トークナイズできません");
+        error_at(p, "tokenize() failure: トークナイズに失敗しました");
     }
 
     new_token(TK_EOF, cur, p, 0);

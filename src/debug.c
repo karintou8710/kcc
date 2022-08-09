@@ -97,7 +97,7 @@ void print_node_kind(NodeKind kind) {
     else if (kind == ND_DEFAULT)
         fprintf(stderr, "ND_DEFAULT");  // default
     else
-        error("print_node_kind() failure");
+        error("print_node_kind() failure: 未定義ノード種");
 
     fprintf(stderr, "\n");
 }
@@ -221,7 +221,7 @@ void print_type_kind(TypeKind kind) {
     else if (kind == TYPE_FUNC)
         fprintf(stderr, "TYPE_FUNC");
     else
-        error("print_type_kind() failure: unexpected type %d", kind);
+        error("print_type_kind() failure: 未定義型 %d", kind);
 
     fprintf(stderr, "\n");
 }

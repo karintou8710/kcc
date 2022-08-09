@@ -52,7 +52,7 @@ static char *get_argreg(int index, Type *ty) {
         return argreg8[index];
     }
 
-    error("size: %d はサポートしてない引数です。", ty->size);
+    error("get_argreg() failure: size=%d は未サポートのレジスタです。", ty->size);
 }
 
 static int size_to_general_reg_index(int size) {
@@ -66,7 +66,7 @@ static int size_to_general_reg_index(int size) {
         return 3;  // 8bit
     }
 
-    error("size_to_general_reg_index() failure: [size=%d]サポートしてないレジスターのサイズです", size);
+    error("size_to_general_reg_index() failure: size=%d は未サポートレジスタです", size);
 }
 
 static char *proper_register(Type *ty, RegKind kind) {
@@ -85,7 +85,7 @@ static char *proper_register(Type *ty, RegKind kind) {
         return rdireg[index];
     }
 
-    error("サポートしていないレジスターです");
+    error("proper_register() failure: 未サポートの種類のレジスターです");
 }
 
 static void push() {
@@ -124,7 +124,7 @@ static void assign_local_var_offsets() {
 // ローカル変数のアドレスを生成
 static void gen_local_var(Node *node) {
     if (node->kind != ND_VAR) {
-        error("代入の左辺値が変数ではありません");
+        error("gen_local_var() failure: 代入の左辺値が変数ではありません");
     }
 
     if (node->var->is_global) {
@@ -167,7 +167,7 @@ static void gen_addr(Node *node) {
         return;
     }
 
-    error("左辺値がポインターまたは変数ではありません");
+    error("gen_addr() failure: nodekind=%d 左辺値が未サポートのノード種です", node->kind);
 }
 
 static void load(Type *ty) {
@@ -272,7 +272,7 @@ static void gen(Node *node) {
             } else if (current_fn->ret_type->size == 8) {
                 printf("  mov rax, rdi\n");
             } else {
-                error("gen() failure: ND_RETURN can't return over 8 size.");
+                error("gen() failure: 8より大きいサイズをreturnできません");
             }
         }
 
@@ -413,7 +413,7 @@ static void gen(Node *node) {
         return;
     } else if (node->kind == ND_BREAK) {
         if (continue_label < 0) {
-            error("breakがfor,switchの中で使われていません");
+            error("gen() failure: breakがfor,switchの中で使用されていません");
         }
 
         if (break_in_switch) {
@@ -426,7 +426,7 @@ static void gen(Node *node) {
         return;
     } else if (node->kind == ND_CONTINUE) {
         if (continue_label < 0) {
-            error("continueがforブロックの中で使用されていません");
+            error("gen() failure: continueがforブロックの中で使用されていません");
         }
         push();  // 数合わせ
         printf("  jmp .Lloopinc%04d\n", continue_label);

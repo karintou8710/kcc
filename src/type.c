@@ -20,7 +20,7 @@ static int typekind_to_size(TypeKind tykind) {
         return 0;  // 関数型にサイズは存在しない
     }
 
-    error("存在しないまたは固定長ではない型です");
+    error("typekind_to_size() failure: 存在しないまたは固定長ではない型です");
 }
 
 int array_base_type_size(Type *ty) {
@@ -222,7 +222,7 @@ bool is_relationalnode(NodeKind kind) {
 
 TypeKind large_integer_type(Type *t1, Type *t2) {
     if (!is_integertype(t1->kind) || !is_integertype(t2->kind)) {
-        error("整数の型ではありません。\n");
+        error("large_integer_type() failure: 整数の型ではありません。\n");
     }
 
     if (t1->size >= t2->size) {
@@ -296,7 +296,7 @@ void add_type(Node *node) {
         // 示す先が同じポインター
         if (then_t->kind == TYPE_PTR && els_t->kind == TYPE_PTR) {
             if (!is_same_type(then_t, els_t)) {
-                error("add_type() failure: ND_TERNARY, different pointer type");
+                error("add_type() failure: 異なるポインター型です (ND_TERNARY)");
             }
             node->type = then_t;
             return;
@@ -305,7 +305,7 @@ void add_type(Node *node) {
         // TODO: 構造体と配列
         if (then_t->kind == TYPE_STRUCT && els_t->kind == TYPE_STRUCT) {
             if (then_t != els_t) {
-                error("add_type() failure: ND_TERNARY, different struct type");
+                error("add_type() failure: 異なる構造体型です (ND_TERNARY)");
             }
             node->type = then_t;
             return;
@@ -313,7 +313,7 @@ void add_type(Node *node) {
 
         if (then_t->kind == TYPE_UNION && els_t->kind == TYPE_UNION) {
             if (then_t != els_t) {
-                error("add_type() failure: ND_TERNARY, different union type");
+                error("add_type() failure: 異なる共用体型です (ND_TERNARY)");
             }
             node->type = then_t;
             return;
@@ -353,7 +353,7 @@ void add_type(Node *node) {
             fprintf(stderr, "[node->rhs->type]\n");
             debug_type(node->rhs->type, 0);
             debug_node(node->rhs, "root", 0);
-            error("add_type() failure: type not found(ND_ASSIGN)");
+            error("add_type() failure: 型情報が見つかりませんでした (ND_ASSIGN)");
         }
 
         if (can_cast_type(node->rhs->type, node->lhs->type->kind)) {
@@ -389,7 +389,7 @@ void add_type(Node *node) {
         debug_type(node->lhs->type, 0);
         fprintf(stderr, "[node->rhs->type]\n");
         debug_type(node->rhs->type, 0);
-        error("add_type() failure: fail to cast %d -> %d", node->rhs->type->kind, node->lhs->type->kind);
+        error("add_type() failure: キャストに失敗しました %d -> %d", node->rhs->type->kind, node->lhs->type->kind);
     }
 
     // lhsとrhsの順番はparse側で保証する
@@ -410,7 +410,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_SUB) {
@@ -439,7 +439,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(SUB)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(SUB)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_MUL) {
@@ -449,7 +449,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(MUL)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(MUL)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_DIV) {
@@ -459,7 +459,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_MOD) {
@@ -469,7 +469,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(MOD)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(MOD)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_LOGICAL_NOT || node->kind == ND_LOGICAL_AND || node->kind == ND_LOGICAL_OR) {
@@ -488,7 +488,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です", lhs->type->kind, rhs->type->kind);
     }
 
     if (is_relationalnode(node->kind)) {
@@ -503,5 +503,5 @@ void add_type(Node *node) {
         return;
     }
 
-    error("add_type() failure: 対応していないノードタイプです。");
+    error("add_type() failure: %dは対応していないノードタイプです。", node->kind);
 }
