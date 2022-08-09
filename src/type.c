@@ -334,15 +334,15 @@ void add_type(Node *node) {
     }
 
     if (node->kind == ND_CALL) {
-        Function *fn = find_func(node->fn_name);
-        if (!fn) {
-            // TODO: プロトタイプ宣言に対応
-            node->type = new_type(TYPE_INT);
-            // error("add_type() failure: can't find func, name=%s", node->fn_name);
+        if (node->lhs) {
+            if (!(node->lhs->type->kind == TYPE_PTR && node->lhs->type->ptr_to->kind == TYPE_FUNC)) {
+                error("add_type() failure: 関数ポインターではありません(ND_CALL)");
+            }
+            node->type = node->lhs->type->ptr_to->ptr_to;
         } else {
+            Function *fn = find_func(node->fn_name);
             node->type = fn->ret_type;
         }
-
         return;
     }
 

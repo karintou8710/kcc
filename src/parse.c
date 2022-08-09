@@ -2529,6 +2529,7 @@ static Node *funcall(Node *node) {
         rhs->lhs->type = t;
         node_call = new_assign(lhs, rhs);
     }
+
     return node_call;
 }
 
