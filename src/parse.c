@@ -24,9 +24,9 @@ static Node *new_div(Node *lhs, Node *rhs);
 static Node *new_mod(Node *lhs, Node *rhs);
 static Node *new_cast(Node *lhs, Type *to_type);
 static Node *new_node_num(long val);
-static Var *new_lvar(Token *tok, Type *type);
-static Var *new_gvar(Token *tok, Type *type);
-static void create_lvar_from_params(Var *params);
+static Var *new_local_var(Token *tok, Type *type);
+static Var *new_global_var(Token *tok, Type *type);
+static void create_local_var_from_params(Var *params);
 static Var *find_local_var(Token *tok);
 static Var *find_global_var(Token *tok);
 static Vector *new_node_init2(Initializer *init, Node *node);
@@ -112,7 +112,7 @@ static bool consume_nostep(int op) {
 }
 
 // typedefに対応
-static bool consume_is_type_nostep(Token *tok) {
+static bool consume_type_nostep(Token *tok) {
     if (tok->kind == TK_TYPE) return true;
 
     if (tok->kind == TK_IDENT) {
@@ -184,7 +184,7 @@ static bool is_func(Type *type) {
 }
 
 /*** new objects ***/
-static Var *new_lvar(Token *tok, Type *type) {
+static Var *new_local_var(Token *tok, Type *type) {
     Var *lvar = try_memory_allocation(sizeof(Var));
     lvar->name = my_strndup(tok->str, tok->len);
     lvar->len = tok->len;
@@ -207,7 +207,7 @@ static Var *new_lvar(Token *tok, Type *type) {
     return lvar;
 }
 
-static Var *new_gvar(Token *tok, Type *type) {
+static Var *new_global_var(Token *tok, Type *type) {
     Var *gvar = try_memory_allocation(sizeof(Var));
     gvar->name = my_strndup(tok->str, tok->len);
     gvar->len = tok->len;
@@ -284,7 +284,7 @@ static Var *find_local_var(Token *tok) {
 }
 
 /* ローカル変数定義時に使用 */
-static Var *find_scope_lvar(Token *tok) {
+static Var *find_scope_var(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
     return find_var(name, locals, vec_last(local_scope));
 }
@@ -334,34 +334,34 @@ static Tag *find_global_struct_type(char *name) {
     return find_tag(name, struct_global_lists);
 }
 
-static Tag *find_lunion_type(char *name) {
+static Tag *find_local_union_type(char *name) {
     return find_tag(name, union_local_lists);
 }
 
-static Tag *find_gunion_type(char *name) {
+static Tag *find_global_union_type(char *name) {
     return find_tag(name, union_global_lists);
 }
 
-static Tag *find_lenum_type(char *name) {
+static Tag *find_local_enum_type(char *name) {
     return find_tag(name, enum_local_lists);
 }
 
-static Tag *find_genum_type(char *name) {
+static Tag *find_global_enum_type(char *name) {
     return find_tag(name, enum_global_lists);
 }
 
 static Tag *find_enum_type(char *name) {
     // ローカルで探索
-    Tag *t = find_lenum_type(name);
+    Tag *t = find_local_enum_type(name);
     if (t) return t;
 
     // グローバルで探索
-    t = find_genum_type(name);
+    t = find_global_enum_type(name);
     return t;
 }
 
 // enum型のメンバーを探索
-static Var *find_lenum_member(char *name) {
+static Var *find_local_enum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_local_lists->len; i++) {
         Tag *tag = enum_local_lists->body[i];
@@ -373,7 +373,7 @@ static Var *find_lenum_member(char *name) {
     return NULL;
 }
 
-static Var *find_genum_member(char *name) {
+static Var *find_global_enum_member(char *name) {
     if (name == NULL) return NULL;
     for (int i = 0; i < enum_global_lists->len; i++) {
         Tag *tag = enum_global_lists->body[i];
@@ -388,11 +388,11 @@ static Var *find_genum_member(char *name) {
 static Var *find_enum_member(Token *tok) {
     char *name = my_strndup(tok->str, tok->len);
     // ローカルで探索
-    Var *v = find_lenum_member(name);
+    Var *v = find_local_enum_member(name);
     if (v) return v;
 
     // グローバルで探索
-    v = find_genum_member(name);
+    v = find_global_enum_member(name);
     return v;
 }
 
@@ -589,16 +589,16 @@ static GlobalInit *eval(Node *node) {
 
 static Tag *is_defined_enum_type(char *name) {
     if (is_global) {
-        Tag *tag = find_genum_type(name);
+        Tag *tag = find_global_enum_type(name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_genum_type() failure: %s列挙型は既に宣言済みです。", name);
+            error("find_global_enum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
         return tag;
     } else {
-        Tag *tag = find_lenum_type(name);
+        Tag *tag = find_local_enum_type(name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_lenum_type() failure: %s列挙型は既に宣言済みです。", name);
+            error("find_local_enum_type() failure: %s列挙型は既に宣言済みです。", name);
         }
         // 前方宣言
         return tag;
@@ -623,7 +623,7 @@ static void end_local_scope() {
 
 // TODO: 引数に適切な型をつけるようにする
 /* 引数からローカル変数を作成する(前から見ていく) */
-static void create_lvar_from_params(Var *params) {
+static void create_local_var_from_params(Var *params) {
     if (!params)
         return;
 
@@ -636,7 +636,7 @@ static void create_lvar_from_params(Var *params) {
     lvar->next = locals;
 
     locals = lvar;
-    create_lvar_from_params(params->next);
+    create_local_var_from_params(params->next);
 }
 
 static bool is_already_defined_global_obj(Token *tok) {
@@ -720,15 +720,15 @@ static Tag *struct_defined_or_forward(Type *type) {
 
 static Tag *union_defined_or_forward(Type *type) {
     if (is_global) {
-        Tag *tag = find_gunion_type(type->name);
+        Tag *tag = find_global_union_type(type->name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_gunion_type() failure: %s構造体は既に宣言済みです。", type->name);
+            error("find_global_union_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
         return tag;
     } else {
-        Tag *tag = find_lunion_type(type->name);
+        Tag *tag = find_local_union_type(type->name);
         if (tag && tag->forward_type->len == 0) {
-            error("find_lunion_type() failure: %s構造体は既に宣言済みです。", type->name);
+            error("find_local_union_type() failure: %s構造体は既に宣言済みです。", type->name);
         }
         return tag;
     }
@@ -962,12 +962,12 @@ static Vector *new_node_init2(Initializer *init, Node *node) {
 /* 変数を宣言 */
 static Node *declear_node_ident(Token *tok, Type *type) {
     Node *node = new_node(ND_VAR);
-    bool f = is_global ? is_already_defined_global_obj(tok) : find_scope_lvar(tok) != NULL;
+    bool f = is_global ? is_already_defined_global_obj(tok) : find_scope_var(tok) != NULL;
     if (f) {
         error_at(tok->str, "declear_node_ident() failure: 既に宣言済みです");
     }
 
-    Var *var = is_global ? new_gvar(tok, type) : new_lvar(tok, type);
+    Var *var = is_global ? new_global_var(tok, type) : new_local_var(tok, type);
     node->var = var;
     return node;
 }
@@ -1360,13 +1360,13 @@ static Type *abstruct_declarator(Type *type) {
  * <type_qualifier> = "const"
  */
 static Type *declaration_specifier() {
-    if (!consume_is_type_nostep(token)) {
+    if (!consume_type_nostep(token)) {
         error("declaration_specifier() failure: expect type");
     }
     Type *type = NULL;
     int flag = 0;
 
-    while (consume_is_type_nostep(token)) {
+    while (consume_type_nostep(token)) {
         // storage class
         if (consume(TK_TYPEDEF)) {
             expect_no_storage();
@@ -1440,9 +1440,9 @@ static Type *type_specifier(int *flag) {
             if (type->kind == TYPE_STRUCT) {
                 stag_local = find_local_struct_type(type->name), stag_global = find_global_struct_type(type->name);
             } else if (type->kind == TYPE_UNION) {
-                stag_local = find_lunion_type(type->name), stag_global = find_gunion_type(type->name);
+                stag_local = find_local_union_type(type->name), stag_global = find_global_union_type(type->name);
             } else if (type->kind == TYPE_ENUM) {
-                stag_local = find_lenum_type(type->name), stag_global = find_genum_type(type->name);
+                stag_local = find_local_enum_type(type->name), stag_global = find_global_enum_type(type->name);
             } else {
                 error("type_specifier() failure: 不正な前方宣言の型です");
             }
@@ -1601,7 +1601,7 @@ static Type *type_specifier(int *flag) {
     }
 
     if (type->kind == TYPE_UNION) {
-        Tag *stag_local = find_lunion_type(type->name), *stag_global = find_gunion_type(type->name);
+        Tag *stag_local = find_local_union_type(type->name), *stag_global = find_global_union_type(type->name);
         Tag *stag = stag_local ? stag_local : stag_global;
         if (stag == NULL) {
             // 初の前方宣言
@@ -1812,7 +1812,7 @@ static void func_define(Type *type) {
             /* プロトタイプ宣言の関数をグローバル変数として登録する */
             Type *fn_type = new_func_type(fn->ret_type, fn->params, &(fn->is_variadic), fn->name);
             fn_type->is_forward = true;
-            new_gvar(tok, fn_type);
+            new_global_var(tok, fn_type);
             return;
         }
 
@@ -1848,7 +1848,7 @@ static void func_define(Type *type) {
     /* 関数をグローバル変数として登録する */
     if (v == NULL) {
         Type *fn_type = new_func_type(fn->ret_type, fn->params, &(fn->is_variadic), fn->name);
-        new_gvar(tok, fn_type);
+        new_global_var(tok, fn_type);
     } else {
         v->type->is_forward = false;
     }
@@ -1859,14 +1859,14 @@ static void func_define(Type *type) {
     enum_local_lists = new_vec();
     locals->offset = 0;
     start_local_scope();
-    create_lvar_from_params(fn->params);
+    create_local_var_from_params(fn->params);
 
     // 可変長引数
     if (fn->is_variadic) {
         Token *t = try_memory_allocation(sizeof(Token));
         t->str = "__va_area__";
         t->len = strlen(t->str);
-        fn->va_area = new_lvar(t, new_array_type(new_type(TYPE_CHAR), 136));
+        fn->va_area = new_local_var(t, new_array_type(new_type(TYPE_CHAR), 136));
     }
 
     fn->body = compound_stmt();
@@ -1886,7 +1886,7 @@ static Node *compound_stmt() {
     node->stmts = new_vec();
     while (!consume('}')) {
         Node *n;
-        if (consume_is_type_nostep(token)) {
+        if (consume_type_nostep(token)) {
             Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep(';')) {
@@ -1975,7 +1975,7 @@ static Node *stmt() {
         node = new_node(ND_FOR);
         expect('(');
         // init
-        if (consume_is_type_nostep(token)) {
+        if (consume_type_nostep(token)) {
             // <declaration>
             Type *type = declaration_specifier();
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
@@ -2311,7 +2311,7 @@ static Node *mul() {
  */
 static Node *cast() {
     Token *t1 = get_nth_token(1);
-    if (consume_nostep('(') && consume_is_type_nostep(t1)) {
+    if (consume_nostep('(') && consume_type_nostep(t1)) {
         expect('(');
         Type *type = type_name();
         expect(')');
@@ -2365,7 +2365,7 @@ static Node *unary() {
         return node;
     } else if (consume(TK_SIZEOF)) {
         Token *tok = get_nth_token(1);
-        if (consume_is_type_nostep(tok)) {
+        if (consume_type_nostep(tok)) {
             expect('(');
             Type *t = type_name();
             Node *node = new_node_num(sizeof_type(t));
