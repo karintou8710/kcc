@@ -1670,11 +1670,10 @@ static Type *type_suffix(Type *type, bool is_first) {
         type = new_array_type(type_suffix(type, false), array_size);
     }
 
-    if (consume('(')) {
-        Type *type_func = new_type(TYPE_FUNC);
-        type_func->ptr_to = type;
-        type = type_func;
-        expect(')');
+    if (consume_nostep('(')) {
+        bool is_variadic = false;
+        Var *params = declaration_params(&is_variadic);
+        type = new_func_type(type, params, &is_variadic);
     }
 
     return type;
@@ -1848,7 +1847,7 @@ static void func_define(Type *type) {
     vec_push(funcs, fn);
 
     /* 関数をグローバル変数として登録する */
-    Type *fn_type = new_func_type(fn);
+    Type *fn_type = new_func_type(fn->ret_type, fn->params, &fn->is_variadic);
     new_gvar(tok, fn_type);
 
     locals = memory_alloc(sizeof(Var));
@@ -2480,8 +2479,13 @@ static Node *funcall(Token *tok) {
         /* 関数ポインター */
         Var *v = find_allscope_var(tok);
         if (v) {
-            node->fn_name = "";
-            node->lhs = should_new_node_var(tok);
+            if ((v->type->kind == TYPE_PTR && v->type->ptr_to->kind == TYPE_FUNC) ||
+                v->type->kind == TYPE_FUNC) {
+                node->fn_name = "";
+                node->lhs = should_new_node_var(tok);
+            } else {
+                error("funcalL() failure: 変数%sは関数ポインターではありません", name);
+            }
         } else {
             error("funcalL() failure: %sは定義されていない関数・変数です", name);
         }

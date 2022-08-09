@@ -54,7 +54,11 @@ run "int main() {const union A{int member;} a, b; b = a;}"
 run "typedef int a = 1; int main() {}"
 run "extern int a = 1; int main() {}"
 
+# namespace
 run "int test;int test(){} int main() {return 0;}"
 run "int test(){} int test; int main() {return 0;}"
+
+# func pointer
+run "int f() {}int main() {long *a = f;int res = a();return 0;}"
 
 echo "test-error.sh success!"

@@ -177,9 +177,11 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     return ty;
 }
 
-Type *new_func_type(Function *fn) {
+Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic) {
     Type *type = new_type(TYPE_FUNC);
-    type->fn = fn;
+    type->ptr_to = ret_type;
+    type->params = params;
+    type->is_variadic = is_variadic;
     return type;
 }
 
@@ -240,7 +242,7 @@ bool can_type_cast(Type *ty, TypeKind to) {
         return true;
     }
 
-    if (from == TYPE_ARRAY && is_scalartype(to)) {
+    if ((from == TYPE_ARRAY || from == TYPE_FUNC) && is_scalartype(to)) {
         return true;
     }
 

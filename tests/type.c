@@ -214,6 +214,63 @@ int nested_type5(int (*a)[2]) {
     return (*a)[0] + (*a)[1];
 }
 
+int func_pointer1() {
+    int (*a)();
+    a = nested_type1;
+    int res = a();
+    return res;
+}
+
+int _test_func2(int a, int b) {
+    return a + b;
+}
+
+int func_pointer2() {
+    int (*a)(int, int) = _test_func2;
+    int (**b)(int, int) = &a;
+    // TODO: func_call
+    // int res = (*b)(1, 2);
+    // return res;
+}
+
+bool _test_func3(bool a) {
+    return a + 10;
+}
+
+int func_pointer3() {
+    bool (*a)(bool a) = _test_func3;
+    int res = a(false);
+    return res;
+}
+
+int _test_func4_1(int (*a)(int p1, long p2)) {
+    int res = a(1, 2);
+    return res;
+}
+
+int _test_func4_2(int p1, long p2) {
+    return p1 + p2;
+}
+
+int func_pointer4() {
+    int res = _test_func4_1(_test_func4_2);
+    return res;
+}
+
+char *_test_func5(char *fmt, ...) {
+    char buf[100];
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+    return buf;
+}
+
+int func_pointer5() {
+    char *(*p)(char *fmt, ...) = _test_func5;
+    int a = 10;
+    return strcmp("t10", p("t%d", a)) == 0;
+}
+
 // 配列を戻り値とするのは未対応
 int main() {
     ASSERT(15, return_type_cast1(), "return_type_cast1");
@@ -275,6 +332,13 @@ int main() {
     ASSERT(1, nested_type4(), "nested_type4()");
     int a[2] = {1, 2};
     ASSERT(3, nested_type5(&a), "nested_type5(&a)");
+
+    ASSERT(3, func_pointer1(), "func_pointer1()");
+    // TODO: func_call
+    // ASSERT(3, func_pointer2(), "func_pointer2()");
+    ASSERT(1, func_pointer3(), "func_pointer3()");
+    ASSERT(3, func_pointer4(), "func_pointer4()");
+    ASSERT(1, func_pointer5(), "func_pointer5()");
 
     printf("ALL TEST OF type.c SUCCESS :)\n");
     return 0;
