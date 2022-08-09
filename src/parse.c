@@ -679,7 +679,7 @@ static void should_cast_args(Vector *args, Var *params, bool is_variadic) {
         Node *n = args->body[i];
         Var *v = params;
 
-        if (!can_type_cast(n->type, v->type->kind)) {
+        if (!can_cast_type(n->type, v->type->kind)) {
             error("should_cast_args() failure: cast error %d %d", n->type->kind, v->type->kind);
         }
 
@@ -1286,7 +1286,7 @@ static Type *declarator2(Type *type) {
         // ex) [10] -> int
         type = type_suffix(type, true);
         // ex) dummy = [10]
-        copy_type_shallow(dummy, type);
+        shallowcopy_type(dummy, type);
         return head;
     } else {
         if (consume_nostep(TK_IDENT)) {
@@ -1507,7 +1507,7 @@ static Type *type_specifier(int *flag) {
         // 定義した順に並べ直す
         type->member = reverse_linked_list_var(type->member);
         // memberのアライメントを考慮したoffsetを決定する
-        apply_align_struct(type);
+        apply_align_to_struct(type);
 
         Tag *tag = struct_defined_or_forward(type);
 
@@ -1537,7 +1537,7 @@ static Type *type_specifier(int *flag) {
         // 定義した順に並べ直す
         type->member = reverse_linked_list_var(type->member);
 
-        apply_align_struct(type);
+        apply_align_to_struct(type);
 
         Tag *tag = union_defined_or_forward(type);
 
@@ -1935,8 +1935,8 @@ static Node *stmt() {
         } else {
             node->lhs = expr();
             add_type(node->lhs);
-            if (!can_type_cast(node->lhs->type, cur_parse_func->ret_type->kind)) {
-                error("stmt() failure: can_type_cast fail");
+            if (!can_cast_type(node->lhs->type, cur_parse_func->ret_type->kind)) {
+                error("stmt() failure: can_cast_type fail");
             }
 
             if (cur_parse_func->ret_type->kind == TYPE_VOID) {
@@ -2317,10 +2317,10 @@ static Node *cast() {
         expect(')');
         Node *node = cast();
         add_type(node);
-        if (can_type_cast(node->type, type->kind)) {
+        if (can_cast_type(node->type, type->kind)) {
             node = new_cast(node, type);
         } else {
-            error("can_type_cast() failure: 型のキャストに失敗しました");
+            error("can_cast_type() failure: 型のキャストに失敗しました");
         }
 
         return node;

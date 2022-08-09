@@ -1,7 +1,7 @@
 #include "kcc.h"
 
 /* 固定長の型のサイズを返す */
-static int tykind_to_size(TypeKind tykind) {
+static int typekind_to_size(TypeKind tykind) {
     if (tykind == TYPE_VOID) {
         return 0;
     } else if (tykind == TYPE_CHAR || tykind == TYPE_BOOL) {
@@ -40,9 +40,9 @@ size_t alignof_type(Type *ty) {
     return ty->alignment;
 }
 
-void apply_align_struct(Type *ty) {
+void apply_align_to_struct(Type *ty) {
     if (!ty || (ty->kind != TYPE_STRUCT && ty->kind != TYPE_UNION)) {
-        error("apply_align_struct() failure: struct or union型ではありません");
+        error("apply_align_to_struct() failure: struct or union型ではありません");
     }
 
     if (ty->member == NULL) return;
@@ -100,7 +100,7 @@ bool is_same_type(Type *ty1, Type *ty2) {
 }
 
 /* tokenはコピー対象に含めない */
-void copy_type_shallow(Type *to, Type *from) {
+void shallowcopy_type(Type *to, Type *from) {
     if (from == NULL) {
         return;
     }
@@ -150,7 +150,7 @@ void calc_type_size(Type *type) {
 Type *new_type(TypeKind tykind) {
     Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = tykind;
-    ty->size = tykind_to_size(tykind);
+    ty->size = typekind_to_size(tykind);
     ty->alignment = ty->size;  // 基本型のアライメントはサイズと等しい
     return ty;
 }
@@ -159,7 +159,7 @@ Type *new_type(TypeKind tykind) {
 Type *new_ptr_type(Type *ptr_to) {
     Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = TYPE_PTR;
-    ty->size = tykind_to_size(TYPE_PTR);
+    ty->size = typekind_to_size(TYPE_PTR);
     ty->alignment = ty->size;
     ty->ptr_to = ptr_to;
     return ty;
@@ -221,7 +221,7 @@ bool is_relationalnode(NodeKind kind) {
         kind == ND_LE);
 }
 
-TypeKind large_numtype(Type *t1, Type *t2) {
+TypeKind large_integer_type(Type *t1, Type *t2) {
     if (!is_integertype(t1->kind) || !is_integertype(t2->kind)) {
         error("整数の型ではありません。\n");
     }
@@ -234,7 +234,7 @@ TypeKind large_numtype(Type *t1, Type *t2) {
 }
 
 /* キャスト */
-bool can_type_cast(Type *ty, TypeKind to) {
+bool can_cast_type(Type *ty, TypeKind to) {
     TypeKind from = ty->kind;
 
     if (to == TYPE_VOID) {
@@ -290,7 +290,7 @@ void add_type(Node *node) {
 
         // 算術型
         if (is_integertype(then_t->kind) && is_integertype(els_t->kind)) {
-            node->type = new_type(large_numtype(then_t, els_t));
+            node->type = new_type(large_integer_type(then_t, els_t));
             return;
         }
 
@@ -357,7 +357,7 @@ void add_type(Node *node) {
             error("add_type() failure: type not found(ND_ASSIGN)");
         }
 
-        if (can_type_cast(node->rhs->type, node->lhs->type->kind)) {
+        if (can_cast_type(node->rhs->type, node->lhs->type->kind)) {
             node->type = node->lhs->type;
             return;
         }
@@ -397,7 +397,7 @@ void add_type(Node *node) {
     if (node->kind == ND_ADD) {
         Node *lhs = node->lhs, *rhs = node->rhs;
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 
@@ -418,7 +418,7 @@ void add_type(Node *node) {
         Node *lhs = node->lhs, *rhs = node->rhs;
 
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 
@@ -485,7 +485,7 @@ void add_type(Node *node) {
         node->kind == ND_RSHIFT) {
         Node *lhs = node->lhs, *rhs = node->rhs;
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 

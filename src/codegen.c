@@ -1,10 +1,7 @@
 #include "kcc.h"
 
 /*
- * ASTからスタックマシンを使ってアセンブリを生成する
- *
- * スタックマシンの使用
- *
+ * ASTからスタックマシンでアセンブリを生成する
  * 全てのノードは必ず一つだけの要素が残るようにpushする
  */
 
@@ -30,7 +27,7 @@ typedef enum RegKind {
     REG_RDI,
 } RegKind;
 
-static void delete_prototype_func() {
+static void delete_func_prototype() {
     for (int i = 0; i < funcs->len; i++) {
         Function *fn = funcs->body[i];
         if (fn->is_prototype) {
@@ -40,6 +37,7 @@ static void delete_prototype_func() {
     }
 }
 
+// 引数の番号とサイズから適切なレジスターの文字列を返す
 static char *get_argreg(int index, Type *ty) {
     if (ty->kind == TYPE_ARRAY)
         return argreg64[index];
@@ -57,7 +55,7 @@ static char *get_argreg(int index, Type *ty) {
     error("size: %d はサポートしてない引数です。", ty->size);
 }
 
-static int size_to_regindex(int size) {
+static int size_to_general_reg_index(int size) {
     if (size == 8) {
         return 0;  // 64bit
     } else if (size == 4) {
@@ -68,7 +66,7 @@ static int size_to_regindex(int size) {
         return 3;  // 8bit
     }
 
-    error("size_to_regindex() failure: [size=%d]サポートしてないレジスターのサイズです", size);
+    error("size_to_general_reg_index() failure: [size=%d]サポートしてないレジスターのサイズです", size);
 }
 
 static char *proper_register(Type *ty, RegKind kind) {
@@ -79,7 +77,7 @@ static char *proper_register(Type *ty, RegKind kind) {
         size = ty->size;
     }
 
-    int index = size_to_regindex(size);
+    int index = size_to_general_reg_index(size);
 
     if (kind == REG_RAX) {
         return raxreg[index];
@@ -111,7 +109,7 @@ static void pop_rdi() {
     printf("  pop rdi\n");
 }
 
-static void assign_lvar_offsets() {
+static void assign_local_var_offsets() {
     for (int i = 0; i < funcs->len; i++) {
         Function *fn = funcs->body[i];
         if (fn->locals->next_offset > 0) {
@@ -124,7 +122,7 @@ static void assign_lvar_offsets() {
 
 // 左辺値は変数である必要がある
 // ローカル変数のアドレスを生成
-static void gen_lval(Node *node) {
+static void gen_local_var(Node *node) {
     if (node->kind != ND_VAR) {
         error("代入の左辺値が変数ではありません");
     }
@@ -145,7 +143,7 @@ static void gen_addr(Node *node) {
         gen(node->lhs);
         return;
     } else if (node->kind == ND_VAR) {
-        gen_lval(node);
+        gen_local_var(node);
         return;
     } else if (node->kind == ND_ADD || node->kind == ND_SUB) {
         gen(node);
@@ -215,7 +213,7 @@ static void gen(Node *node) {
         push();
         return;
     } else if (node->kind == ND_VAR) {
-        gen_lval(node);
+        gen_local_var(node);
         pop();
         add_type(node);
         load(node->type);
@@ -642,10 +640,10 @@ static void gen(Node *node) {
 
 void codegen() {
     // 関数プロトタイプを削除
-    delete_prototype_func();
+    delete_func_prototype();
 
     // 各関数のoffsetを計算
-    assign_lvar_offsets();
+    assign_local_var_offsets();
 
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");

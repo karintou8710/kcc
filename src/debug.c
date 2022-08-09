@@ -1,6 +1,6 @@
 #include "kcc.h"
 
-static void recursion_line_printf(int depth, char *fmt, ...) {
+static void printf_with_space(int depth, char *fmt, ...) {
     va_list ap;
     int space_width = 4;
     va_start(ap, fmt);
@@ -231,19 +231,19 @@ void debug_node(Node *node, char *pos, int depth) {
         return;
     }
 
-    recursion_line_printf(depth, "[%s]\n", pos);
+    printf_with_space(depth, "[%s]\n", pos);
 
-    recursion_line_printf(depth, "");
+    printf_with_space(depth, "");
     print_node_kind(node->kind);
     puts("");
     debug_type(node->type, depth);
 
     if (node->kind == ND_NUM) {
-        recursion_line_printf(depth, "");
+        printf_with_space(depth, "");
         fprintf(stderr, "num -> %ld\n", node->val);
     } else if (node->kind == ND_VAR) {
-        recursion_line_printf(depth, "name -> %s\n", node->var->name);
-        recursion_line_printf(depth, "offset -> %d\n", node->var->offset);
+        printf_with_space(depth, "name -> %s\n", node->var->name);
+        printf_with_space(depth, "offset -> %d\n", node->var->offset);
     } else if (node->kind == ND_TERNARY) {
         debug_node(node->then, "then", depth + 1);
         debug_node(node->els, "els", depth + 1);
@@ -258,7 +258,7 @@ void debug_node(Node *node, char *pos, int depth) {
         }
         debug_node(node->body, "body", depth + 1);
     } else if (node->kind == ND_CASE || node->kind == ND_DEFAULT) {
-        recursion_line_printf(depth, "label_name -> %s\n", node->label_name);
+        printf_with_space(depth, "label_name -> %s\n", node->label_name);
         debug_node(node->body, "body", depth + 1);
     } else {
         debug_node(node->lhs, "lhs", depth + 1);
@@ -301,20 +301,20 @@ void debug_type(Type *ty, int depth) {
         return;
     }
 
-    recursion_line_printf(depth, "");
+    printf_with_space(depth, "");
     print_type_kind(ty->kind);
     puts("");
 
     if (ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION) {
-        recursion_line_printf(depth, "name -> %s\n", ty->name);
-        recursion_line_printf(depth, "size -> %d\n", ty->size);
+        printf_with_space(depth, "name -> %s\n", ty->name);
+        printf_with_space(depth, "size -> %d\n", ty->size);
         for (Var *member = ty->member; member; member = member->next) {
-            recursion_line_printf(depth, "member -> %s\n", member->name);
+            printf_with_space(depth, "member -> %s\n", member->name);
         }
     } else {
-        recursion_line_printf(depth, "size -> %d\n", ty->size);
-        recursion_line_printf(depth, "array_size -> %d\n", ty->array_size);
-        recursion_line_printf(depth, "is_constant -> %d\n", ty->is_constant);
+        printf_with_space(depth, "size -> %d\n", ty->size);
+        printf_with_space(depth, "array_size -> %d\n", ty->array_size);
+        printf_with_space(depth, "is_constant -> %d\n", ty->is_constant);
         debug_type(ty->ptr_to, depth + 1);
     }
 }

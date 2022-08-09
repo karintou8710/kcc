@@ -44,7 +44,7 @@ bool vec_contains(Vector *v, void *elem) {
     return false;
 }
 
-bool vec_union1(Vector *v, void *elem) {
+bool vec_union(Vector *v, void *elem) {
     if (vec_contains(v, elem))
         return false;
     vec_push(v, elem);

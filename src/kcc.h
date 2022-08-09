@@ -283,6 +283,7 @@ void *try_memory_allocation(size_t size);
 void copy_func(Function *to, Function *from);
 
 // debug.c
+// TODO: print_~は文字列を返すようにする
 void print_node_kind(NodeKind kind);
 void print_token_kind(TokenKind kind);
 void print_type_kind(TypeKind kind);
@@ -300,7 +301,7 @@ void *vec_pop(Vector *v);
 void *vec_last(Vector *v);
 void vec_delete(Vector *v, int index);
 bool vec_contains(Vector *v, void *elem);
-bool vec_union1(Vector *v, void *elem);
+bool vec_union(Vector *v, void *elem);
 void vec_concat(Vector *to, Vector *from);
 
 // type.c
@@ -311,16 +312,16 @@ void add_type(Node *node);
 int sizeof_type(Type *ty);
 size_t alignof_type(Type *ty);
 int array_base_type_size(Type *ty);
-void apply_align_struct(Type *ty);
+void apply_align_to_struct(Type *ty);
 bool is_integertype(TypeKind kind);
 bool is_scalartype(TypeKind kind);
 bool is_relationalnode(NodeKind kind);
-TypeKind large_numtype(Type *t1, Type *t2);
-bool can_type_cast(Type *ty, TypeKind to);
+TypeKind large_integer_type(Type *t1, Type *t2);
+bool can_cast_type(Type *ty, TypeKind to);
 bool is_same_type(Type *ty1, Type *ty2);
 Tag *new_tag(Type *type);
 void copy_type(Type *to, Type *from);
-void copy_type_shallow(Type *to, Type *from);
+void shallowcopy_type(Type *to, Type *from);
 void calc_type_size(Type *type);
 Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic, char *name);
 

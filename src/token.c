@@ -24,7 +24,7 @@ static Token *new_token(int kind, Token *cur, char *str, int len) {
     return tok;
 }
 
-static char escape_single_letter(char *p) {
+static char decode_escaped_letter(char *p) {
     for (int i = 0; i < sizeof(escape_letters) / sizeof(char[2]); i++) {
         if (escape_letters[i][0] == *p) {
             return escape_letters[i][1];
@@ -337,7 +337,7 @@ Token *tokenize(char *p) {
             if (*p == '\\') {
                 cur = new_token(TK_NUM, cur, p, 2);
                 p++;
-                cur->val = escape_single_letter(p);
+                cur->val = decode_escaped_letter(p);
                 p++;
             } else {
                 cur = new_token(TK_NUM, cur, p, 1);
