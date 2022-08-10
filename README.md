@@ -1,5 +1,6 @@
 # kcc
 
+セルフホストを達成した C89 サブセットのコンパイラーです。
 Rui Ueyama さんの「低レイヤを知りたい人のための C コンパイラ作成入門」
 を参考に開発しています。
 
@@ -24,11 +25,19 @@ $ git clone https://github.com/karintou8710/kcc
 $ cd kcc
 $ make
 
-# test
+# test 1st generation
+$ make test1
+
+# test all generation and selfhost
 $ make testall
 
-# diff between gen2 and gen3
+# test selfhost
 $ make diff
+
+# run any code with 1st generation
+# recommend to use [#include "input.h"]
+$ vi input.c
+$ make run1
 ```
 
 ## BNF

@@ -2,7 +2,7 @@
 
 COMPILER=$1
 # SRCのファイルを実行する
-SRC=test_exec.c
+SRC=input.c
 DUMMY_LIB_DIR=selfhost/dummy_headers
 SUCCESS=0
 FAILURE=1
