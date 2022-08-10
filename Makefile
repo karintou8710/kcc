@@ -1,7 +1,7 @@
 CC=gcc
 CLANG=clang -fsanitize=address -fno-omit-frame-pointer
 AS=as
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g
 
 SRCS=$(wildcard src/*.c)
 HEADERS=$(wildcard src/*.h)

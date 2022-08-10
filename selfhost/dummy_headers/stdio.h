@@ -1,6 +1,8 @@
 #ifndef STDIO_H
 #define STDIO_H
 
+#include "stdarg.h"
+
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 

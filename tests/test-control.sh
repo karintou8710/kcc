@@ -27,7 +27,7 @@ do
         exit $FAILURE
     fi
 
-    cc -static -o tmp tmp.s
+    cc -o tmp tmp.s
     ./tmp
 
     ERRCHK=$?

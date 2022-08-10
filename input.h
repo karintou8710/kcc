@@ -1,7 +1,14 @@
 #include <ctype.h>
+#include <curses.h>
 #include <errno.h>
+#include <ncurses.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
