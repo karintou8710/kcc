@@ -20,6 +20,7 @@ typedef enum TypeKind TypeKind;
 typedef enum NodeKind NodeKind;
 typedef enum TokenKind TokenKind;
 typedef enum StorageClass StorageClass;
+typedef enum WordColor WordColor;
 
 enum StorageClass {
     UNKNOWN,  // NULL。callcでzero初期化するために使う
@@ -135,6 +136,18 @@ enum NodeKind {
     ND_SWITCH,         // switch
     ND_CASE,           // case
     ND_DEFAULT,        // default
+};
+
+// bashの文字色の番号
+enum WordColor {
+    BLACK_WORD = 30,
+    RED_WORD = 31,
+    GREEN_WORD = 32,
+    YELLOW_WORD = 33,
+    BLUE_WORD = 34,
+    MAGENTA_WORD = 35,
+    CYAN_WORD = 36,
+    WHITE_WORD = 37,
 };
 
 struct Vector {
@@ -281,6 +294,8 @@ char *my_strndup(char *s, size_t n);
 void swap(void **p, void **q);
 void *try_memory_allocation(size_t size);
 void copy_func(Function *to, Function *from);
+void change_word_color(WordColor color_number);
+void reset_word_color();
 
 // debug.c
 // TODO: print_~は文字列を返すようにする

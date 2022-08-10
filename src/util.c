@@ -13,6 +13,14 @@ void error(char *fmt, ...) {
     exit(EXIT_FAILURE);
 }
 
+void change_word_color(WordColor color_number) {
+    fprintf(stderr, "\e[%dm", color_number);
+}
+
+void reset_word_color() {
+    fprintf(stderr, "\e[m");
+}
+
 // エラー箇所を報告する
 // format
 // foo.c:10: x = y + + 5;
@@ -36,16 +44,21 @@ void error_at(char *loc, char *fmt, ...) {
 
     // 見つかった行を、ファイル名と行番号と一緒に表示
     int indent = fprintf(stderr, "%s:%d: ", file_name, line_num);
+
+    change_word_color(YELLOW_WORD);
+
     fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
     // エラー箇所を"^"で指し示して、エラーメッセージを表示
     int pos = loc - line + indent;
     fprintf(stderr, "%*s", pos, "");  // pos個の空白を出力
-    fprintf(stderr, "^ ");
+    fprintf(stderr, "^   ");
+
+    reset_word_color();
+
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
-    // vfprintf(stderr, fmt, ap);
     printf("\n");
 
     exit(EXIT_FAILURE);
