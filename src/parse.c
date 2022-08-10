@@ -137,9 +137,7 @@ static void expect(int op) {
         if (op == TK_TYPE) {
             error_at(token->str, "expect() failure: 適当な位置に型がありません");
         }
-        char msg[100];
-        snprintf(msg, 100, "expect() failure: 「%c」ではありません。", op);
-        error_at(token->str, msg);
+        error_at(token->str, "expect() failure: 「%c」ではありません。", op);
     }
     next_token();
 }
@@ -149,10 +147,7 @@ static void expect_nostep(int op) {
         if (op == TK_TYPE) {
             error_at(token->str, "expect_nostep() failure: 適当な位置に型がありません");
         }
-
-        char msg[100];
-        snprintf(msg, 100, "expect_nostep() failure: 「%c」ではありません。", op);
-        error_at(token->str, msg);
+        error_at(token->str, "expect_nostep() failure: 「%c」ではありません。", op);
     }
 }
 
@@ -167,7 +162,7 @@ static long expect_number() {
 
 static void expect_no_storage() {
     if (current_storage != UNKNOWN) {
-        error("expect_no_storage() failure: 記憶子が複数定義されています");
+        error_at(token->str, "expect_no_storage() failure: 記憶子が複数定義されています");
     }
 }
 
@@ -427,10 +422,10 @@ Function *find_func(char *name) {
 static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *op, int len) {
     int max_digit = 50;
     if (gl->str && gr->str) {
-        error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
+        error_at(token->str, "eval_binary_op() failure: オペランドが不適切です [%s]", op);
     } else if (gl->str && !gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
-            error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
+            error_at(token->str, "eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = gl->len + max_digit + len + 1;
         char *buf = try_memory_allocation(sizeof(char) * buf_size);
@@ -439,7 +434,7 @@ static void eval_binary_op(GlobalInit *g, GlobalInit *gl, GlobalInit *gr, char *
         g->len = buf_size;
     } else if (!gl->str && gr->str) {
         if (strcmp(op, "+") != 0 && strcmp(op, "-") != 0) {
-            error("eval_binary_op() failure: オペランドが不適切です [%s]", op);
+            error_at(token->str, "eval_binary_op() failure: オペランドが不適切です [%s]", op);
         }
         int buf_size = max_digit + gr->len + len + 1;
         char *buf = try_memory_allocation(sizeof(char) * buf_size);
@@ -581,7 +576,7 @@ static GlobalInit *eval(Node *node) {
         return g;
     }
 
-    error("eval() failure: %d 未対応のNodeタイプです", node->kind);
+    error_at(token->str, "eval() failure: %d 未対応のNodeタイプです", node->kind);
 }
 
 /*** other func ***/
@@ -975,7 +970,7 @@ static Node *should_new_node_var(Token *tok) {
     Node *node = new_node(ND_VAR);
     node->var = find_allscope_var(tok);
     if (node->var == NULL) {
-        error("should_new_node_var() failure: %sは宣言されていません", my_strndup(tok->str, tok->len));
+        error_at(tok->str, "should_new_node_var() failure: %sは宣言されていません", my_strndup(tok->str, tok->len));
     }
     return node;
 }
@@ -1072,9 +1067,9 @@ static Node *declaration_var(Type *type) {
     // 変数
     if (consume('=')) {
         if (current_storage == STORAGE_TYPEDEF) {
-            error("declaration_var() failure: typedef中で初期化はできません");
+            error_at(token->str, "declaration_var() failure: typedef中で初期化はできません");
         } else if (current_storage == STORAGE_EXTERN) {
-            error("declaration_var() failure: extern中で初期化はできません");
+            error_at(token->str, "declaration_var() failure: extern中で初期化はできません");
         }
 
         Initializer *init = new_initializer(node->var);
@@ -1082,7 +1077,7 @@ static Node *declaration_var(Type *type) {
     }
 
     if (node->var->type->kind == TYPE_ARRAY && sizeof_type(node->var->type) == 0) {
-        error("declaration_var() failure: 宣言で配列の添え字は省略できません");
+        error_at(token->str, "declaration_var() failure: 宣言で配列の添え字は省略できません");
     }
 
     return node;
@@ -1163,7 +1158,7 @@ static void initialize_string(Initializer *init) {
     init->children = try_memory_allocation(sizeof(Initializer) * ty->array_size);
     init->len = ty->array_size;
     if (init->len < token->len) {
-        error("initialize_string() failure: 文字列が長すぎます");
+        error_at(token->str, "initialize_string() failure: 文字列が長すぎます");
     }
     for (int i = 0; i < init->len; i++) {
         (init->children + i)->var = init->var;
@@ -1184,7 +1179,7 @@ static void initialize_struct(Initializer *init) {
     Type *ty = init->type;
 
     if (ty->member == NULL) {
-        error("initialize_struct() failure: 未定義の構造体です");
+        error_at(token->str, "initialize_struct() failure: 未定義の構造体です");
     }
 
     int member_num = count_var(ty->member);
@@ -1303,11 +1298,11 @@ static Type *declarator2(Type *type) {
 static Node *declarator_var(Type *type) {
     type = declarator(type);
     if (type->token == NULL) {
-        error("declarator() failure: type->token == NULL");
+        error_at(token->str, "declarator() failure: 識別子が定義されていません");
     }
     Node *node = declear_node_ident(type->token, type);
-    // 新しい型のオフセットにする
 
+    // 新しい型のオフセットにする
     node->var->offset += sizeof_type(node->var->type);
     return node;
 }
@@ -1315,7 +1310,7 @@ static Node *declarator_var(Type *type) {
 static void declarator_struct(Type *member_type, Type *struct_type) {
     member_type = declarator(member_type);
     if (member_type->token == NULL) {
-        error("declarator() failure: member_type->token == NULL");
+        error_at(token->str, "declarator() failure: メンバーの識別子が定義されていません");
     }
     new_struct_member(member_type->token, member_type, struct_type);
 }
@@ -1346,7 +1341,7 @@ static Var *declarator_param(Type *type, Var *cur) {
 static Type *abstruct_declarator(Type *type) {
     type = declarator(type);
     if (type->token) {
-        error("declarator() failure: 型のみ定義する構文で変数名が定義されています");
+        error_at(token->str, "declarator() failure: 型のみ定義する構文で変数名が定義されています");
     }
     return type;
 }
@@ -1428,7 +1423,7 @@ static Type *type_specifier(int *flag) {
         char *name = my_strndup(tok->str, tok->len);
         Type *t = find_typedef_alias(name);
         if (t == NULL) {
-            error("find_typedef_alias() failure: %sは定義されていません", name);
+            error_at(token->str, "find_typedef_alias() failure: %sは定義されていません", name);
         }
         type = try_memory_allocation(sizeof(Type));
         copy_type(type, t);
@@ -1441,11 +1436,11 @@ static Type *type_specifier(int *flag) {
             } else if (type->kind == TYPE_ENUM) {
                 stag_local = find_local_enum_type(type->name), stag_global = find_global_enum_type(type->name);
             } else {
-                error("type_specifier() failure: 不正な前方宣言の型です");
+                error_at(token->str, "type_specifier() failure: 不正な前方宣言の型です");
             }
             Tag *stag = stag_local ? stag_local : stag_global;
             if (stag == NULL) {
-                error("find_~_type() failure: 前方宣言の構造体がありません");
+                error_at(token->str, "find_~_type() failure: 前方宣言の構造体がありません");
             }
             vec_push(stag->forward_type, type);
         }
@@ -1492,7 +1487,7 @@ static Type *type_specifier(int *flag) {
         *flag |= UNSIGNED;
         return NULL;
     } else {
-        error("type_specifier() failure: 適切な型ではありません");
+        error_at(token->str, "type_specifier() failure: 適切な型ではありません");
     }
 
     if (type->kind == TYPE_STRUCT && consume('{')) {
@@ -1711,7 +1706,7 @@ static Var *enumerator(Type *type, int *enum_const_num) {
     if (consume('=')) {
         GlobalInit *el = eval(conditional());
         if (el->str) {
-            error("enumerator() failure: 数値型の定数ではありません");
+            error_at(token->str, "enumerator() failure: 数値型の定数ではありません");
         }
         var->val = el->val;
         *enum_const_num = el->val + 1;
@@ -1750,7 +1745,7 @@ static Var *declaration_params(bool *is_variadic) {
 
         if (consume(TK_VARIADIC)) {
             if (cur == &head) {
-                error("declaration_params() failure: ...は第一引数に設定できません");
+                error_at(token->str, "declaration_params() failure: ...は第一引数に設定できません");
             }
 
             *is_variadic = true;
@@ -1770,7 +1765,7 @@ static Var *declaration_params(bool *is_variadic) {
         if (p->name) {
             char *name = my_strndup(p->name, p->len);
             if (find_params(name, head.next)) {
-                error("find_params() error: 既に%sは定義されています", name);
+                error_at(token->str, "find_params() failure: 既に%sは定義されています", name);
             }
         }
 
@@ -1790,12 +1785,12 @@ static void func_define(Type *type) {
     Token *tok = type->token;
 
     // プロトタイプ宣言は複数定義を許可する
+    fn->name = my_strndup(tok->str, tok->len);
     Var *v = find_global_var(tok);
     if (v && !v->type->is_forward) {
-        error("func_define() failure: 既に%sは定義されています", fn->name);
+        error_at(tok->str, "func_define() failure: 既に%sは定義されています", fn->name);
     }
 
-    fn->name = my_strndup(tok->str, tok->len);
     fn->ret_type = type->ptr_to;
     fn->params = type->params;  // 前から見ていく
     fn->is_variadic = type->is_variadic;
@@ -1815,7 +1810,7 @@ static void func_define(Type *type) {
 
         if (!is_same_params(fn->params, entry->params) ||
             !is_same_type(fn->ret_type, entry->ret_type)) {
-            error("func_define() failure: 異なる型でのプロトタイプ宣言です");
+            error_at(tok->str, "func_define() failure: 異なる型でのプロトタイプ宣言です");
         }
 
         return;
@@ -1823,20 +1818,16 @@ static void func_define(Type *type) {
 
     // 定義
     if (entry) {
-        if (!entry->is_prototype) {
-            error("func_define() failure: 既に%sは定義されています", fn->name);
-        }
-
         if (!is_same_params(fn->params, entry->params) ||
             !is_same_type(fn->ret_type, entry->ret_type)) {
-            error("func_define() failure: %sは異なる型での宣言です", fn->name);
+            error_at(tok->str, "func_define() failure: %sは異なる型での宣言です", fn->name);
         }
     }
 
     // 定義では型だけの引数を許容しない
     for (Var *v = fn->params; v; v = v->next) {
         if (v->is_only_type)
-            error("func_define() failure: 引数の定義には変数名が必要です");
+            error_at(tok->str, "func_define() failure: 引数の定義には変数名が必要です");
     }
 
     /* 再帰関数用に先に登録する */
@@ -1932,7 +1923,7 @@ static Node *stmt() {
             node->lhs = expr();
             add_type(node->lhs);
             if (!can_cast_type(node->lhs->type, cur_parse_func->ret_type->kind)) {
-                error("stmt() failure: can_cast_type fail");
+                error_at(token->str, "stmt() failure: can_cast_type() が失敗しました");
             }
 
             if (cur_parse_func->ret_type->kind == TYPE_VOID) {
@@ -1974,10 +1965,11 @@ static Node *stmt() {
         if (consume_type_nostep(token)) {
             // <declaration>
             Type *type = declaration_specifier();
+            // TODO: 初期化部分で構造体の定義を禁止に
             if ((type->kind == TYPE_STRUCT || type->kind == TYPE_UNION || type->kind == TYPE_ENUM) &&
                 consume_nostep('{')) {
                 // 構造体か列挙型の作成
-                error("stmt() failure: failure");
+                error_at(token->str, "stmt() failure: forの初期化部分でタグの作成はできません");
             }
             node->init = declaration(type);
         } else {
@@ -2037,7 +2029,7 @@ static Node *stmt() {
 static Node *labeld() {
     if (consume(TK_CASE)) {
         if (node_in_switch == NULL) {
-            error("labeld() failure: switch文の中でcaseが宣言されていません");
+            error_at(token->str, "labeld() failure: caseがswitch文の中にありません");
         }
         switch_label_cnt++;
 
@@ -2053,7 +2045,7 @@ static Node *labeld() {
         return node;
     } else if (consume(TK_DEFAULT)) {
         if (node_in_switch == NULL) {
-            error("labeld() failure: switch文の中でdefaultが宣言されていません");
+            error_at(token->str, "labeld() failure: switch文の中でdefaultが宣言されていません");
         }
         switch_label_cnt++;
         Node *node = new_node(ND_DEFAULT);
@@ -2067,7 +2059,7 @@ static Node *labeld() {
         return node;
     }
 
-    error("labeld() failure: 不正なトークンです");
+    error_at(token->str, "labeld() failure: 不正なトークンです");
 }
 
 /*
@@ -2315,7 +2307,7 @@ static Node *cast() {
         if (can_cast_type(node->type, type->kind)) {
             node = new_cast(node, type);
         } else {
-            error("can_cast_type() failure: 型のキャストに失敗しました");
+            error_at(token->str, "can_cast_type() failure: 型のキャストに失敗しました");
         }
 
         return node;
@@ -2410,7 +2402,7 @@ static Node *postfix() {
             expect(TK_IDENT);
             add_type(node);
             if (node->type->kind != TYPE_STRUCT && node->type->kind != TYPE_UNION) {
-                error("postfix() failure: struct or union型ではありません。");
+                error_at(tok->str, "postfix() failure: struct or union型ではありません。");
             }
             Var *member = node->type->member;
             while (member) {
@@ -2427,7 +2419,7 @@ static Node *postfix() {
             }
 
             if (member == NULL) {
-                error("postfix() failure: %s構造体が定義されていません。", my_strndup(tok->str, tok->len));
+                error_at(tok->str, "postfix() failure: %sメンバーが定義されていません。", my_strndup(tok->str, tok->len));
             }
 
             continue;
@@ -2460,7 +2452,7 @@ static Node *postfix() {
 static Node *funcall(Node *node) {
     add_type(node);
     if (!is_callable(node->type)) {
-        error("funcalL() failure: 関数ポインター・関数以外を呼びだそうとしています。");
+        error_at(token->str, "funcalL() failure: 関数ポインター・関数以外を呼びだそうとしています。");
     }
 
     Node *node_call = new_node(ND_CALL);
@@ -2487,7 +2479,7 @@ static Node *funcall(Node *node) {
         node_call->fn_name = "";
         node_call->lhs = node;
     } else {
-        error("funcall() failure: unreachable");
+        error_at(token->str, "funcall() failure: unreachable");
     }
 
     if (strcmp(node_call->fn_name, "va_start") == 0) {
@@ -2499,13 +2491,13 @@ static Node *funcall(Node *node) {
 
         // 仮引数のサイズ
         if (node_call->args->len != 2) {
-            error("funcall() failure: va_start args len != 2");
+            error_at(token->str, "funcall() failure: va_start args len != 2");
         }
 
         // __builtin_va_list構造体が定義されているか
         Tag *tag = find_global_struct_type("__builtin_va_list");
         if (tag == NULL) {
-            error("find_global_struct_type() failure: __builtin_va_listが未定義です");
+            error_at(token->str, "find_global_struct_type() failure: __builtin_va_listが未定義です");
         }
         // struct __builtin_va_list *
         Type *t = new_ptr_type(tag->base_type);
@@ -2584,7 +2576,7 @@ static Node *primary() {
 
     if (token->kind == TK_EOF) {
         // TK_EOFはtoken->strが入力を超える位置になる
-        error("primary() failure: 不正なコードです。");
+        error_at(token->str, "primary() failure: 不正なコードです。");
     }
     error_at(token->str, "primary() failure: 不正なトークンです。");
 }
@@ -2592,7 +2584,7 @@ static Node *primary() {
 static long const_expr() {
     GlobalInit *g = eval(expr());
     if (g->len > 0) {
-        error("const_expr() failure: 定数ではありません");
+        error_at(token->str, "const_expr() failure: 定数ではありません");
     }
     return g->val;
 }
