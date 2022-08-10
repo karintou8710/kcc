@@ -30,7 +30,7 @@ static char decode_escaped_letter(char *p) {
             return escape_letters[i][1];
         }
     }
-    error("single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
+    error_at(p, "single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
 }
 
 static void skip_space(char **p) {
