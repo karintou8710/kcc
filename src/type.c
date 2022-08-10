@@ -329,7 +329,7 @@ void add_type(Node *node) {
     }
 
     if (node->kind == ND_STRING) {
-        node->type = new_ptr_type(new_type(TYPE_CHAR));
+        node->type = new_array_type(new_type(TYPE_CHAR), strlen(node->str_literal) + 1);
         return;
     }
 

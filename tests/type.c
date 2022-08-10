@@ -307,6 +307,7 @@ int main() {
     ASSERT(8, sizeof(long), "sizeof(long)");
     ASSERT(8, sizeof(int(*(*)[20])[10]), "sizeof(int (*(*)[20])[10])");
     ASSERT(80, sizeof(_Bool(*[10])[]), "sizeof(_Bool(*[10])[])");
+    ASSERT(10, sizeof("123456789"), "sizeof(\"123456789\")");
 
     ASSERT(1000000000000010, long1(), "long1");
     ASSERT(127, long2(), "long2");
