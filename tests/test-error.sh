@@ -22,10 +22,10 @@ run() {
 
     debug "$COMPILER start compileing \"$input\""
     pre=`echo $src | sed -e 's/\.c/\.i/g'`
-    cpp $src > $pre
+    cpp -w $src > $pre
     ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $pre >/dev/null 2>&1
     ERRCHK=$?
-    if [ $ERRCHK -eq $SUCCESS ]; then
+    if [ $ERRCHK -ne $FAILURE ]; then
         debug "error: $COMPILER passed invalid code"
         exit $FAILURE
     fi
@@ -35,6 +35,7 @@ run "int main() {return 0}"
 run "int main() {int a;int a;}"
 run "int main() {struct A {}; struct A{};}"
 run "int main() {a int = 1;}"
+run "int main() {\";}"
 
 # const
 run "int main() {const int a = 1; a = 2;}"
@@ -60,5 +61,7 @@ run "int test(){} int test; int main() {return 0;}"
 
 # func pointer
 run "int f() {}int main() {long *a = f;int res = a();return 0;}"
+
+
 
 echo "test-error.sh success!"

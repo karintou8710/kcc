@@ -323,6 +323,9 @@ Token *tokenize(char *p) {
                 len++;
                 p++;
             }
+            if (*p == '\0') {
+                error_at(q, "tokinize() failure: 「\"」で閉じていません");
+            }
             p++;
             cur->str = my_strndup(q, len);
             cur->len = strlen(cur->str);
