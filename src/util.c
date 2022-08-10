@@ -8,6 +8,12 @@ void assert(int n) {
 void error(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
+
+    // エラーメッセージだと示す
+    change_word_color(RED_WORD);
+    fprintf(stderr, "::error messages::\n");
+    reset_word_color();
+
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
@@ -41,6 +47,11 @@ void error_at(char *loc, char *fmt, ...) {
     for (char *p = user_input; p < line; p++)
         if (*p == '\n')
             line_num++;
+
+    // エラーメッセージだと示す
+    change_word_color(RED_WORD);
+    fprintf(stderr, "::error messages::\n");
+    reset_word_color();
 
     // 見つかった行を、ファイル名と行番号と一緒に表示
     int indent = fprintf(stderr, "%s:%d: ", file_name, line_num);
