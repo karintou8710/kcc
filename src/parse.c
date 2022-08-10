@@ -744,7 +744,7 @@ static Node *new_node(NodeKind kind) {
 static Node *new_binop(NodeKind kind, Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
-    Node *node = try_memory_allocation(sizeof(Node));
+    Node *node = new_node(kind);
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
