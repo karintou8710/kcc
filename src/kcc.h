@@ -275,7 +275,7 @@ void str_advance(char **p);
 void next_token();
 Token *get_nth_token(int n);
 bool starts_with(char *p, char *q);
-void error_at(char *loc, char *msg);
+void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 char *my_strndup(char *s, size_t n);
 void swap(void **p, void **q);

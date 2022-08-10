@@ -17,7 +17,10 @@ void error(char *fmt, ...) {
 // format
 // foo.c:10: x = y + + 5;
 //                   ^ 式ではありません
-void error_at(char *loc, char *msg) {
+void error_at(char *loc, char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+
     char *line = loc;
     while (user_input < line && line[-1] != '\n')
         line--;
@@ -38,7 +41,10 @@ void error_at(char *loc, char *msg) {
     // エラー箇所を"^"で指し示して、エラーメッセージを表示
     int pos = loc - line + indent;
     fprintf(stderr, "%*s", pos, "");  // pos個の空白を出力
-    fprintf(stderr, "^ %s\n", msg);
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(EXIT_FAILURE);
     // vfprintf(stderr, fmt, ap);
     printf("\n");
 

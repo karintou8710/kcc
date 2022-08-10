@@ -72,14 +72,14 @@ Token *tokenize(char *p) {
                 char *q = p;
                 skip_to_target(&p, '"');
                 if (*p != '"') {
-                    error("tokenize() failure: 「\"」で閉じていません。");
+                    error_at(q, "tokenize() failure: 「\"」で閉じていません。");
                 }
                 cur->str = my_strndup(q, p - q);
                 cur->len = p - q + 1;
 
                 p++;
             } else {
-                error("tokenize() failure: \", <で始まっていません");
+                error_at(p, "tokenize() failure: \", <で始まっていません");
             }
             continue;
         }
@@ -345,7 +345,7 @@ Token *tokenize(char *p) {
                 p++;
             }
             if (*p != '\'') {
-                error("tokenize() failure: 「'」で閉じていません。");
+                error_at(p, "tokenize() failure: 「'」で閉じていません。");
             }
             p++;
             continue;

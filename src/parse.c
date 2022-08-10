@@ -1358,7 +1358,7 @@ static Type *abstruct_declarator(Type *type) {
  */
 static Type *declaration_specifier() {
     if (!consume_type_nostep(token)) {
-        error("declaration_specifier() failure: 型キーワードではありません");
+        error_at(token->str, "declaration_specifier() failure: 型キーワードではありません");
     }
     Type *type = NULL;
     int flag = 0;
