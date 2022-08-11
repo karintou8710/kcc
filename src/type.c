@@ -23,12 +23,16 @@ static int typekind_to_size(TypeKind tykind) {
     error("typekind_to_size() failure: 存在しないまたは固定長ではない型です");
 }
 
-int array_base_type_size(Type *ty) {
+static Type *array_base_type(Type *ty) {
     if (ty->kind == TYPE_ARRAY) {
-        return array_base_type_size(ty->ptr_to);
+        return array_base_type(ty->ptr_to);
     }
 
-    return ty->size;
+    return ty;
+}
+
+int array_base_type_size(Type *ty) {
+    return array_base_type(ty)->size;
 }
 
 // sizeofの実装
@@ -316,6 +320,12 @@ void add_type(Node *node) {
                 error("add_type() failure: 異なる共用体型です (ND_TERNARY)");
             }
             node->type = then_t;
+            return;
+        }
+
+        if (then_t->kind == TYPE_ARRAY && els_t->kind == TYPE_ARRAY) {
+            // TODO: 適切な型に変換
+            node->type = new_ptr_type(new_type(TYPE_VOID));
             return;
         }
 
