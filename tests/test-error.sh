@@ -5,13 +5,23 @@ DUMMY_LIB_DIR=selfhost/dummy_headers
 SUCCESS=0
 FAILURE=1
 
-debug() {
+p () {
     FILENAME=`basename "$0"`
     echo "$FILENAME: $1"
 }
 
+error() {
+    # red color
+    p "\033[31m$1\033[m"
+}
+
+success() {
+    # green color
+    p "\033[32m$1\033[m"
+}
+
 if [ ! -e "$COMPILER" ]; then
-    debug "./$COMPILER does not exist"
+    error "./$COMPILER does not exist"
     exit $FAILURE
 fi
 
@@ -20,13 +30,13 @@ run() {
     src="tmp.c"
     echo "$input" > $src
 
-    debug "$COMPILER start compileing \"$input\""
+    p "$COMPILER start compileing \"$input\""
     pre=`echo $src | sed -e 's/\.c/\.i/g'`
     cpp -w $src > $pre
     ASAN_OPTIONS=detect_leaks=0 ./$COMPILER $pre >/dev/null 2>&1
     ERRCHK=$?
     if [ $ERRCHK -ne $FAILURE ]; then
-        debug "error: $COMPILER passed invalid code"
+        error "$COMPILER passed invalid code"
         exit $FAILURE
     fi
 }
@@ -77,4 +87,4 @@ run "int f() {}int main() {long *a = f;int res = a();return 0;}"
 
 
 
-echo "test-error.sh success!"
+success "test-error.sh success!"
