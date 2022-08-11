@@ -146,6 +146,14 @@ int globalstruct7() {
     return b3.a;
 }
 
+struct E {
+    int a, b, c;
+} e1;
+int globalstruct8() {
+    e1.a = 10, e1.b = 20, e1.c = 30;
+    return e1.a == 10 && e1.b == 20 && e1.c == 30;
+}
+
 enum enumA {
     A = 10,
     B,

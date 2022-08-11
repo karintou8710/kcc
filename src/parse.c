@@ -1667,11 +1667,15 @@ static Type *type_suffix(Type *type, bool is_first) {
 }
 
 /*
- *  <struct_declaration> = <declaration_specifier> <declarator> ";"
+ *  <struct_declaration> = <declaration_specifier> <declarator> ("," <declarator>)* ";"
  */
 Type *struct_declaration(Type *type) {
     Type *t = declaration_specifier();
     declarator_struct(t, type);
+    while (consume(',')) {
+        declarator_struct(t, type);
+    }
+
     expect(';');
     return type;
 }

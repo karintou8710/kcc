@@ -350,6 +350,32 @@ int struct_anonymous2() {
     return test.member1.a + test.member2.a;
 }
 
+int struct_comma1() {
+    struct A {
+        int a, b, c;
+    } s;
+    s.a = 10, s.b = 20, s.c = 30;
+    return s.a == 10 && s.b == 20 && s.c == 30;
+}
+
+int struct_comma2() {
+    struct A {
+        int a, b;
+        int c;
+    } s = {
+        1, 2, 3};
+    return s.a == 1 && s.b == 2 && s.c == 3;
+}
+
+int struct_comma3() {
+    int var = 10;
+    struct A {
+        int *a, b, c[2], (*d)(void);
+    } s = {
+        &var, var, {1, 2}, struct_comma2};
+    return *s.a == 10 && s.b == 10 && s.c[0] == 1 && s.c[1] == 2 && s.d() == 1;
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -379,6 +405,10 @@ int main() {
 
     ASSERT(20, struct_anonymous1(), "struct_anonymous1()");
     ASSERT(30, struct_anonymous2(), "struct_anonymous2()");
+
+    ASSERT(1, struct_comma1(), "struct_comma1()");
+    ASSERT(1, struct_comma2(), "struct_comma2()");
+    ASSERT(1, struct_comma3(), "struct_comma3()");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;

@@ -72,7 +72,7 @@ $ make run1
 <type_suffix> = "[" <const_expr>? "]" <type_suffix>
               | "(" (<declaration_param> ("," <declaration_param>)* ("," "...")? | "void" | ε)  ")" <type_suffix>
               | ε
-<struct_declaration> = <declaration_specifier> <declarator> ";"
+<struct_declaration> = <declaration_specifier> <declarator> ("," <declarator>)* ";"
 <enumerator_list> = <enumerator> (",", <enumerator>)* ","?
 <enumerator> = <ident>
              | <ident> "=" <conditional>
