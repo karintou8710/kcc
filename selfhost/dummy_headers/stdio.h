@@ -72,6 +72,8 @@ int fscanf(FILE *stream, char *format, ...);
 int sscanf(char *str, char *format, ...);
 int sprintf(char *str, char *format, ...);
 int vsprintf(char *s, char *format, va_list arg);
+int fileno(const FILE *stream);
+int putchar(int c);
 
 extern FILE *stdin;
 extern FILE *stdout;

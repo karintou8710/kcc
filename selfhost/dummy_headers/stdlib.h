@@ -12,5 +12,8 @@ void free(void *ptr);
 void srand(unsigned int seed);
 int rand(void);
 int system(const char *command);
+char *realpath(const char *p1, char *p2);
+long int random(void);
+void srandom(unsigned int);
 
 #endif

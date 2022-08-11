@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <stdarg.h>
