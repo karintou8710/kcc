@@ -194,6 +194,11 @@ int assign13() {
     ((*(b + 1))) = 10;
     return a[1];
 }
+int assign14() {
+    int a = 0, b = 1, c = 2;
+    a = b -= c *= c;
+    return a;
+}
 // if else
 int if_else1() {
     if (1)
@@ -791,6 +796,7 @@ int main() {
     ASSERT(4, assign11(), "assign11");
     ASSERT(1, assign12(), "assign12");
     ASSERT(10, assign13(), "assign13");
+    ASSERT(-3, assign14(), "assign14");
 
     ASSERT(4, if_else1(), "if_else1");
     ASSERT(6, if_else2(), "if_else2");

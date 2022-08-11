@@ -2102,33 +2102,33 @@ static Node *expr() {
 }
 
 /*
- *  <assign> = <conditional> ("=" <assign>)?
- *           | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" ) <conditional>
+ *  <assign> = <conditional>
+ *           | <conditional> ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <assign>
  */
 static Node *assign() {
     Node *node = conditional();
     if (consume('=')) {
         node = new_assign(node, assign());
     } else if (consume(TK_ADD_EQ)) {
-        node = new_assign(node, new_add(node, conditional()));
+        node = new_assign(node, new_add(node, assign()));
     } else if (consume(TK_SUB_EQ)) {
-        node = new_assign(node, new_sub(node, conditional()));
+        node = new_assign(node, new_sub(node, assign()));
     } else if (consume(TK_MUL_EQ)) {
-        node = new_assign(node, new_mul(node, conditional()));
+        node = new_assign(node, new_mul(node, assign()));
     } else if (consume(TK_DIV_EQ)) {
-        node = new_assign(node, new_div(node, conditional()));
+        node = new_assign(node, new_div(node, assign()));
     } else if (consume(TK_MOD_EQ)) {
-        node = new_assign(node, new_mod(node, conditional()));
+        node = new_assign(node, new_mod(node, assign()));
     } else if (consume(TK_AND_EQ)) {
-        node = new_assign(node, new_binop(ND_AND, node, conditional()));
+        node = new_assign(node, new_binop(ND_AND, node, assign()));
     } else if (consume(TK_OR_EQ)) {
-        node = new_assign(node, new_binop(ND_OR, node, conditional()));
+        node = new_assign(node, new_binop(ND_OR, node, assign()));
     } else if (consume(TK_XOR_EQ)) {
-        node = new_assign(node, new_binop(ND_XOR, node, conditional()));
+        node = new_assign(node, new_binop(ND_XOR, node, assign()));
     } else if (consume(TK_LSHIFT_EQ)) {
-        node = new_assign(node, new_binop(ND_LSHIFT, node, conditional()));
+        node = new_assign(node, new_binop(ND_LSHIFT, node, assign()));
     } else if (consume(TK_RSHIFT_EQ)) {
-        node = new_assign(node, new_binop(ND_RSHIFT, node, conditional()));
+        node = new_assign(node, new_binop(ND_RSHIFT, node, assign()));
     }
     return node;
 }
