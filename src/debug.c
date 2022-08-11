@@ -96,6 +96,10 @@ void print_node_kind(NodeKind kind) {
         fprintf(stderr, "ND_CASE");  // case
     else if (kind == ND_DEFAULT)
         fprintf(stderr, "ND_DEFAULT");  // default
+    else if (kind == ND_GOTO)
+        fprintf(stderr, "ND_GOTO");  // goto
+    else if (kind == ND_LABEL)
+        fprintf(stderr, "ND_LABEL");  // label
     else
         error("print_node_kind() failure: 未定義ノード種");
 
@@ -188,6 +192,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_CASE");
     else if (kind == TK_DEFAULT)
         fprintf(stderr, "TK_DEFAULT");
+    else if (kind == TK_GOTO)
+        fprintf(stderr, "TK_GOTO");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

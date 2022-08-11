@@ -88,10 +88,12 @@ $ make run1
        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
        | "switch" "(" <expression> ")" <statement>
        | ("continue" | "break") ";"
+       | "goto" <ident> ";"
        | <labeled>
        | <compound_stmt>
 <labeled> = "case" <const_expr> ":" <statement>
           | "default" ":" <statement>
+          | <ident> ":" <statement>
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>

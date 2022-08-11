@@ -75,6 +75,7 @@ enum TokenKind {
     TK_SIGNED,       // signed
     TK_UNSIGNED,     // unsigned (未実装)
     TK_CONST,        // const
+    TK_GOTO,         // goto
 };
 
 enum TypeKind {
@@ -136,6 +137,8 @@ enum NodeKind {
     ND_SWITCH,         // switch
     ND_CASE,           // case
     ND_DEFAULT,        // default
+    ND_GOTO,           // goto
+    ND_LABEL,          // label
 };
 
 // bashの文字色の番号
@@ -251,6 +254,7 @@ struct Function {
     Var *va_area;  // 可変長引数のメモリ配置
     int stack_size;
     Type *ret_type;
+    Vector *goto_labels;  // <char *>
 
     bool is_prototype;
     bool is_variadic;  // 可変長引数を引数に持つか

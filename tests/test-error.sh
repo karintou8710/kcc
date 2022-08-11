@@ -46,6 +46,9 @@ run "int main() { (int[20])(1); }"
 run "int main() { int a = 1; a.a = 20; }"
 run "int main() { struct A { } a; a.a = 1; }"
 run "int main() { int a; a(); }"
+run "int main() { goto test; }"
+run "label:; int main() {}"
+run "int test() {label:;} int main() {goto label;}"
 
 # const
 run "int main() {const int a = 1; a = 2;}"

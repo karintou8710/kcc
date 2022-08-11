@@ -1860,8 +1860,9 @@ static void func_define(Type *type) {
         t->len = strlen(t->str);
         fn->va_area = new_local_var(t, new_array_type(new_type(TYPE_CHAR), 136));
     }
-
+    fn->goto_labels = new_vec();
     fn->body = compound_stmt();
+
     end_local_scope();
     fn->locals = locals;
     return;
@@ -2005,6 +2006,11 @@ static Node *stmt() {
         node_in_switch = node;
         node->body = stmt();
         node_in_switch = tmp;
+    } else if (consume(TK_GOTO)) {
+        Token *tok = token;
+        expect(TK_IDENT);
+        node = new_node(ND_GOTO);
+        node->label_name = my_strndup(tok->str, tok->len);
     } else if (consume_nostep('{')) {
         node = compound_stmt();
     } else if (consume(TK_BREAK)) {
@@ -2019,8 +2025,13 @@ static Node *stmt() {
     } else if (consume_nostep(TK_CASE) || consume_nostep(TK_DEFAULT)) {
         node = labeld();
     } else {
-        node = expr();
-        expect(';');
+        Token *tok_next = token->next;
+        if (token->kind == TK_IDENT && tok_next->kind == ':') {
+            node = labeld();
+        } else {
+            node = expr();
+            expect(';');
+        }
     }
 
     return node;
@@ -2029,6 +2040,7 @@ static Node *stmt() {
 /*
  * <labeled> = "case" <const_expr> ":" <statement>
  *           | "default" ":" <statement>
+ *           | <ident> ":" <statement>
  */
 static Node *labeld() {
     if (consume(TK_CASE)) {
@@ -2060,6 +2072,14 @@ static Node *labeld() {
         node->label_name = name;
         node->body = stmt();
         vec_push(node_in_switch->stmts, node);
+        return node;
+    } else if (consume_nostep(TK_IDENT)) {
+        Node *node = new_node(ND_LABEL);
+        node->label_name = my_strndup(token->str, token->len);
+        next_token();
+        expect(':');
+        node->body = stmt();
+        vec_push(cur_parse_func->goto_labels, node->label_name);
         return node;
     }
 

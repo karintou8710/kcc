@@ -584,6 +584,26 @@ static void gen(Node *node) {
         printf(".Llogicalorend%04d:\n", label_num);
         push();
         return;
+    } else if (node->kind == ND_LABEL) {
+        printf("%s:\n", node->label_name);
+        gen(node->body);
+        return;
+    } else if (node->kind == ND_GOTO) {
+        bool is_defined = false;
+        for (int i = 0; i < current_fn->goto_labels->len; i++) {
+            char *name = current_fn->goto_labels->body[i];
+            if (strcmp(name, node->label_name) == 0) {
+                is_defined = true;
+                break;
+            }
+        }
+        if (!is_defined) {
+            error("gen() failure: goto先が存在しません");
+        }
+
+        push();  // 数合わせ
+        printf("  jmp %s\n", node->label_name);
+        return;
     }
 
     gen(node->lhs);
