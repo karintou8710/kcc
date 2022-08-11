@@ -323,7 +323,7 @@ void add_type(Node *node) {
             return;
         }
 
-        if (then_t->kind == TYPE_ARRAY && els_t->kind == TYPE_ARRAY) {
+        if ((then_t->kind == TYPE_ARRAY || then_t->kind == TYPE_PTR) && (els_t->kind == TYPE_ARRAY || els_t->kind == TYPE_PTR)) {
             // TODO: 適切な型に変換
             node->type = new_ptr_type(new_type(TYPE_VOID));
             return;

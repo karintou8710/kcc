@@ -150,6 +150,13 @@ int termary5(int cond) {
     return c[1];
 }
 
+int termary6(int cond) {
+    int a[2] = {3, 4};
+    int d = 1, *e = &d;
+    int *c = cond ? a : e;
+    return c[0];
+}
+
 int and_or_xor1() {
     return 1 | 2 & 1;
 }
@@ -277,6 +284,8 @@ int main() {
     ASSERT(25, termary4(1), "termary4(1)");
     ASSERT(1, termary5(0), "termary5(0)");
     ASSERT(4, termary5(1), "termary5(1)");
+    ASSERT(1, termary6(0), "termary6(0)");
+    ASSERT(3, termary6(1), "termary6(1)");
 
     ASSERT(1, and_or_xor1(), "and_or_xor1");
     ASSERT(3, and_or_xor2(), "and_or_xor2");
