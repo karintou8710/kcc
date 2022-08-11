@@ -629,14 +629,6 @@ int char1() {
     return x[0] + y;
 }
 
-// string_literal
-int string_literal1() {
-    char *a;
-    a = "Hello, C-compiler";
-    printf("%s\n", a);
-    return 0;
-}
-
 // %=
 int assign_mod1() {
     int a;
@@ -875,8 +867,6 @@ int main() {
     ASSERT(1, mod2(), "mod2");
 
     ASSERT(3, char1(), "char1");
-
-    ASSERT(0, string_literal1(), "string_literal");
 
     ASSERT(2, assign_mod1(), "assign_mod1");
 

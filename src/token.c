@@ -309,7 +309,6 @@ Token *tokenize(char *p) {
          */
         if (*p == '\"') {
             p++;
-            cur = new_token(TK_STRING, cur, p, 0);
             char *q = p;
             int len = 0;
             // 文字列の長さを取得する
@@ -327,10 +326,23 @@ Token *tokenize(char *p) {
                 error_at(q, "tokinize() failure: 「\"」で閉じていません");
             }
             p++;
-            cur->str = my_strndup(q, len);
-            cur->len = strlen(cur->str);
-            cur->str_literal_index = string_literal->len;
-            vec_push(string_literal, cur);
+
+            if (cur->kind == TK_STRING) {
+                // 文字列リテラルの連結
+                Token *t = vec_last(string_literal);
+                char *str = try_memory_allocation(sizeof(char) * (t->len + len + 1));
+                strcat(str, t->str);
+                strcat(str, my_strndup(q, len));
+                t->str = str;
+                t->len += len;
+            } else {
+                cur = new_token(TK_STRING, cur, p, 0);
+                cur->str = my_strndup(q, len);
+                cur->len = strlen(cur->str);
+                cur->str_literal_index = string_literal->len;
+                vec_push(string_literal, cur);
+            }
+
             continue;
         }
 
