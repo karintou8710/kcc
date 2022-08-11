@@ -97,7 +97,7 @@ $ make run1
 <expr> = <assign> ("," <assign>)* | <declaration>
 <assign> = <conditional> ("=" <assign>)?
          | <conditional> ( "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ) <conditional>
-<conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
+<conditional> = <logical_or> | <logical_or> "?" <expression> ":" <conditional>
 <logical_or> = <logical_and> ("||" <logical_and>)*
 <logical_and> = <inclusive_or> ("&&" <inclusive_or>)*
 <inclusive_or> = <exclusive_or> ( "|" <exclusive_or> )*

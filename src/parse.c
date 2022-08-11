@@ -2134,14 +2134,14 @@ static Node *assign() {
 }
 
 /*
- * <conditional> = <logical_or> | <logical_or> "?" <assign> ":" <conditional>
+ * <conditional> = <logical_or> | <logical_or> "?" <expression> ":" <conditional>
  */
 static Node *conditional() {
     Node *node = logical_or();
     if (consume('?')) {
         Node *n = new_node(ND_TERNARY);
         n->cond = node;
-        n->then = assign();
+        n->then = expr();
         add_type(n->then);
         expect(':');
         n->els = conditional();
