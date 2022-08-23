@@ -47,7 +47,7 @@ $ make run1
 <declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
 <declaration_var> = <declarator> ("=" <initialize>)?
 <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
-<storage_class>  = "typedef" | "entern"
+<storage_class>  = "typedef" | "entern" | "static"
 <type_specifier> = "char"
                  | "short"
                  | "int"

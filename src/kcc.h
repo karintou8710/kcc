@@ -26,6 +26,7 @@ enum StorageClass {
     UNKNOWN,  // NULL。callcでzero初期化するために使う
     STORAGE_TYPEDEF,
     STORAGE_EXTERN,
+    STORAGE_STATIC,
 };
 
 /* 0 ~ 255は1文字のトークン */
@@ -76,6 +77,7 @@ enum TokenKind {
     TK_UNSIGNED,     // unsigned (未実装)
     TK_CONST,        // const
     TK_GOTO,         // goto
+    TK_STATIC,       // static
 };
 
 enum TypeKind {
@@ -215,6 +217,7 @@ struct Var {
     bool is_global;
     bool is_only_type;  // プロトタイプ宣言で使用
     bool is_extern;
+    bool is_static;
 };
 
 struct Node {
@@ -256,6 +259,7 @@ struct Function {
     Type *ret_type;
     Vector *goto_labels;  // <char *>
 
+    bool is_static;
     bool is_prototype;
     bool is_variadic;  // 可変長引数を引数に持つか
 };

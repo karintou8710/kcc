@@ -122,7 +122,7 @@ static bool consume_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN, TK_TYPEDEF, TK_SIGNED, TK_UNSIGNED, TK_CONST};
+        TK_EXTERN, TK_TYPEDEF, TK_STATIC, TK_SIGNED, TK_UNSIGNED, TK_CONST};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -1030,6 +1030,8 @@ static Node *declaration(Type *type) {
             vec_push(typedef_alias, ta);
         } else if (node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
             node->var->is_extern = true;
+        } else if (node->kind == ND_VAR && current_storage == STORAGE_STATIC) {
+            node->var->is_static = true;
         }
         return node;
     }
@@ -1050,6 +1052,8 @@ static Node *declaration(Type *type) {
             vec_push(typedef_alias, ta);
         } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_EXTERN) {
             tmp_node->var->is_extern = true;
+        } else if (tmp_node->kind == ND_VAR && current_storage == STORAGE_STATIC) {
+            tmp_node->var->is_static = true;
         }
     }
     current_storage = UNKNOWN;
@@ -1348,7 +1352,7 @@ static Type *abstruct_declarator(Type *type) {
 
 /*
  * <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
- * <storage_class>  = "typedef" | "entern"
+ * <storage_class>  = "typedef" | "entern" | "static"
  * <type_qualifier> = "const"
  */
 static Type *declaration_specifier() {
@@ -1367,6 +1371,10 @@ static Type *declaration_specifier() {
         } else if (consume(TK_EXTERN)) {
             expect_no_storage();
             current_storage = STORAGE_EXTERN;
+            continue;
+        } else if (consume(TK_STATIC)) {
+            expect_no_storage();
+            current_storage = STORAGE_STATIC;
             continue;
         }
 
@@ -1786,6 +1794,9 @@ static void func_define(Type *type) {
     type = declarator(type);
     Function *fn = try_memory_allocation(sizeof(Function));
     cur_parse_func = fn;
+    if (current_storage == STORAGE_STATIC) {
+        fn->is_static = true;
+    }
     Token *tok = type->token;
 
     // プロトタイプ宣言は複数定義を許可する

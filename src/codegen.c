@@ -684,7 +684,8 @@ void codegen() {
         // 関数型の変数はFunctionとVarをうまく管理するために生成しているだけ
         if (var->type->kind == TYPE_FUNC) continue;
 
-        printf("  .globl %s\n", var->name);
+        // 内部リンケージ or 外部リンケージ
+        if (!var->is_static) printf("  .globl %s\n", var->name);
 
         // 宣言のみ
         if (var->global_init->len == 0) {
@@ -725,7 +726,8 @@ void codegen() {
     // 先頭の式から順にコード生成
     for (int i = 0; i < funcs->len; i++) {
         current_fn = funcs->body[i];
-        printf(".globl %s\n", current_fn->name);
+        // 内部リンケージ or 外部リンケージ
+        if (!current_fn->is_static) printf(".globl %s\n", current_fn->name);
         printf("%s:\n", current_fn->name);
 
         // プロローグ

@@ -194,6 +194,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_DEFAULT");
     else if (kind == TK_GOTO)
         fprintf(stderr, "TK_GOTO");
+    else if (kind == TK_STATIC)
+        fprintf(stderr, "TK_STATIC");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

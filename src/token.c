@@ -92,6 +92,7 @@ Token *tokenize(char *p) {
 
         // 未実装
         if (strncmp(p, "static", 6) == 0) {
+            cur = new_token(TK_STATIC, cur, p, 6);
             p += 6;
             continue;
         }
