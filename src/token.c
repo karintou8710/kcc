@@ -56,67 +56,9 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (strncmp(p, "#include", 8) == 0) {
-            cur = new_token(TK_INCLUDE, cur, p, 8);
-            p += 8;
-
-            skip_space(&p);
-
-            if (*p == '<') {
-                // TODO: 標準ライブラリのインクルード
-                cur->is_standard = true;
-                while (*p != '\n') p++;
-            } else if (*p == '"') {
-                p++;
-
-                char *q = p;
-                skip_to_target(&p, '"');
-                if (*p != '"') {
-                    error_at(q, "tokenize() failure: 「\"」で閉じていません。");
-                }
-                cur->str = my_strndup(q, p - q);
-                cur->len = p - q + 1;
-
-                p++;
-            } else {
-                error_at(p, "tokenize() failure: \", <で始まっていません");
-            }
-            continue;
-        }
-
         // プリプロセッサーが出力するメタ情報を削除
         if (starts_with(p, "#") && (user_input == p || *(p - 1) == '\n')) {
             while (*p != '\n') p++;
-            continue;
-        }
-
-        if (strncmp(p, "register", 8) == 0) {
-            cur = new_token(TK_REGISTER, cur, p, 8);
-            p += 8;
-            continue;
-        }
-
-        if (strncmp(p, "auto", 4) == 0) {
-            cur = new_token(TK_AUTO, cur, p, 4);
-            p += 4;
-            continue;
-        }
-
-        if (strncmp(p, "restrict", 8) == 0) {
-            cur = new_token(TK_RESTRICT, cur, p, 8);
-            p += 8;
-            continue;
-        }
-
-        if (strncmp(p, "volatile", 8) == 0) {
-            cur = new_token(TK_VOLATILE, cur, p, 8);
-            p += 8;
-            continue;
-        }
-
-        if (strncmp(p, "static", 6) == 0) {
-            cur = new_token(TK_STATIC, cur, p, 6);
-            p += 6;
             continue;
         }
 
@@ -390,6 +332,34 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "#include", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_INCLUDE, cur, p, 8);
+            p += 8;
+
+            skip_space(&p);
+
+            if (*p == '<') {
+                // TODO: 標準ライブラリのインクルード
+                cur->is_standard = true;
+                while (*p != '\n') p++;
+            } else if (*p == '"') {
+                p++;
+
+                char *q = p;
+                skip_to_target(&p, '"');
+                if (*p != '"') {
+                    error_at(q, "tokenize() failure: 「\"」で閉じていません。");
+                }
+                cur->str = my_strndup(q, p - q);
+                cur->len = p - q + 1;
+
+                p++;
+            } else {
+                error_at(p, "tokenize() failure: \", <で始まっていません");
+            }
+            continue;
+        }
+
         if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_RETURN, cur, p, 6);
             p += 6;
@@ -588,6 +558,36 @@ Token *tokenize(char *p) {
         if (strncmp(p, "do", 2) == 0 && !is_alnum(p[2])) {
             cur = new_token(TK_DO, cur, p, 2);
             p += 2;
+            continue;
+        }
+
+        if (strncmp(p, "register", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_REGISTER, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "auto", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_AUTO, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
+        if (strncmp(p, "restrict", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_RESTRICT, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "volatile", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_VOLATILE, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "static", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_STATIC, cur, p, 6);
+            p += 6;
             continue;
         }
 

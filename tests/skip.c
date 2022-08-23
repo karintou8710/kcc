@@ -10,12 +10,13 @@ int ASSERT(int expected, int actual, char *name) {
 }
 
 int main() {
-    int register x = 10;
-    ASSERT(10, x, "x");
-    auto int y = 10;
-    ASSERT(10, y, "y");
-    int *const restrict volatile *restrict *volatile z = 0;
-    ASSERT(0, z, "z");
+    /* キーワードで始まる変数名のテストも兼ねる */
+    int register registerx = 10;
+    ASSERT(10, registerx, "registerx");
+    auto int autoy = 10;
+    ASSERT(10, autoy, "autoy");
+    int *const restrict volatile *restrict *volatile volatilez = 0;
+    ASSERT(0, volatilez, "volatilez");
     printf("ALL TEST OF scope.c SUCCESS :)\n");
     return 0;
 }
