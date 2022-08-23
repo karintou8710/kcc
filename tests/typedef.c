@@ -89,10 +89,6 @@ STRUCT3 *typedef7() {
     return s;
 }
 
-static int printf() {
-    return 0;
-}
-
 int main() {
     ASSERT(4, sizeof(INT32), "sizeof(INT32)");
     ASSERT(8, sizeof(INT1), "sizeof(INT1)");

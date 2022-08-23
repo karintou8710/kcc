@@ -196,6 +196,14 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_GOTO");
     else if (kind == TK_STATIC)
         fprintf(stderr, "TK_STATIC");
+    else if (kind == TK_RESTRICT)
+        fprintf(stderr, "TK_RESTRICT");
+    else if (kind == TK_REGISTER)
+        fprintf(stderr, "TK_REGISTER");
+    else if (kind == TK_VOLATILE)
+        fprintf(stderr, "TK_VOLATILE");
+    else if (kind == TK_AUTO)
+        fprintf(stderr, "TK_AUTO");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

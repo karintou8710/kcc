@@ -122,7 +122,7 @@ static bool consume_type_nostep(Token *tok) {
 
     // 型の修飾子や指定子
     TokenKind type_tokens[] = {
-        TK_EXTERN, TK_TYPEDEF, TK_STATIC, TK_SIGNED, TK_UNSIGNED, TK_CONST};
+        TK_EXTERN, TK_TYPEDEF, TK_STATIC, TK_SIGNED, TK_UNSIGNED, TK_CONST, TK_REGISTER, TK_AUTO, TK_VOLATILE, TK_RESTRICT};
 
     for (int i = 0; i < sizeof(type_tokens) / sizeof(TokenKind); i++) {
         if (tok->kind == type_tokens[i]) return true;
@@ -1033,6 +1033,7 @@ static Node *declaration(Type *type) {
         } else if (node->kind == ND_VAR && current_storage == STORAGE_STATIC) {
             node->var->is_static = true;
         }
+        current_storage = UNKNOWN;
         return node;
     }
 
@@ -1245,12 +1246,19 @@ static void initialize2(Initializer *init) {
 
 /*
  *  <pointer> = ("*" <type_qualifier>?) *
+ *  <type_qualifier> = "const" | "volatile" | "restrict"
  */
 static Type *pointer(Type *type) {
     while (consume('*')) {
         Type *t = new_ptr_type(type);
-        if (consume(TK_CONST)) {
-            t->is_constant = true;
+        while (1) {
+            if (consume(TK_CONST)) {
+                t->is_constant = true;
+            } else if (consume(TK_VOLATILE) || consume(TK_RESTRICT)) {
+                // skip
+            } else {
+                break;
+            }
         }
         type = t;
     }
@@ -1352,7 +1360,7 @@ static Type *abstruct_declarator(Type *type) {
 
 /*
  * <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
- * <storage_class>  = "typedef" | "entern" | "static"
+ * <storage_class>  = "typedef" | "entern" | "static" | "register" | "auto"
  * <type_qualifier> = "const"
  */
 static Type *declaration_specifier() {
@@ -1376,11 +1384,23 @@ static Type *declaration_specifier() {
             expect_no_storage();
             current_storage = STORAGE_STATIC;
             continue;
+        } else if (consume(TK_REGISTER)) {
+            // skip
+            expect_no_storage();
+            current_storage = STORAGE_REGISTER;
+            continue;
+        } else if (consume(TK_AUTO)) {
+            debug("%d", current_storage);
+            expect_no_storage();
+            current_storage = STORAGE_AUTO;
+            continue;
         }
 
         // type_qualifier
         if (consume(TK_CONST)) {
             flag |= CONST;
+            continue;
+        } else if (consume(TK_VOLATILE) || consume(TK_RESTRICT)) {
             continue;
         }
 
@@ -2045,6 +2065,7 @@ static Node *stmt() {
         }
     }
 
+    current_storage = UNKNOWN;
     return node;
 }
 

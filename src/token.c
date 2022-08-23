@@ -90,7 +90,30 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        // 未実装
+        if (strncmp(p, "register", 8) == 0) {
+            cur = new_token(TK_REGISTER, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "auto", 4) == 0) {
+            cur = new_token(TK_AUTO, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
+        if (strncmp(p, "restrict", 8) == 0) {
+            cur = new_token(TK_RESTRICT, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "volatile", 8) == 0) {
+            cur = new_token(TK_VOLATILE, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
         if (strncmp(p, "static", 6) == 0) {
             cur = new_token(TK_STATIC, cur, p, 6);
             p += 6;

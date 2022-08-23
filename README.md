@@ -47,7 +47,7 @@ $ make run1
 <declaration> = <declaration_specifier> <declaration_var> ("," <declaration_var>)* ";"
 <declaration_var> = <declarator> ("=" <initialize>)?
 <declaration_specifier> = (<storage_class> | <type_specifier> | <type_qualifier>)+
-<storage_class>  = "typedef" | "entern" | "static"
+<storage_class>  = "typedef" | "entern" | "static" | "register" | "auto"
 <type_specifier> = "char"
                  | "short"
                  | "int"
@@ -60,7 +60,7 @@ $ make run1
                  | "enum" <ident>? "{" <enumerator_list> "}"
                  | "signed"
                  | "unsigned"
-<type_qualifier> = "const"
+<type_qualifier> = "const" | "volatile" | "restrict"
 <initialize> = <assign>
              | "{" <initialize> ("," <initialize>)* "}"
 <declarator> = <pointer> <ident> <type_suffix>

@@ -27,6 +27,8 @@ enum StorageClass {
     STORAGE_TYPEDEF,
     STORAGE_EXTERN,
     STORAGE_STATIC,
+    STORAGE_AUTO,
+    STORAGE_REGISTER,
 };
 
 /* 0 ~ 255は1文字のトークン */
@@ -78,6 +80,10 @@ enum TokenKind {
     TK_CONST,        // const
     TK_GOTO,         // goto
     TK_STATIC,       // static
+    TK_AUTO,         // auto
+    TK_REGISTER,     // register(skip)
+    TK_VOLATILE,     // volatile(skip)
+    TK_RESTRICT,     // restrict(skip)
 };
 
 enum TypeKind {
