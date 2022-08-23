@@ -60,6 +60,7 @@ run "int main() { goto test; }"
 run "label:; int main() {}"
 run "int test() {label:;} int main() {goto label;}"
 run "int main() {register auto int x = 1;}"
+run "int main() { _Alignof(0); }"
 
 # const
 run "int main() {const int a = 1; a = 2;}"

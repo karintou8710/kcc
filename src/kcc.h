@@ -84,6 +84,7 @@ enum TokenKind {
     TK_REGISTER,     // register(skip)
     TK_VOLATILE,     // volatile(skip)
     TK_RESTRICT,     // restrict(skip)
+    TK_ALIGNOF,      // _Alignof(C11)
 };
 
 enum TypeKind {

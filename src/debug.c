@@ -204,6 +204,8 @@ void print_token_kind(TokenKind kind) {
         fprintf(stderr, "TK_VOLATILE");
     else if (kind == TK_AUTO)
         fprintf(stderr, "TK_AUTO");
+    else if (kind == TK_ALIGNOF)
+        fprintf(stderr, "AK_ALIGNOF");
     else
         fprintf(stderr, "TK_[%c]", kind);
 

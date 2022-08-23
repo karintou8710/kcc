@@ -113,6 +113,7 @@ $ make run1
 <unary> = <postfix>
         | "sizeof" <unary>
         | "sizeof" "(" <type_name> ")"
+        | "_Alignof" "(" <type_name> ")"
         | ("++" | "--") <postfix>
         | <unary> ("++" | "--")
         | ("!" | "~" | "+" | "-" | "*" | "&") <cast>

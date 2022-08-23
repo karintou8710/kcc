@@ -2376,6 +2376,7 @@ static Node *cast() {
  *  <unary> = <postfix>
  *          | "sizeof" <unary>
  *          | "sizeof" "(" <type_name> ")"
+ *          | "_Alignof" "(" <type_name> ")"
  *          | ("++" | "--") <postfix>
  *          | <unary> ("++" | "--")
  ?          | ("!" | "~" | "+" | "-" | "*" | "&") <cast>
@@ -2416,6 +2417,17 @@ static Node *unary() {
             return node;
         } else {
             return new_node_num(sizeOfNode(unary()));
+        }
+    } else if (consume(TK_ALIGNOF)) {
+        Token *tok = get_nth_token(1);
+        if (consume_type_nostep(tok)) {
+            expect('(');
+            Type *t = type_name();
+            Node *node = new_node_num(alignof_type(t));
+            expect(')');
+            return node;
+        } else {
+            error_at(tok->str, "unary() failure: 型ではありません");
         }
     } else if (consume(TK_INC)) {
         Node *node = unary();
