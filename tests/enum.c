@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -106,6 +105,14 @@ int enum7() {
     return *cp;
 }
 
+int enum8() {
+    enum TEST {
+        a = 1 << 1,
+        b = 1 << 2
+    };
+    return a;
+}
+
 int main() {
     ASSERT(0, enum1(0), "enum1(0)");
     ASSERT(1, enum1(1), "enum1(1)");
@@ -130,6 +137,7 @@ int main() {
     ASSERT(8, enum5(), "enum5");
     ASSERT(4, enum6(), "enum6");
     ASSERT(0, enum7(), "enum7");
+    ASSERT(2, enum8(), "enum8");
 
     printf("ALL TEST OF enum.c SUCCESS :)\n");
     return 0;

@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -230,6 +229,25 @@ int struct_forward1() {
     return sizeof(struct A);
 }
 
+int struct_nested_type1() {
+    struct A {
+        int(*a);
+        int (*b[2])[10];
+    } a;
+    return sizeof(a.b);
+}
+
+int struct_nested_type2() {
+    struct A {
+        int a;
+    };
+    struct B {
+        struct A (*a[1])[10];
+        struct B (*b)[2];
+    } b;
+    return sizeof(b);
+}
+
 typedef struct FORWARD FORWARD;
 FORWARD *forward;
 struct FORWARD {
@@ -300,6 +318,64 @@ int struct_assign4() {
     return c.m1.m1[5] + c.m2[5];
 }
 
+int struct_assign5() {
+    struct A {
+        char m;
+    } a, b;
+    a.m = 10;
+    b = a;
+    return b.m;
+}
+
+int struct_anonymous1() {
+    struct {
+        int a;
+    } b, c = {
+             10};
+    b.a = 10;
+    return b.a + c.a;
+}
+
+int struct_anonymous2() {
+    struct {
+        struct {
+            int a;
+        } member1;
+        struct {
+            int a;
+        } member2;
+    } test = {
+        {10},
+        {20}};
+    return test.member1.a + test.member2.a;
+}
+
+int struct_comma1() {
+    struct A {
+        int a, b, c;
+    } s;
+    s.a = 10, s.b = 20, s.c = 30;
+    return s.a == 10 && s.b == 20 && s.c == 30;
+}
+
+int struct_comma2() {
+    struct A {
+        int a, b;
+        int c;
+    } s = {
+        1, 2, 3};
+    return s.a == 1 && s.b == 2 && s.c == 3;
+}
+
+int struct_comma3() {
+    int var = 10;
+    struct A {
+        int *a, b, c[2], (*d)(void);
+    } s = {
+        &var, var, {1, 2}, struct_comma2};
+    return *s.a == 10 && s.b == 10 && s.c[0] == 1 && s.c[1] == 2 && s.d() == 1;
+}
+
 int main() {
     ASSERT(11, struct1(), "struct1");
     ASSERT(2, struct2(), "struct2");
@@ -322,6 +398,17 @@ int main() {
     ASSERT(1, struct_assign2(), "struct_assign2");
     ASSERT(15, struct_assign3(), "struct_assign3");
     ASSERT(15, struct_assign4(), "struct_assign4");
+    ASSERT(10, struct_assign5(), "struct_assign5");
+
+    ASSERT(16, struct_nested_type1(), "struct_nested_type1()");
+    ASSERT(16, struct_nested_type2(), "struct_nested_type2()");
+
+    ASSERT(20, struct_anonymous1(), "struct_anonymous1()");
+    ASSERT(30, struct_anonymous2(), "struct_anonymous2()");
+
+    ASSERT(1, struct_comma1(), "struct_comma1()");
+    ASSERT(1, struct_comma2(), "struct_comma2()");
+    ASSERT(1, struct_comma3(), "struct_comma3()");
 
     printf("ALL TEST OF struct.c SUCCESS :)\n");
     return 0;

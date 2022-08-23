@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -146,6 +146,14 @@ int globalstruct7() {
     return b3.a;
 }
 
+struct E {
+    int a, b, c;
+} e1;
+int globalstruct8() {
+    e1.a = 10, e1.b = 20, e1.c = 30;
+    return e1.a == 10 && e1.b == 20 && e1.c == 30;
+}
+
 enum enumA {
     A = 10,
     B,
@@ -164,6 +172,31 @@ int global_enum1(int index) {
         return B;
     else if (index == 2)
         return C;
+}
+
+int _global_func_pointer1(int a, int b) {
+    return a + b;
+}
+
+int _global_func_pointer2(int a, int b) {
+    return a - b;
+}
+
+int (*f)(int, int) = _global_func_pointer1;
+
+int global_func_pointer1() {
+    int t = f(1, 2);
+    return t;
+}
+
+int (*f2[2])(int, int) = {
+    _global_func_pointer1,
+    _global_func_pointer2};
+
+int global_func_pointer2() {
+    int t = f2[0](1, 2);
+    int t2 = f2[1](1, 2);
+    return t == 3 && t2 == -1;
 }
 
 int main() {
@@ -186,6 +219,9 @@ int main() {
     ASSERT(1, global_enum1(0), "global_enum1(0)");
     ASSERT(2, global_enum1(1), "global_enum1(1)");
     ASSERT(3, global_enum1(2), "global_enum1(2)");
+
+    ASSERT(3, global_func_pointer1(), "global_func_pointer1");
+    ASSERT(1, global_func_pointer2(), "global_func_pointer2");
 
     printf("ALL TEST OF global.c SUCCESS :)\n");
 

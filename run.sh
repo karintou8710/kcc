@@ -1,33 +1,54 @@
 #!/bin/bash
 
 COMPILER=$1
+# SRCのファイルを実行する
+SRC=input.c
+DUMMY_LIB_DIR=selfhost/dummy_headers
 SUCCESS=0
 FAILURE=1
 
-debug() {
+p () {
     FILENAME=`basename "$0"`
     echo "$FILENAME: $1"
 }
 
+error() {
+    # red color
+    p "\033[31m$1\033[m"
+}
+
+success() {
+    # green color
+    p "\033[32m$1\033[m"
+}
+
 run() {
     if [ ! -e "$COMPILER" ]; then
-        debug "./$COMPILER does not exist"
+        error "./$COMPILER does not exist"
         exit $FAILURE
     fi
     
-    touch test_exec.c
-    ./$COMPILER test_exec.c > tmp.s
+    touch $SRC
+    pre=`echo $SRC | sed -e 's/\.c/\.i/g'`
+    cpp -I $DUMMY_LIB_DIR $SRC > $pre
+    ./$COMPILER $pre > tmp.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "$COMPILER failed to compile"
+        error "$COMPILER failed to compile"
         exit $FAILURE
     fi
     
-    cc -static -o tmp tmp.s
+    cc -o tmp tmp.s
+    ERRCHK=$?
+    if [ $ERRCHK -ne $SUCCESS ]; then
+        error "$src failed to assemble"
+        exit $FAILURE
+    fi
+
     ./tmp
     status="$?"
 
-    debug "exit status => $status"
+    p "exit status => $status"
 }
 
 run

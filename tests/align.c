@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -54,6 +53,20 @@ int main() {
     ASSERT(48, sizeof(struct A4), "sizeof(struct A4)");
     ASSERT(24, sizeof(struct A5), "sizeof(struct A5)");
     ASSERT(40, sizeof(struct A6), "sizeof(struct A6)");
+
+    ASSERT(1, _Alignof(char), "_Alignof(char)");
+    ASSERT(2, _Alignof(short), "_Alignof(short)");
+    ASSERT(4, _Alignof(int), "_Alignof(int)");
+    ASSERT(8, _Alignof(long), "_Alignof(long)");
+    ASSERT(8, _Alignof(long long int), "_Alignof(long)");
+    ASSERT(1, _Alignof(char[2][2]), "_Alignof(char[2][2])");
+    ASSERT(8, _Alignof(char(*)[2][2]), "_Alignof(char(*)[2][2])");
+    ASSERT(4, _Alignof(struct A1), "_Alignof(struct A1)");
+    ASSERT(8, _Alignof(struct A2), "_Alignof(struct A2)");
+    ASSERT(8, _Alignof(struct A3), "_Alignof(struct A3)");
+    ASSERT(8, _Alignof(struct A4), "_Alignof(struct A4)");
+    ASSERT(8, _Alignof(struct A5), "_Alignof(struct A5)");
+    ASSERT(8, _Alignof(struct A6), "_Alignof(struct A6)");
 
     printf("ALL TEST OF align.c SUCCESS :)\n");
     return 0;

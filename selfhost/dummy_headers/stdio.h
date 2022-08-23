@@ -1,6 +1,8 @@
 #ifndef STDIO_H
 #define STDIO_H
 
+#include "stdarg.h"
+
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
@@ -60,6 +62,18 @@ int fprintf(FILE *stream, char *format, ...);
 int snprintf(char *s, size_t n, char *format, ...);
 int vfprintf(FILE *stream, char *format, va_list args);
 int puts(char *s);
+int fgetc(FILE *stream);
+char *fgets(char *s, int size, FILE *stream);
+int getc(FILE *stream);
+int getchar(void);
+int ungetc(int c, FILE *stream);
+int scanf(char *format, ...);
+int fscanf(FILE *stream, char *format, ...);
+int sscanf(char *str, char *format, ...);
+int sprintf(char *str, char *format, ...);
+int vsprintf(char *s, char *format, va_list arg);
+int fileno(const FILE *stream);
+int putchar(int c);
 
 extern FILE *stdin;
 extern FILE *stdout;

@@ -5,43 +5,55 @@ KCC_FROM_CLANG=$2
 SUCCESS=0
 FAILURE=1
 
-debug() {
+p () {
     FILENAME=`basename "$0"`
     echo "$FILENAME: $1"
 }
 
+error() {
+    # red color
+    p "\033[31m$1\033[m"
+}
+
+success() {
+    # green color
+    p "\033[32m$1\033[m"
+}
+
 if [ ! -e "$KCC_FROM_GCC" ]; then
-    debug "./$KCC_FROM_GCC does not exist"
+    error "./$KCC_FROM_GCC does not exist"
     exit $FAILURE
 fi
 
 if [ ! -e "$KCC_FROM_CLANG" ]; then
-    debug "./$KCC_FROM_CLANG does not exist"
+    error "./$KCC_FROM_CLANG does not exist"
     exit $FAILURE
 fi
 
-for i in tests/*.c
+for src in tests/*.c
 do
-    debug "$KCC_FROM_GCC start compileing $i"
-    ./$KCC_FROM_GCC $i > tmp_gcc.s
+    p "$KCC_FROM_GCC start compileing $src"
+    pre=`echo $src | sed -e 's/\.c/\.i/g'`
+    cpp $src > $pre
+    ./$KCC_FROM_GCC $pre > tmp_gcc.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "$KCC_FROM_GCC failed to compile"
+        error "$KCC_FROM_GCC failed to compile"
         exit $FAILURE
     fi
 
-	debug "$KCC_FROM_CLANG start compileing $i"
-    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $i > tmp_clang.s
+	p "$KCC_FROM_CLANG start compileing $src"
+    ASAN_OPTIONS=detect_leaks=0 ./$KCC_FROM_CLANG $pre > tmp_clang.s
     ERRCHK=$?
     if [ $ERRCHK -ne $SUCCESS ]; then
-        debug "$KCC_FROM_CLANG failed to compile"
+        error "$KCC_FROM_CLANG failed to compile"
         exit $FAILURE
     fi
 
 	diff tmp_gcc.s tmp_clang.s
     ret=$?
     if [ $ret -ne $SUCCESS ]; then
-        echo "diff tmp_gcc.s tmp_clang.s failed at $i"
+        echo "diff tmp_gcc.s tmp_clang.s failed at $src"
         exit $FAILURE
     fi
 done

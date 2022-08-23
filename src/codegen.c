@@ -1,10 +1,7 @@
 #include "kcc.h"
 
 /*
- * ASTからスタックマシンを使ってアセンブリを生成する
- *
- * スタックマシンの使用
- *
+ * ASTからスタックマシンでアセンブリを生成する
  * 全てのノードは必ず一つだけの要素が残るようにpushする
  */
 
@@ -23,13 +20,14 @@ static Function *current_fn;
 // continue, breakでどこに飛ぶのか値を保持
 static int continue_label = -1;
 static int logical_label = 0;
+static bool break_in_switch = false;
 
 typedef enum RegKind {
     REG_RAX,
     REG_RDI,
 } RegKind;
 
-static void delete_prototype_func() {
+static void delete_func_prototype() {
     for (int i = 0; i < funcs->len; i++) {
         Function *fn = funcs->body[i];
         if (fn->is_prototype) {
@@ -39,6 +37,7 @@ static void delete_prototype_func() {
     }
 }
 
+// 引数の番号とサイズから適切なレジスターの文字列を返す
 static char *get_argreg(int index, Type *ty) {
     if (ty->kind == TYPE_ARRAY)
         return argreg64[index];
@@ -53,10 +52,10 @@ static char *get_argreg(int index, Type *ty) {
         return argreg8[index];
     }
 
-    error("size: %d はサポートしてない引数です。", ty->size);
+    error("get_argreg() failure: size=%d は未サポートのレジスタです。", ty->size);
 }
 
-static int size_to_regindex(int size) {
+static int size_to_general_reg_index(int size) {
     if (size == 8) {
         return 0;  // 64bit
     } else if (size == 4) {
@@ -67,7 +66,7 @@ static int size_to_regindex(int size) {
         return 3;  // 8bit
     }
 
-    error("size_to_regindex() failure: [size=%d]サポートしてないレジスターのサイズです", size);
+    error("size_to_general_reg_index() failure: size=%d は未サポートレジスタです", size);
 }
 
 static char *proper_register(Type *ty, RegKind kind) {
@@ -78,7 +77,7 @@ static char *proper_register(Type *ty, RegKind kind) {
         size = ty->size;
     }
 
-    int index = size_to_regindex(size);
+    int index = size_to_general_reg_index(size);
 
     if (kind == REG_RAX) {
         return raxreg[index];
@@ -86,7 +85,7 @@ static char *proper_register(Type *ty, RegKind kind) {
         return rdireg[index];
     }
 
-    error("サポートしていないレジスターです");
+    error("proper_register() failure: 未サポートの種類のレジスターです");
 }
 
 static void push() {
@@ -110,7 +109,7 @@ static void pop_rdi() {
     printf("  pop rdi\n");
 }
 
-static void assign_lvar_offsets() {
+static void assign_local_var_offsets() {
     for (int i = 0; i < funcs->len; i++) {
         Function *fn = funcs->body[i];
         if (fn->locals->next_offset > 0) {
@@ -123,9 +122,9 @@ static void assign_lvar_offsets() {
 
 // 左辺値は変数である必要がある
 // ローカル変数のアドレスを生成
-static void gen_lval(Node *node) {
+static void gen_local_var(Node *node) {
     if (node->kind != ND_VAR) {
-        error("代入の左辺値が変数ではありません");
+        error("gen_local_var() failure: 代入の左辺値が変数ではありません");
     }
 
     if (node->var->is_global) {
@@ -144,7 +143,7 @@ static void gen_addr(Node *node) {
         gen(node->lhs);
         return;
     } else if (node->kind == ND_VAR) {
-        gen_lval(node);
+        gen_local_var(node);
         return;
     } else if (node->kind == ND_ADD || node->kind == ND_SUB) {
         gen(node);
@@ -159,20 +158,25 @@ static void gen_addr(Node *node) {
         gen(node);
         return;
     } else if (node->kind == ND_SUGER || node->kind == ND_STMT_EXPR) {
-        gen(node);
+        /* TODO: (a,b,c) = 1などの不正な構文も通してしまう */
+        for (int i = 0; i < node->stmts->len; i++) {
+            gen_addr(node->stmts->body[i]);
+            pop();
+        }
+        push();
         return;
     }
 
-    error("左辺値がポインターまたは変数ではありません");
+    error("gen_addr() failure: nodekind=%d 左辺値が未サポートのノード種です", node->kind);
 }
 
 static void load(Type *ty) {
-    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT) {
+    if (ty->kind == TYPE_ARRAY || ty->kind == TYPE_STRUCT || ty->kind == TYPE_UNION || ty->kind == TYPE_FUNC) {
         // アドレスのまま読みこむようにする
         return;
     }
 
-    if (ty->kind == TYPE_CHAR) {
+    if (ty->kind == TYPE_CHAR || ty->kind == TYPE_BOOL) {
         printf("  movsx eax, BYTE PTR [rax]\n");
         return;
     }
@@ -190,8 +194,7 @@ static void load(Type *ty) {
 
 static void gen(Node *node) {
     // 入れ子ループに対応するためにローカル変数で深さを持つ
-    int loop_count = label_loop_count;  // 現在のラベルの値を保持
-    int if_count = label_if_count;
+    int local_control_count = label_control_count;  // 現在のラベルの値を保持
 
     if (node->kind == ND_NULL) {
         push();
@@ -210,7 +213,7 @@ static void gen(Node *node) {
         push();
         return;
     } else if (node->kind == ND_VAR) {
-        gen_lval(node);
+        gen_local_var(node);
         pop();
         add_type(node);
         load(node->type);
@@ -227,17 +230,26 @@ static void gen(Node *node) {
         push();
         return;
     } else if (node->kind == ND_ASSIGN) {
+        if (!node->is_initialization && node->lhs->type->is_constant) {
+            error("gen() failure: 定数に代入はできません");
+        }
         gen_addr(node->lhs);
         gen(node->rhs);
         pop_rdi();
         pop();
-        add_type(node->lhs);
-        if (node->type->kind == TYPE_STRUCT) {
+        add_type(node);
+        if (node->type->kind == TYPE_STRUCT || node->type->kind == TYPE_UNION) {
             // メモリコピー
             for (int i = 0; i < node->type->size; i++) {
-                printf("  mov r8, [rdi+%d]\n", i);
-                printf("  mov [rax+%d], r8\n", i);
+                printf("  mov sil, BYTE PTR [rdi+%d]\n", i);
+                printf("  mov BYTE PTR [rax+%d], sil\n", i);
             }
+        } else if (node->type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(node->rhs->type, REG_RDI);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne dil\n");
+            printf("  movzb rdi, dil\n");
+            printf("  mov [rax], dil\n");
         } else {
             printf("  mov [rax], %s\n", proper_register(node->lhs->type, REG_RDI));
         }
@@ -249,13 +261,18 @@ static void gen(Node *node) {
         pop_rdi();
         if (current_fn->ret_type->kind == TYPE_CHAR) {
             printf("  movsx rax, dil\n");
+        } else if (current_fn->ret_type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(current_fn->ret_type, REG_RDI);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
         } else if (current_fn->ret_type->kind != TYPE_VOID) {
             if (current_fn->ret_type->size < 8) {
                 printf("  movsx rax, %s\n", proper_register(current_fn->ret_type, REG_RDI));
             } else if (current_fn->ret_type->size == 8) {
                 printf("  mov rax, rdi\n");
             } else {
-                error("gen() failure: ND_RETURN can't return over 8 size.");
+                error("gen() failure: 8より大きいサイズをreturnできません");
             }
         }
 
@@ -263,111 +280,161 @@ static void gen(Node *node) {
         // returnは終了なので数合わせなし
         return;
     } else if (node->kind == ND_IF) {
-        label_if_count++;
+        label_control_count++;
         gen(node->cond);
         pop();
         printf("  cmp rax, 0\n");
         if (node->els) {
-            printf("  je  .Lifelse%04d\n", if_count);
+            printf("  je  .Lifelse%04d\n", local_control_count);
             gen(node->then);
             pop();
-            printf("  jmp .Lifend%04d\n", if_count);
-            printf(".Lifelse%04d:\n", if_count);
+            printf("  jmp .Lifend%04d\n", local_control_count);
+            printf(".Lifelse%04d:\n", local_control_count);
             gen(node->els);
             pop();
-            printf(".Lifend%04d:\n", if_count);
+            printf(".Lifend%04d:\n", local_control_count);
         } else {
-            printf("  je  .Lifend%04d\n", if_count);
+            printf("  je  .Lifend%04d\n", local_control_count);
             gen(node->then);
             pop();
-            printf(".Lifend%04d:\n", if_count);
+            printf(".Lifend%04d:\n", local_control_count);
         }
 
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_TERNARY) {
-        label_if_count++;
+        label_control_count++;
         gen(node->cond);
         pop();
         printf("  cmp rax, 0\n");
-        printf("  je  .Lifelse%04d\n", if_count);
+        printf("  je  .Lifelse%04d\n", local_control_count);
         gen(node->then);
         pop();
-        printf("  jmp .Lifend%04d\n", if_count);
-        printf(".Lifelse%04d:\n", if_count);
+        printf("  jmp .Lifend%04d\n", local_control_count);
+        printf(".Lifelse%04d:\n", local_control_count);
         gen(node->els);
         pop();
-        printf(".Lifend%04d:\n", if_count);
+        printf(".Lifend%04d:\n", local_control_count);
         push();  // 数合わせ
 
         return;
     } else if (node->kind == ND_WHILE) {
-        label_loop_count++;
-        printf(".Lloopbegin%04d:\n", loop_count);
+        label_control_count++;
+        printf(".Lloopbegin%04d:\n", local_control_count);
 
         gen(node->cond);
         pop();
 
         printf("  cmp rax, 0\n");
-        printf("  je  .Lloopend%04d\n", loop_count);
+        printf("  je  .Lloopend%04d\n", local_control_count);
+        printf(".Lloopbody%04d:\n", local_control_count);  // do-while用
 
-        int tmp_label = continue_label;
-        continue_label = loop_count;
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_control_count, break_in_switch = false;
         gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
         pop();
-        continue_label = tmp_label;
 
         // whileには必要ないが、for文との辻褄合わせに入れる
-        printf(".Lloopinc%04d:\n", loop_count);
-        printf("  jmp .Lloopbegin%04d\n", loop_count);
-        printf(".Lloopend%04d:\n", loop_count);
+        printf(".Lloopinc%04d:\n", local_control_count);
+        printf("  jmp .Lloopbegin%04d\n", local_control_count);
+        printf(".Lloopend%04d:\n", local_control_count);
         push();  // 数合わせ
         return;
+    } else if (node->kind == ND_DO_WHILE) {
+        printf("  jmp .Lloopbody%04d\n", local_control_count);
+        gen(node->lhs);  // whileを生成
+        return;
     } else if (node->kind == ND_FOR) {
-        label_loop_count++;
+        label_control_count++;
         if (node->init) {
             gen(node->init);
             pop();
         }
 
-        printf(".Lloopbegin%04d:\n", loop_count);
+        printf(".Lloopbegin%04d:\n", local_control_count);
         if (node->cond) {
             gen(node->cond);
             pop();
             printf("  cmp rax, 0\n");
-            printf("  je  .Lloopend%04d\n", loop_count);
+            printf("  je  .Lloopend%04d\n", local_control_count);
         }
 
-        int tmp_label = continue_label;
-        continue_label = loop_count;
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_control_count, break_in_switch = false;
         gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
         pop();
-        continue_label = tmp_label;
 
-        printf(".Lloopinc%04d:\n", loop_count);
+        printf(".Lloopinc%04d:\n", local_control_count);
         if (node->inc) {
             gen(node->inc);
             pop();
         }
-        printf("  jmp .Lloopbegin%04d\n", loop_count);
-        printf(".Lloopend%04d:\n", loop_count);
+        printf("  jmp .Lloopbegin%04d\n", local_control_count);
+        printf(".Lloopend%04d:\n", local_control_count);
+        push();  // 数合わせ
+        return;
+    } else if (node->kind == ND_SWITCH) {
+        label_control_count++;
+        gen(node->cond);
+        pop();
+        // defaultは一番最後の条件分岐
+        Node *default_node = NULL;
+        for (int i = 0; i < node->stmts->len; i++) {
+            Node *n = node->stmts->body[i];
+            if (n->kind == ND_CASE) {
+                printf("  cmp rax, %ld\n", n->val);
+                printf("  je  %s\n", n->label_name);
+                continue;
+            } else if (n->kind == ND_DEFAULT) {
+                if (default_node) {
+                    error("gen() failure: defaultが重複定義されています");
+                }
+                default_node = n;
+                continue;
+            }
+            error("gen() failure: switch文の中でcaseまたはlabelが宣言されていません");
+        }
+        if (default_node) {
+            printf("  jmp  %s\n", default_node->label_name);
+        }
+
+        // どれにもマッチしなかった場合
+        printf("  jmp .Lswitchend%04d\n", local_control_count);
+
+        int tmp_label = continue_label, tmp_in_switch = break_in_switch;
+        continue_label = local_control_count, break_in_switch = true;
+        gen(node->body);
+        break_in_switch = tmp_in_switch, continue_label = tmp_label;
+        pop();  // 条件にマッチせずendに飛ぶ場合もあるので、数合わせ
+        printf(".Lswitchend%04d:\n", local_control_count);
         push();  // 数合わせ
         return;
     } else if (node->kind == ND_BREAK) {
-        // loop_countは次の深さになっているので１を引く
         if (continue_label < 0) {
-            error("forブロックの中でbreakを使用していません。");
+            error("gen() failure: breakがfor,switchの中で使用されていません");
         }
-        push();  // 数合わせ
-        printf("  jmp .Lloopend%04d\n", continue_label);
+
+        if (break_in_switch) {
+            push();  // 数合わせ
+            printf("  jmp .Lswitchend%04d\n", continue_label);
+        } else {
+            push();  // 数合わせ
+            printf("  jmp .Lloopend%04d\n", continue_label);
+        }
         return;
     } else if (node->kind == ND_CONTINUE) {
-        // loop_countは次の深さになっているので１を引く
         if (continue_label < 0) {
-            error("forブロックの中でcontinueを使用していません。");
+            error("gen() failure: continueがforブロックの中で使用されていません");
         }
         push();  // 数合わせ
         printf("  jmp .Lloopinc%04d\n", continue_label);
+        return;
+    } else if (node->kind == ND_CASE || node->kind == ND_DEFAULT) {
+        // parserでcaseがswitch文の中にある事を保証している
+        printf("%s:\n", node->label_name);
+        gen(node->body);
         return;
     } else if (node->kind == ND_BLOCK || node->kind == ND_STMT_EXPR) {
         for (int i = 0; i < node->stmts->len; i++) {
@@ -394,20 +461,34 @@ static void gen(Node *node) {
             return;
         }
 
+        /* レジスタが上書きされないよう、仮引数の生成より先にする。 */
+        if (node->lhs) {
+            // 関数ポインターのロード
+            gen(node->lhs);
+            printf("  pop r10\n");
+        }
+
         int nargs = node->args->len;
         for (int i = 0; i < nargs; i++) {
             gen(node->args->body[i]);
         }
         for (int i = nargs - 1; i >= 0; i--) {
             Var *l = node->args->body[i];
+
             printf("  pop %s\n", argreg64[i]);
         }
+
         // rspを16の倍数にアライメントしてからコールする
         printf("  mov rax, 0\n");
         printf("  push rbp\n");
         printf("  mov rbp, rsp\n");
         printf("  and rsp, -16\n");
-        printf("  call %s\n", node->fn_name);
+        if (node->lhs) {
+            // 関数ポインターの呼びだし
+            printf("  call r10\n");
+        } else {
+            printf("  call %s\n", node->fn_name);
+        }
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         push();  // 数合わせ
@@ -429,6 +510,26 @@ static void gen(Node *node) {
     } else if (node->kind == ND_CAST) {
         gen(node->lhs);
         pop();
+
+        /*
+         * サイズが等しいか判定する前にBOOLかどうかを見る。
+         * char -> boolなどの場合があるため。
+         */
+        if (node->type->kind == TYPE_BOOL) {
+            char *reg_name = proper_register(node->type, REG_RAX);
+            printf("  test %s, %s\n", reg_name, reg_name);
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            push();
+            return;
+        }
+
+        if (sizeof_type(node->type) == sizeof_type(node->lhs->type)) {
+            /* 無駄なキャストはしない */
+            push();
+            return;
+        }
+
         if (node->type->size == 8) {
             // キャストの必要なし
         } else if (node->type->size == 4) {
@@ -468,24 +569,43 @@ static void gen(Node *node) {
         gen(node->lhs);
         pop();
         printf("  test rax, rax\n");
-        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        printf("  jne .Llogicalorfalse%04d\n", label_num);
         gen(node->rhs);
         pop();
         printf("  test rax, rax\n");
-        printf("  jne .Llogicalandfalse%04d\n", label_num);
+        printf("  jne .Llogicalorfalse%04d\n", label_num);
         // false
         printf("  mov rax, 0\n");
-        printf("  jmp .Llogicalandend%04d\n", label_num);
+        printf("  jmp .Llogicalorend%04d\n", label_num);
         // true
-        printf(".Llogicalandfalse%04d:\n", label_num);
+        printf(".Llogicalorfalse%04d:\n", label_num);
         printf("  mov rax, 1\n");
 
-        printf(".Llogicalandend%04d:\n", label_num);
+        printf(".Llogicalorend%04d:\n", label_num);
         push();
+        return;
+    } else if (node->kind == ND_LABEL) {
+        printf("%s:\n", node->label_name);
+        gen(node->body);
+        return;
+    } else if (node->kind == ND_GOTO) {
+        bool is_defined = false;
+        for (int i = 0; i < current_fn->goto_labels->len; i++) {
+            char *name = current_fn->goto_labels->body[i];
+            if (strcmp(name, node->label_name) == 0) {
+                is_defined = true;
+                break;
+            }
+        }
+        if (!is_defined) {
+            error("gen() failure: goto先が存在しません");
+        }
+
+        push();  // 数合わせ
+        printf("  jmp %s\n", node->label_name);
         return;
     }
 
-    // 主に演算のATSで読みこまれる
     gen(node->lhs);
     gen(node->rhs);
 
@@ -539,11 +659,11 @@ static void gen(Node *node) {
 }
 
 void codegen() {
-    // プロトタイプ関数を削除
-    delete_prototype_func();
+    // 関数プロトタイプを削除
+    delete_func_prototype();
 
     // 各関数のoffsetを計算
-    assign_lvar_offsets();
+    assign_local_var_offsets();
 
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
@@ -561,24 +681,27 @@ void codegen() {
     for (Var *var = globals; var != NULL; var = var->next) {
         // 外部ファイルで定義されるので何も出力しない
         if (var->is_extern) continue;
+        // 関数型の変数はFunctionとVarをうまく管理するために生成しているだけ
+        if (var->type->kind == TYPE_FUNC) continue;
 
-        printf("  .globl %s\n", var->name);
+        // 内部リンケージ or 外部リンケージ
+        if (!var->is_static) printf("  .globl %s\n", var->name);
 
         // 宣言のみ
-        if (var->ginit->len == 0) {
+        if (var->global_init->len == 0) {
             /*
              * .commは外部ファイルで定義されるかわからない変数。
              * もし定義がされなければ、指定したサイズでメモリ確保される。
              */
-            printf("  .comm %s, %d\n", var->name, sizeOfType(var->type));
+            printf("  .comm %s, %d\n", var->name, sizeof_type(var->type));
             continue;
         }
 
         // 初期化式あり
         printf("%s:\n", var->name);
 
-        for (int i = 0; i < var->ginit->len; i++) {
-            GInitEl *g = var->ginit->body[i];
+        for (int i = 0; i < var->global_init->len; i++) {
+            GlobalInit *g = var->global_init->body[i];
 
             // ポインターかラベル
             if (g->str) {
@@ -603,7 +726,8 @@ void codegen() {
     // 先頭の式から順にコード生成
     for (int i = 0; i < funcs->len; i++) {
         current_fn = funcs->body[i];
-        printf(".globl %s\n", current_fn->name);
+        // 内部リンケージ or 外部リンケージ
+        if (!current_fn->is_static) printf(".globl %s\n", current_fn->name);
         printf("%s:\n", current_fn->name);
 
         // プロローグ
@@ -658,8 +782,7 @@ void codegen() {
         // エピローグ
         // 最後の式の結果がRAXに残っているのでそれが返り値になる
         printf(".L.return.%s:\n", current_fn->name);
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
+        printf("  leave\n");
         printf("  ret\n");
     }
 }

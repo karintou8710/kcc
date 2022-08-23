@@ -1,5 +1,6 @@
 *~
 *.o
+*.i
 tmp*
 a.out
 kcc1
@@ -7,7 +8,8 @@ kcc2
 kcc3
 kcc1_gcc
 kcc1_clang
-test_exec.*
+input.c
+input.i
 out
 peda*
 .gdb*

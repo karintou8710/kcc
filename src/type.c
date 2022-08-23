@@ -1,15 +1,10 @@
 #include "kcc.h"
 
-/*
- * TODO: 型のキャスト、静的型チェック
- *
- */
-
 /* 固定長の型のサイズを返す */
-static int tykind_to_size(TypeKind tykind) {
+static int typekind_to_size(TypeKind tykind) {
     if (tykind == TYPE_VOID) {
         return 0;
-    } else if (tykind == TYPE_CHAR) {
+    } else if (tykind == TYPE_CHAR || tykind == TYPE_BOOL) {
         return 1;
     } else if (tykind == TYPE_SHORT) {
         return 2;
@@ -17,35 +12,41 @@ static int tykind_to_size(TypeKind tykind) {
         return 4;
     } else if (tykind == TYPE_PTR || tykind == TYPE_LONG) {
         return 8;
-    } else if (tykind == TYPE_STRUCT) {
+    } else if (tykind == TYPE_STRUCT || tykind == TYPE_UNION) {
         return 0;  // parser側でsizeを決める
     } else if (tykind == TYPE_ENUM) {
         return 4;  // INT型と同じサイズ
+    } else if (tykind == TYPE_FUNC) {
+        return 0;  // 関数型にサイズは存在しない
     }
 
-    error("存在しないまたは固定長ではない型です");
+    error("typekind_to_size() failure: 存在しないまたは固定長ではない型です");
+}
+
+static Type *array_base_type(Type *ty) {
+    if (ty->kind == TYPE_ARRAY) {
+        return array_base_type(ty->ptr_to);
+    }
+
+    return ty;
 }
 
 int array_base_type_size(Type *ty) {
-    if (ty->kind == TYPE_ARRAY) {
-        return array_base_type_size(ty->ptr_to);
-    }
-
-    return ty->size;
+    return array_base_type(ty)->size;
 }
 
 // sizeofの実装
-int sizeOfType(Type *ty) {
+int sizeof_type(Type *ty) {
     return ty->size;
 }
 
-size_t alignOfType(Type *ty) {
+size_t alignof_type(Type *ty) {
     return ty->alignment;
 }
 
-void apply_align_struct(Type *ty) {
-    if (!ty || ty->kind != TYPE_STRUCT) {
-        error("apply_align_struct() failure: struct型ではありません");
+void apply_align_to_struct(Type *ty) {
+    if (!ty || (ty->kind != TYPE_STRUCT && ty->kind != TYPE_UNION)) {
+        error("apply_align_to_struct() failure: struct or union型ではありません");
     }
 
     if (ty->member == NULL) return;
@@ -63,15 +64,25 @@ void apply_align_struct(Type *ty) {
     int struct_size = 0;
 
     while (v->next) {
-        v->next->offset = v->offset + sizeOfType(v->type);
-        // 負の割り算は未実装
-        int padding = (alignOfType(v->next->type) - v->next->offset % alignOfType(v->next->type)) % alignOfType(v->next->type);
-        v->next->offset += padding;
-        struct_size += sizeOfType(v->type) + padding;
+        if (ty->kind == TYPE_UNION) {
+            v->next->offset = 0;
+            if (struct_size < sizeof_type(v->type)) struct_size = sizeof_type(v->type);
+        } else {
+            // struct
+            v->next->offset = v->offset + sizeof_type(v->type);
+            // 負の割り算は未実装
+            int padding = (alignof_type(v->next->type) - v->next->offset % alignof_type(v->next->type)) % alignof_type(v->next->type);
+            v->next->offset += padding;
+            struct_size += sizeof_type(v->type) + padding;
+        }
         v = v->next;
     }
     // 最後の一つのメンバーのサイズを足す
-    struct_size += sizeOfType(v->type);
+    if (ty->kind == TYPE_UNION) {
+        if (struct_size < sizeof_type(v->type)) struct_size = sizeof_type(v->type);
+    } else {
+        struct_size += sizeof_type(v->type);
+    }
 
     // max_alignmentの倍数に構造体のサイズを揃える
     int padding = (max_alginemnt - struct_size % max_alginemnt) % max_alginemnt;
@@ -92,29 +103,75 @@ bool is_same_type(Type *ty1, Type *ty2) {
     return is_same_type(ty1->ptr_to, ty2->ptr_to);
 }
 
+/* tokenはコピー対象に含めない */
+void shallowcopy_type(Type *to, Type *from) {
+    if (from == NULL) {
+        return;
+    }
+    to->kind = from->kind;
+    to->ptr_to = try_memory_allocation(sizeof(Type));
+    to->ptr_to = from->ptr_to;
+    to->size = from->size;
+    to->array_size = from->array_size;
+    to->alignment = from->alignment;
+    to->name = from->name;
+    to->member = from->member;
+    to->is_forward = from->is_forward;
+    to->is_constant = from->is_constant;
+    to->is_unsigned = from->is_unsigned;
+    return;
+}
+
+void copy_type(Type *to, Type *from) {
+    if (from == NULL) {
+        return;
+    }
+    to->kind = from->kind;
+    to->ptr_to = try_memory_allocation(sizeof(Type));
+    copy_type(to->ptr_to, from->ptr_to);
+    to->size = from->size;
+    to->array_size = from->array_size;
+    to->alignment = from->alignment;
+    to->name = from->name;
+    to->member = from->member;
+    to->is_forward = from->is_forward;
+    to->is_constant = from->is_constant;
+    to->is_unsigned = from->is_unsigned;
+    return;
+}
+
+/* ネスト型は最後まで配列型のサイズが決定しないので計算し直す */
+void calc_type_size(Type *type) {
+    if (type == NULL || type->ptr_to == NULL) return;
+
+    calc_type_size(type->ptr_to);
+    if (type->kind == TYPE_ARRAY) {
+        type->size = type->array_size * type->ptr_to->size;
+    }
+}
+
 /* 基本の型を生成 */
 Type *new_type(TypeKind tykind) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = tykind;
-    ty->size = tykind_to_size(tykind);
+    ty->size = typekind_to_size(tykind);
     ty->alignment = ty->size;  // 基本型のアライメントはサイズと等しい
     return ty;
 }
 
 /* ポインター型を生成 */
 Type *new_ptr_type(Type *ptr_to) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = TYPE_PTR;
-    ty->size = tykind_to_size(TYPE_PTR);
+    ty->size = typekind_to_size(TYPE_PTR);
     ty->alignment = ty->size;
     ty->ptr_to = ptr_to;
     return ty;
 }
 
-// TODO: baseの型(例えばint[2][3]ならint型)を全ての配列型で持つべき?
 /* 配列型を生成 */
 Type *new_array_type(Type *ptr_to, int array_size) {
-    Type *ty = memory_alloc(sizeof(Type));
+    Type *ty = try_memory_allocation(sizeof(Type));
     ty->kind = TYPE_ARRAY;
     ty->size = ptr_to->size * array_size;
     ty->alignment = ptr_to->alignment;
@@ -123,13 +180,34 @@ Type *new_array_type(Type *ptr_to, int array_size) {
     return ty;
 }
 
+Type *new_func_type(Type *ret_type, Var *params, bool *is_variadic, char *name) {
+    // strcmp()を使用するので、nameをNULLにしない
+    if (name == NULL) name = "";
+    Type *type = new_type(TYPE_FUNC);
+    type->ptr_to = ret_type;
+    type->params = params;
+    type->is_variadic = is_variadic;
+    type->name = name;
+    return type;
+}
+
+/* base_typeは型を独立させるためコピーする */
+Tag *new_tag(Type *type) {
+    Tag *tag = try_memory_allocation(sizeof(Tag));
+    tag->base_type = try_memory_allocation(sizeof(Type));
+    copy_type(tag->base_type, type);
+    tag->forward_type = new_vec();
+    return tag;
+}
+
 bool is_integertype(TypeKind kind) {
     return (
         kind == TYPE_CHAR ||
         kind == TYPE_SHORT ||
         kind == TYPE_INT ||
         kind == TYPE_LONG ||
-        kind == TYPE_ENUM);
+        kind == TYPE_ENUM ||
+        kind == TYPE_BOOL);
 }
 
 bool is_scalartype(TypeKind kind) {
@@ -146,9 +224,9 @@ bool is_relationalnode(NodeKind kind) {
         kind == ND_LE);
 }
 
-TypeKind large_numtype(Type *t1, Type *t2) {
+TypeKind large_integer_type(Type *t1, Type *t2) {
     if (!is_integertype(t1->kind) || !is_integertype(t2->kind)) {
-        error("整数の型ではありません。\n");
+        error("large_integer_type() failure: 整数の型ではありません。\n");
     }
 
     if (t1->size >= t2->size) {
@@ -159,7 +237,7 @@ TypeKind large_numtype(Type *t1, Type *t2) {
 }
 
 /* キャスト */
-bool can_type_cast(Type *ty, TypeKind to) {
+bool can_cast_type(Type *ty, TypeKind to) {
     TypeKind from = ty->kind;
 
     if (to == TYPE_VOID) {
@@ -170,7 +248,7 @@ bool can_type_cast(Type *ty, TypeKind to) {
         return true;
     }
 
-    if (from == TYPE_ARRAY && is_scalartype(to)) {
+    if ((from == TYPE_ARRAY || from == TYPE_FUNC) && is_scalartype(to)) {
         return true;
     }
 
@@ -215,14 +293,14 @@ void add_type(Node *node) {
 
         // 算術型
         if (is_integertype(then_t->kind) && is_integertype(els_t->kind)) {
-            node->type = new_type(large_numtype(then_t, els_t));
+            node->type = new_type(large_integer_type(then_t, els_t));
             return;
         }
 
         // 示す先が同じポインター
         if (then_t->kind == TYPE_PTR && els_t->kind == TYPE_PTR) {
             if (!is_same_type(then_t, els_t)) {
-                error("add_type() failure: ND_TERNARY, different pointer type");
+                error("add_type() failure: 異なるポインター型です (ND_TERNARY)");
             }
             node->type = then_t;
             return;
@@ -231,9 +309,23 @@ void add_type(Node *node) {
         // TODO: 構造体と配列
         if (then_t->kind == TYPE_STRUCT && els_t->kind == TYPE_STRUCT) {
             if (then_t != els_t) {
-                error("add_type() failure: ND_TERNARY, different struct type");
+                error("add_type() failure: 異なる構造体型です (ND_TERNARY)");
             }
             node->type = then_t;
+            return;
+        }
+
+        if (then_t->kind == TYPE_UNION && els_t->kind == TYPE_UNION) {
+            if (then_t != els_t) {
+                error("add_type() failure: 異なる共用体型です (ND_TERNARY)");
+            }
+            node->type = then_t;
+            return;
+        }
+
+        if ((then_t->kind == TYPE_ARRAY || then_t->kind == TYPE_PTR) && (els_t->kind == TYPE_ARRAY || els_t->kind == TYPE_PTR)) {
+            // TODO: 適切な型に変換
+            node->type = new_ptr_type(new_type(TYPE_VOID));
             return;
         }
 
@@ -247,20 +339,20 @@ void add_type(Node *node) {
     }
 
     if (node->kind == ND_STRING) {
-        node->type = new_ptr_type(new_type(TYPE_CHAR));
+        node->type = new_array_type(new_type(TYPE_CHAR), strlen(node->str_literal) + 1);
         return;
     }
 
     if (node->kind == ND_CALL) {
-        Function *fn = find_func(node->fn_name);
-        if (!fn) {
-            // TODO: プロトタイプ宣言に対応
-            node->type = new_type(TYPE_INT);
-            // error("add_type() failure: can't find func, name=%s", node->fn_name);
+        if (node->lhs) {
+            if (!(node->lhs->type->kind == TYPE_PTR && node->lhs->type->ptr_to->kind == TYPE_FUNC)) {
+                error("add_type() failure: 関数ポインターではありません(ND_CALL)");
+            }
+            node->type = node->lhs->type->ptr_to->ptr_to;
         } else {
+            Function *fn = find_func(node->fn_name);
             node->type = fn->ret_type;
         }
-
         return;
     }
 
@@ -271,10 +363,10 @@ void add_type(Node *node) {
             fprintf(stderr, "[node->rhs->type]\n");
             debug_type(node->rhs->type, 0);
             debug_node(node->rhs, "root", 0);
-            error("add_type() failure: type not found(ND_ASSIGN)");
+            error("add_type() failure: 型情報が見つかりませんでした (ND_ASSIGN)");
         }
 
-        if (can_type_cast(node->rhs->type, node->lhs->type->kind)) {
+        if (can_cast_type(node->rhs->type, node->lhs->type->kind)) {
             node->type = node->lhs->type;
             return;
         }
@@ -294,18 +386,27 @@ void add_type(Node *node) {
             return;
         }
 
+        if (node->rhs->type->kind == TYPE_UNION && node->lhs->type->kind == TYPE_UNION) {
+            if (node->rhs->type != node->lhs->type) {
+                error("add_type() failure: 異なる型の共用体に代入はできません");
+            }
+
+            node->type = node->rhs->type;
+            return;
+        }
+
         fprintf(stderr, "[node->lhs->type]\n");
         debug_type(node->lhs->type, 0);
         fprintf(stderr, "[node->rhs->type]\n");
         debug_type(node->rhs->type, 0);
-        error("add_type() failure: fail to cast %d -> %d", node->rhs->type->kind, node->lhs->type->kind);
+        error("add_type() failure: キャストに失敗しました %d -> %d", node->rhs->type->kind, node->lhs->type->kind);
     }
 
     // lhsとrhsの順番はparse側で保証する
     if (node->kind == ND_ADD) {
         Node *lhs = node->lhs, *rhs = node->rhs;
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 
@@ -319,14 +420,14 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(ADD)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_SUB) {
         Node *lhs = node->lhs, *rhs = node->rhs;
 
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 
@@ -348,7 +449,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(SUB)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(SUB)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_MUL) {
@@ -358,7 +459,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(MUL)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(MUL)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_DIV) {
@@ -368,7 +469,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_MOD) {
@@ -378,7 +479,7 @@ void add_type(Node *node) {
             return;
         }
 
-        error("%d %d不正な型です(DIV)", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です(MOD)", lhs->type->kind, rhs->type->kind);
     }
 
     if (node->kind == ND_LOGICAL_NOT || node->kind == ND_LOGICAL_AND || node->kind == ND_LOGICAL_OR) {
@@ -393,11 +494,11 @@ void add_type(Node *node) {
         node->kind == ND_RSHIFT) {
         Node *lhs = node->lhs, *rhs = node->rhs;
         if (is_integertype(lhs->type->kind) && is_integertype(rhs->type->kind)) {
-            node->type = new_type(large_numtype(lhs->type, rhs->type));
+            node->type = new_type(large_integer_type(lhs->type, rhs->type));
             return;
         }
 
-        error("%d %d不正な型です", lhs->type->kind, rhs->type->kind);
+        error("add_type() failure: %d %d不正な型です", lhs->type->kind, rhs->type->kind);
     }
 
     if (is_relationalnode(node->kind)) {
@@ -412,5 +513,5 @@ void add_type(Node *node) {
         return;
     }
 
-    error("add_type() failure: 対応していないノードタイプです。");
+    error("add_type() failure: %dは対応していないノードタイプです。", node->kind);
 }

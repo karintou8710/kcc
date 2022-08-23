@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -18,12 +17,6 @@ int ret() {
 
 void p() {
     printf("Hello, World\n");
-}
-
-int int_scanf() {
-    int c;
-    scanf("%d", &c);
-    return c;
 }
 
 void new_line() {
@@ -188,6 +181,23 @@ int assign11() {
     b = 1;
     int res = (e = *(d = &a) + 1);
     return res + e;
+}
+int assign12() {
+    int a = 10;
+    int *b = &a;
+    (*b) = 1;
+    return a;
+}
+int assign13() {
+    int a[2] = {0};
+    int *b = a;
+    ((*(b + 1))) = 10;
+    return a[1];
+}
+int assign14() {
+    int a = 0, b = 1, c = 2;
+    a = b -= c *= c;
+    return a;
 }
 // if else
 int if_else1() {
@@ -551,7 +561,7 @@ int array2() {
     *(a + 1) = 2;
     *(a + 2) = 3;
     int i;
-    int sum;
+    int sum = 0;
     for (i = 0; i < 3; i += 1) {
         sum += *(a + i);
     }
@@ -586,6 +596,11 @@ int array5() {
     }
     return a[2][1];
 }
+int array6() {
+    int a[((1)) * 2][1 * 2 - 1];
+    a[1][0] = 5;
+    return a[1][0];
+}
 
 // MOD
 int mod1_gcd(int a, int b) {
@@ -612,14 +627,6 @@ int char1() {
     int y;
     y = 4;
     return x[0] + y;
-}
-
-// string_literal
-int string_literal1() {
-    char *a;
-    a = "Hello, C-compiler";
-    printf("%s\n", a);
-    return 0;
 }
 
 // %=
@@ -779,6 +786,9 @@ int main() {
     ASSERT(7, assign9(), "assign9");
     ASSERT(5, assign10(), "assign10");
     ASSERT(4, assign11(), "assign11");
+    ASSERT(1, assign12(), "assign12");
+    ASSERT(10, assign13(), "assign13");
+    ASSERT(-3, assign14(), "assign14");
 
     ASSERT(4, if_else1(), "if_else1");
     ASSERT(6, if_else2(), "if_else2");
@@ -851,13 +861,12 @@ int main() {
     ASSERT(2, array3(), "array3");
     ASSERT(4, array4(), "array4");
     ASSERT(5, array5(), "array5");
+    ASSERT(5, array6(), "array6");
 
     ASSERT(30, mod1(), "mod1");
     ASSERT(1, mod2(), "mod2");
 
     ASSERT(3, char1(), "char1");
-
-    ASSERT(0, string_literal1(), "string_literal");
 
     ASSERT(2, assign_mod1(), "assign_mod1");
 

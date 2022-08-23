@@ -16,7 +16,7 @@ static char escape_letters[][2] = {
     {'?', 63}};
 
 static Token *new_token(int kind, Token *cur, char *str, int len) {
-    Token *tok = memory_alloc(sizeof(Token));
+    Token *tok = try_memory_allocation(sizeof(Token));
     tok->kind = kind;
     tok->str = str;
     tok->len = len;
@@ -24,13 +24,25 @@ static Token *new_token(int kind, Token *cur, char *str, int len) {
     return tok;
 }
 
-static char escape_single_letter(char *p) {
+static char decode_escaped_letter(char *p) {
     for (int i = 0; i < sizeof(escape_letters) / sizeof(char[2]); i++) {
         if (escape_letters[i][0] == *p) {
             return escape_letters[i][1];
         }
     }
-    error("single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
+    error_at(p, "single_letter() failure: %dは対応していないエスケープシーケンスです。", *p);
+}
+
+static void skip_space(char **p) {
+    char *q = *p;
+    while (*q && isspace(*q)) q++;
+    *p = q;
+}
+
+static void skip_to_target(char **p, char c) {
+    char *q = *p;
+    while (*q && *q != c) q++;
+    *p = q;
 }
 
 Token *tokenize(char *p) {
@@ -44,49 +56,15 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        // includeはスキップする
-        if (strncmp(p, "#include", 8) == 0) {
-            cur = new_token(TK_INCLUDE, cur, p, 8);
-            p += 8;
-
-            while (isspace(*p)) p++;
-
-            if (*p == '<') {
-                // TODO: 標準ライブラリのインクルード
-                cur->is_standard = true;
-                while (*p != '\n') p++;
-            } else if (*p == '"') {
-                p++;
-
-                char *q = p;
-                while (*p && *p != '"') p++;
-                if (*p != '"') {
-                    error("tokenize() failure: 「\"」で閉じていません。");
-                }
-                cur->str = my_strndup(q, p - q);
-                cur->len = p - q + 1;
-
-                p++;
-            } else {
-                error("tokenize() failure: #includeに失敗しました");
-            }
-            continue;
-        }
-
         // プリプロセッサーが出力するメタ情報を削除
-        if (startsWith(p, "#") && (user_input == p || *(p - 1) == '\n')) {
+        if (starts_with(p, "#") && (user_input == p || *(p - 1) == '\n')) {
             while (*p != '\n') p++;
-            continue;
-        }
-
-        if (strncmp(p, "static", 6) == 0) {
-            p += 6;
             continue;
         }
 
         if (strncmp(p, "//", 2) == 0) {
             p += 2;
-            while (*p != '\n') p++;
+            skip_to_target(&p, '\n');
             continue;
         }
 
@@ -98,133 +76,133 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (startsWith(p, "...")) {
+        if (starts_with(p, "...")) {
             cur = new_token(TK_VARIADIC, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, "<<=")) {
+        if (starts_with(p, "<<=")) {
             cur = new_token(TK_LSHIFT_EQ, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, ">>=")) {
+        if (starts_with(p, ">>=")) {
             cur = new_token(TK_RSHIFT_EQ, cur, p, 3);
             p += 3;
             continue;
         }
 
-        if (startsWith(p, "==")) {
+        if (starts_with(p, "==")) {
             cur = new_token(TK_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "!=")) {
+        if (starts_with(p, "!=")) {
             cur = new_token(TK_NE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "<=")) {
+        if (starts_with(p, "<=")) {
             cur = new_token(TK_LE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, ">=")) {
+        if (starts_with(p, ">=")) {
             cur = new_token(TK_GE, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, ">>")) {
+        if (starts_with(p, ">>")) {
             cur = new_token(TK_RSHIFT, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "<<")) {
+        if (starts_with(p, "<<")) {
             cur = new_token(TK_LSHIFT, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "+=")) {
+        if (starts_with(p, "+=")) {
             cur = new_token(TK_ADD_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "-=")) {
+        if (starts_with(p, "-=")) {
             cur = new_token(TK_SUB_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "*=")) {
+        if (starts_with(p, "*=")) {
             cur = new_token(TK_MUL_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "/=")) {
+        if (starts_with(p, "/=")) {
             cur = new_token(TK_DIV_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "%=")) {
+        if (starts_with(p, "%=")) {
             cur = new_token(TK_MOD_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "&=")) {
+        if (starts_with(p, "&=")) {
             cur = new_token(TK_AND_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "|=")) {
+        if (starts_with(p, "|=")) {
             cur = new_token(TK_OR_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "^=")) {
+        if (starts_with(p, "^=")) {
             cur = new_token(TK_XOR_EQ, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "++")) {
+        if (starts_with(p, "++")) {
             cur = new_token(TK_INC, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "--")) {
+        if (starts_with(p, "--")) {
             cur = new_token(TK_DEC, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "&&")) {
+        if (starts_with(p, "&&")) {
             cur = new_token(TK_LOGICAL_AND, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "||")) {
+        if (starts_with(p, "||")) {
             cur = new_token(TK_LOGICAL_OR, cur, p, 2);
             p += 2;
             continue;
         }
 
-        if (startsWith(p, "->")) {
+        if (starts_with(p, "->")) {
             cur = new_token(TK_ARROW, cur, p, 2);
             p += 2;
             continue;
@@ -236,22 +214,72 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // 2進数
+        if (starts_with(p, "0b")) {
+            p += 2;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 2);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な2進数です");
+            }
+
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
+        // 16進数
+        if (starts_with(p, "0x")) {
+            p += 2;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 16);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な16進数です");
+            }
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
+        // 8進数
+        if (starts_with(p, "0")) {
+            p += 1;
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 8);
+            cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な8進数です");
+            }
+            cur->type = new_type(TYPE_INT);
+            continue;
+        }
+
         if (isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            if (is_alnum(*p)) {
+                error_at(p, "tokenize() failure: 無効な10進数です");
+            }
             cur->type = new_type(TYPE_INT);
             continue;
         }
 
+        /*
+         * 文字列リテラル
+         * アセンブリにエスケープ文字を展開せずに出力する
+         */
         if (*p == '\"') {
             p++;
-            cur = new_token(TK_STRING, cur, p, 0);
             char *q = p;
             int len = 0;
+            // 文字列の長さを取得する
             while (*p && *p != '"') {
-                // エスケープ文字を飛ばす
+                // \"があるのでエスケープ文字は飛ばす
                 if (*p == '\\') {
                     p += 2;
                     len += 2;
@@ -260,20 +288,37 @@ Token *tokenize(char *p) {
                 len++;
                 p++;
             }
+            if (*p == '\0') {
+                error_at(q, "tokinize() failure: 「\"」で閉じていません");
+            }
             p++;
-            cur->str = my_strndup(q, len);
-            cur->len = strlen(cur->str);
-            cur->str_literal_index = string_literal->len;
-            vec_push(string_literal, cur);
+
+            if (cur->kind == TK_STRING) {
+                // 文字列リテラルの連結
+                Token *t = vec_last(string_literal);
+                char *str = try_memory_allocation(sizeof(char) * (t->len + len + 1));
+                strcat(str, t->str);
+                strcat(str, my_strndup(q, len));
+                t->str = str;
+                t->len += len;
+            } else {
+                cur = new_token(TK_STRING, cur, p, 0);
+                cur->str = my_strndup(q, len);
+                cur->len = strlen(cur->str);
+                cur->str_literal_index = string_literal->len;
+                vec_push(string_literal, cur);
+            }
+
             continue;
         }
 
+        /* TODO: 複数文字のシングルクオーテーション */
         if (*p == '\'') {
             p++;
             if (*p == '\\') {
                 cur = new_token(TK_NUM, cur, p, 2);
                 p++;
-                cur->val = escape_single_letter(p);
+                cur->val = decode_escaped_letter(p);
                 p++;
             } else {
                 cur = new_token(TK_NUM, cur, p, 1);
@@ -281,9 +326,37 @@ Token *tokenize(char *p) {
                 p++;
             }
             if (*p != '\'') {
-                error("tokenize() failure: 「'」で閉じていません。");
+                error_at(p, "tokenize() failure: 「'」で閉じていません。");
             }
             p++;
+            continue;
+        }
+
+        if (strncmp(p, "#include", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_INCLUDE, cur, p, 8);
+            p += 8;
+
+            skip_space(&p);
+
+            if (*p == '<') {
+                // TODO: 標準ライブラリのインクルード
+                cur->is_standard = true;
+                while (*p != '\n') p++;
+            } else if (*p == '"') {
+                p++;
+
+                char *q = p;
+                skip_to_target(&p, '"');
+                if (*p != '"') {
+                    error_at(q, "tokenize() failure: 「\"」で閉じていません。");
+                }
+                cur->str = my_strndup(q, p - q);
+                cur->len = p - q + 1;
+
+                p++;
+            } else {
+                error_at(p, "tokenize() failure: \", <で始まっていません");
+            }
             continue;
         }
 
@@ -317,6 +390,12 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "switch", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_SWITCH, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         if (strncmp(p, "break", 5) == 0 && !is_alnum(p[5])) {
             cur = new_token(TK_BREAK, cur, p, 5);
             p += 5;
@@ -329,6 +408,24 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "default", 7) == 0 && !is_alnum(p[7])) {
+            cur = new_token(TK_DEFAULT, cur, p, 7);
+            p += 7;
+            continue;
+        }
+
+        if (strncmp(p, "case", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_CASE, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
+        if (strncmp(p, "goto", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_GOTO, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
         if (strncmp(p, "sizeof", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_SIZEOF, cur, p, 6);
             p += 6;
@@ -336,11 +433,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long int, long long int
-                p += 3;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 3);
             cur->type = new_type(TYPE_INT);
             p += 3;
@@ -355,11 +447,6 @@ Token *tokenize(char *p) {
         }
 
         if (strncmp(p, "long", 4) == 0 && !is_alnum(p[4])) {
-            if (cur->kind == TK_TYPE && cur->type->kind == TYPE_LONG) {
-                // long と long longは同じ型とみなす
-                p += 4;
-                continue;
-            }
             cur = new_token(TK_TYPE, cur, p, 4);
             cur->type = new_type(TYPE_LONG);
             p += 4;
@@ -380,20 +467,64 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "_Bool", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_TYPE, cur, p, 5);
+            cur->type = new_type(TYPE_BOOL);
+            p += 5;
+            continue;
+        }
+
+        if (strncmp(p, "signed", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_SIGNED, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        if (strncmp(p, "unsigned", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_UNSIGNED, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "const", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_CONST, cur, p, 5);
+            p += 5;
+            continue;
+        }
+
         if (strncmp(p, "struct", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_TYPE, cur, p, 6);
             cur->type = new_type(TYPE_STRUCT);
             p += 6;
 
-            while (isspace(*p)) p++;
+            skip_space(&p);
 
             if (is_alpha(*p)) {
                 char *q = p;
-                str_advanve(&p);
+                str_advance(&p);
                 cur->type->name = my_strndup(q, p - q);
                 continue;
             } else {
-                error_at(p, "tokenize() failure: structの型名が存在しません。");
+                /* 無名構造体 */
+                continue;
+            }
+        }
+
+        if (strncmp(p, "union", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_TYPE, cur, p, 5);
+            cur->type = new_type(TYPE_UNION);
+            p += 5;
+
+            skip_space(&p);
+
+            if (is_alpha(*p)) {
+                char *q = p;
+                str_advance(&p);
+                cur->type->name = my_strndup(q, p - q);
+                continue;
+            } else {
+                /* 匿名共用体 */
+                continue;
             }
         }
 
@@ -402,11 +533,11 @@ Token *tokenize(char *p) {
             cur->type = new_type(TYPE_ENUM);
             p += 4;
 
-            while (isspace(*p)) p++;
+            skip_space(&p);
 
             if (is_alpha(*p)) {
                 char *q = p;
-                str_advanve(&p);
+                str_advance(&p);
                 cur->type->name = my_strndup(q, p - q);
             }
             continue;
@@ -424,15 +555,57 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "do", 2) == 0 && !is_alnum(p[2])) {
+            cur = new_token(TK_DO, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (strncmp(p, "register", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_REGISTER, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "auto", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_AUTO, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
+        if (strncmp(p, "restrict", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_RESTRICT, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "volatile", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_VOLATILE, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
+        if (strncmp(p, "static", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_STATIC, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        if (strncmp(p, "_Alignof", 8) == 0 && !is_alnum(p[8])) {
+            cur = new_token(TK_ALIGNOF, cur, p, 8);
+            p += 8;
+            continue;
+        }
+
         if (is_alpha(*p)) {
             cur = new_token(TK_IDENT, cur, p, 0);
             char *q = p;
-            str_advanve(&p);
+            str_advance(&p);
             cur->len = p - q;
             continue;
         }
 
-        error_at(p, "tokenize() failure: トークナイズできません");
+        error_at(p, "tokenize() failure: トークナイズに失敗しました");
     }
 
     new_token(TK_EOF, cur, p, 0);

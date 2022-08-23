@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -94,6 +93,105 @@ int init_array12() {
     return a[0][0] + a[1][1] + a[2][2];
 }
 
+int init_array13() {
+    char a[3][4] = {};
+    char b[3][3] = {{0}};
+    return a[2][2] == 0 && b[2][2] == 0;
+}
+
+int init_struct1() {
+    struct A {
+        int member;
+        int member2;
+    };
+    struct A a = {0, 1};
+
+    return a.member + a.member2;
+}
+
+int init_struct2() {
+    struct A {
+        int member;
+        int member2;
+    };
+    struct A a = {}, b = {1}, c = {1 * 2, 3 - 4};
+
+    return a.member2 == 0 && b.member2 == 0 && c.member2 == -1;
+}
+
+int init_struct3() {
+    struct A {
+        char a;
+        short b;
+    } a = {
+        127,
+        127};
+    return a.a == 127 && a.b == 127;
+}
+
+int init_struct4() {
+    struct A {
+        char *str;
+    };
+    struct A a = {
+        "test"};
+    return strcmp("test", a.str) == 0;
+}
+
+int init_struct5() {
+    struct A {
+        int a;
+        int *b;
+        char *str;
+    };
+    struct A a = {};
+    return a.str == 0;
+}
+
+int init_struct6() {
+    struct A {
+        int member[4];
+    };
+    struct A a = {
+        {1, 2, 3}};
+
+    return a.member[0] == 1 && a.member[1] == 2 && a.member[3] == 0;
+}
+
+int init_struct7() {
+    struct A {
+        int a;
+        int member[4];
+    } a[2] = {
+        {1, {1, 2, 3, 4}},
+        {2, {1 * 2, 2 * 2, 3 * 2, 4 * 2}}};
+
+    return a[0].a == 1 && a[0].member[2] == 3 && a[1].a == 2 && a[1].member[3] == 8;
+}
+
+int init_struct8() {
+    struct A {
+        int member;
+    };
+    struct B {
+        struct A a_struct[2];
+    } b[2] = {
+        {{{1},
+          {2}}},
+        {{{3},
+          {4}}}};
+    return b[0].a_struct[0].member == 1 && b[1].a_struct[1].member == 4;
+}
+
+int init_struct9() {
+    struct A {
+        int a;
+        int b;
+        int c;
+    } a = {};
+    return a.a == 0 && a.b == 0 && a.c == 0;
+}
+
 int test1 = 10;
 int test2_1 = 1 + 2 - (3 * 4) / 5, test2_2 = 1;
 int *test3_1 = 1, test3_2 = 2;
@@ -128,6 +226,7 @@ int main() {
     ASSERT(195, init_array10(), "init_array10");
     ASSERT(330, init_array11(), "init_array11");
     ASSERT(330, init_array12(), "init_array12");
+    ASSERT(1, init_array13(), "init_array13");
 
     ASSERT(10, test1, "test1");
     ASSERT(1, test2_1, "test2_1");
@@ -148,6 +247,16 @@ int main() {
     ASSERT(0, test15, "test15");
     ASSERT(1, test16, "test16");
     ASSERT(0, test17, "test17");
+
+    ASSERT(1, init_struct1(), "init_struct1");
+    ASSERT(1, init_struct2(), "init_struct2");
+    ASSERT(1, init_struct3(), "init_struct3");
+    ASSERT(1, init_struct4(), "init_struct4");
+    ASSERT(1, init_struct5(), "init_struct5");
+    ASSERT(1, init_struct6(), "init_struct6");
+    ASSERT(1, init_struct7(), "init_struct7");
+    ASSERT(1, init_struct8(), "init_struct8");
+    ASSERT(1, init_struct9(), "init_struct9");
 
     printf("ALL TEST OF init.c SUCCESS :)\n");
     return 0;

@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <string.h>
+#include "basic.h"
 
 int ASSERT(int expected, int actual, char *name) {
     if (expected == actual)
@@ -21,7 +20,6 @@ int test2(int);
 int test2(int a) {
     return a;
 }
-int test2(int);
 
 int test3(int *, int[2][2]);
 int test3(int *a, int b[2][2]) {
